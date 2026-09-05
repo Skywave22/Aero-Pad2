@@ -167,12 +167,19 @@ fun SettingsScreen(
             }
 
             // ---------- Mouse ----------
-            if (matches("mouse", "trackpad", "sensitivity", "scroll", "smoothing", "pen", "tap")) SettingsGroup("Mouse & trackpad") {
+            if (matches("mouse", "trackpad", "sensitivity", "scroll", "smoothing", "pen", "tap", "acceleration", "profile", "drag", "edge")) SettingsGroup("Mouse & trackpad") {
+                // Profile dropdown missing standard combo box, so just list buttons or radio. Let's use SegmentedRow or list.
+                // Simple representation:
                 SliderRow("Sensitivity", mouse.sensitivity, viewModel::setMouseSensitivity)
-                SliderRow("Scroll speed", mouse.scrollSpeed, viewModel::setScrollSpeed)
+                SliderRow("Acceleration", mouse.acceleration, viewModel::setAcceleration)
                 SliderRow("Movement smoothing", mouse.movementSmoothing, viewModel::setMovementSmoothing)
+                SliderRow("Scroll speed", mouse.scrollSpeed, viewModel::setScrollSpeed)
                 ToggleRow("Invert scroll", mouse.invertScroll, viewModel::setInvertScroll)
                 ToggleRow("Tap to click", mouse.tapToClick, viewModel::setTapToClick)
+                ToggleRow("Drag lock (double tap and hold)", mouse.dragLock, viewModel::setDragLock)
+                ToggleRow("Edge scrolling", mouse.edgeScroll, viewModel::setEdgeScroll)
+                ToggleRow("Three-finger gestures", mouse.threeFingerGestures, viewModel::setThreeFingerGestures)
+                ToggleRow("Palm rejection", mouse.palmRejection, viewModel::setPalmRejection)
                 ToggleRow("Pen mode", mouse.penMode, viewModel::setPenMode, subtitle = "Slower, precise pointer")
             }
 

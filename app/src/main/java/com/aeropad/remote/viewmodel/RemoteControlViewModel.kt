@@ -86,6 +86,43 @@ class RemoteControlViewModel @Inject constructor(
             sendAction(HidAction.MouseDown(MouseButton.LEFT))
         }
     }
+    
+    private var threeFingerAccumX = 0f
+    private var threeFingerAccumY = 0f
+    
+    fun onThreeFingerSwipe(dx: Float, dy: Float) {
+        threeFingerAccumX += dx
+        threeFingerAccumY += dy
+        
+        // threshold for swipe
+        if (threeFingerAccumY < -150f) {
+            // Swipe Up -> Show Task View / Mission Control (Windows: Win+Tab)
+            sendAction(HidAction.KeyboardCombo(HidKeys.KEY_LEFT_META, HidKeys.KEY_TAB))
+            threeFingerAccumY = 0f
+            threeFingerAccumX = 0f
+        } else if (threeFingerAccumY > 150f) {
+            // Swipe Down -> Show Desktop (Windows: Win+D)
+            sendAction(HidAction.KeyboardCombo(HidKeys.KEY_LEFT_META, HidKeys.KEY_D))
+            threeFingerAccumY = 0f
+            threeFingerAccumX = 0f
+        } else if (threeFingerAccumX > 150f) {
+            // Swipe Right -> Next app / tab
+            sendAction(HidAction.KeyboardCombo(HidKeys.KEY_LEFT_ALT, HidKeys.KEY_TAB))
+            threeFingerAccumY = 0f
+            threeFingerAccumX = 0f
+        } else if (threeFingerAccumX < -150f) {
+            // Swipe Left -> Prev app
+            sendAction(HidAction.KeyboardCombo(HidKeys.KEY_LEFT_ALT, HidKeys.KEY_LEFTSHIFT, HidKeys.KEY_TAB))
+            threeFingerAccumY = 0f
+            threeFingerAccumX = 0f
+        }
+    }
+    
+    fun onThreeFingerSwipeEnd() {
+        threeFingerAccumX = 0f
+        threeFingerAccumY = 0f
+    }
+
     /** Reset motion state when a new gesture starts (prevents smoothing bleed). */
     fun onTrackpadGestureStart() = trackpad.startGesture()
 

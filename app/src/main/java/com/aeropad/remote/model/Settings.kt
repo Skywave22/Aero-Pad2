@@ -70,12 +70,22 @@ data class AppSettings(
 )
 
 /** Mouse/trackpad tuning. All percentages 0..100. */
+
+enum class TrackpadProfile { NATURAL, PRECISE, FAST, GAMING, CUSTOM }
+enum class AccelerationCurve { NONE, LINEAR, EXPONENTIAL }
 data class MouseSettings(
+    val profile: TrackpadProfile = TrackpadProfile.NATURAL,
     val sensitivity: Int = 65,
     val scrollSpeed: Int = 50,
     val movementSmoothing: Int = 20,
+    val acceleration: Int = 30,
+    val curve: AccelerationCurve = AccelerationCurve.LINEAR,
     val invertScroll: Boolean = false,
     val tapToClick: Boolean = true,
+    val dragLock: Boolean = false,
+    val edgeScroll: Boolean = true,
+    val threeFingerGestures: Boolean = true,
+    val palmRejection: Boolean = true,
     val penMode: Boolean = false
 ) {
     companion object { const val MIN = 0; const val MAX = 100 }
@@ -84,7 +94,8 @@ data class MouseSettings(
     fun sanitized(): MouseSettings = copy(
         sensitivity = sensitivity.coerceIn(MIN, MAX),
         scrollSpeed = scrollSpeed.coerceIn(MIN, MAX),
-        movementSmoothing = movementSmoothing.coerceIn(MIN, MAX)
+        movementSmoothing = movementSmoothing.coerceIn(MIN, MAX),
+        acceleration = acceleration.coerceIn(MIN, MAX)
     )
 }
 

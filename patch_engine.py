@@ -1,18 +1,9 @@
-package com.aeropad.remote.domain
+import re
 
-import com.aeropad.remote.hid.PointerMath
-import com.aeropad.remote.model.MouseSettings
+with open('app/src/main/java/com/aeropad/remote/domain/TrackpadEngine.kt', 'r') as f:
+    text = f.read()
 
-/**
- * OPTIMIZATION: single shared trackpad state machine.
- *
- * The smoothing + fractional-carry + scroll-accumulation pipeline was
- * copy-pasted in 3 ViewModels (RemoteControl, PcCombo, WidgetInteractor).
- * This class is now the one implementation (~20 lines replacing ~90).
- * AirMouseCore keeps its own variant intentionally: its input domain is
- * angular velocity, not pixel deltas.
- */
-class TrackpadEngine(private val settings: () -> MouseSettings) {
+new_engine = """class TrackpadEngine(private val settings: () -> MouseSettings) {
 
     private var smoothX = 0f
     private var smoothY = 0f
@@ -66,29 +57,11 @@ class TrackpadEngine(private val settings: () -> MouseSettings) {
         scrollAccum = remainder
         return steps
     }
-}
+}"""
 
-    /** Raw px delta → settings-adjusted int mouse delta (0,0 = don't send). */
-    fun move(dxPx: Float, dyPx: Float): Pair<Int, Int> {
-        val s = settings()
-        val g = PointerMath.gain(s.sensitivity, s.penMode)
-        smoothX = PointerMath.smooth(smoothX, dxPx * g, s.movementSmoothing)
-        smoothY = PointerMath.smooth(smoothY, dyPx * g, s.movementSmoothing)
-        val fx = smoothX + fracX
-        val fy = smoothY + fracY
-        val ix = fx.toInt()
-        val iy = fy.toInt()
-        fracX = fx - ix
-        fracY = fy - iy
-        return ix to iy
-    }
+# Need to check how much was there. Let's just replace the class body
+pattern = r"class TrackpadEngine\(private val settings: \(\) -> MouseSettings\) \{.*?\}"
+text = re.sub(pattern, new_engine, text, flags=re.DOTALL)
 
-    /** Accumulated scroll px → wheel steps (0 = don't send). */
-    fun scroll(dyPx: Float): Int {
-        val s = settings()
-        scrollAccum += dyPx
-        val (steps, remainder) = PointerMath.scrollSteps(scrollAccum, s.scrollSpeed, s.invertScroll)
-        scrollAccum = remainder
-        return steps
-    }
-}
+with open('app/src/main/java/com/aeropad/remote/domain/TrackpadEngine.kt', 'w') as f:
+    f.write(text)

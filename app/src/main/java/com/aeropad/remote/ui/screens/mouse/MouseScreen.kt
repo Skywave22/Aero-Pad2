@@ -58,6 +58,7 @@ fun MouseScreen(
     viewModel: RemoteControlViewModel = hiltViewModel()
 ) {
     val isConnected by viewModel.isConnected.collectAsState()
+    val mouseSettings by viewModel.mouseSettings.collectAsState()
     val vibration by viewModel.vibrationsEnabled.collectAsState()
     val haptic = rememberHaptic(vibration)
     val spec = LocalAppTheme.current
@@ -116,15 +117,13 @@ fun MouseScreen(
                                 onLongPress = { haptic(); viewModel.onTrackpadLongPress() }
                             )
                         }
-                        .pointerInput(viewModel) {
-                            // keyed on viewModel (stable): gesture coroutine
-                            // survives recompositions -> no dropped deltas.
-                            detectDragGestures(
-                                onDragStart = { viewModel.onTrackpadGestureStart() }
-                            ) { change, dragAmount ->
-                                change.consume()
-                                viewModel.onTrackpadDelta(dragAmount.x, dragAmount.y)
-                            }
+                        .pointerInput(viewModel, mouseSettings) {
+                            detectTrackpadGestures(
+                                viewModel = viewModel,
+                                isEdgeScrollEnabled = mouseSettings.edgeScroll,
+                                isThreeFingerEnabled = mouseSettings.threeFingerGestures,
+                                isPalmRejectionEnabled = mouseSettings.palmRejection
+                            )
                         }
                 ) {
                     // Specular streak overlay running diagonally
