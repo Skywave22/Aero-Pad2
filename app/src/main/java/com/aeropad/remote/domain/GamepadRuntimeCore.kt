@@ -49,14 +49,14 @@ object GamepadRuntimeCore {
      */
     fun hatFromTouch(dx: Float, dy: Float, eightWay: Boolean): Int {
         val dead = 0.25f
-        if (abs(dx) < dead && abs(dy) < dead) return 8 // neutral center
+        if (abs(dx) < dead && abs(dy) < dead) return 0 // neutral center
 
         if (!eightWay) {
             // Dominant axis → 4 directions (hat: 0=N, 2=E, 4=S, 6=W).
             return if (abs(dx) >= abs(dy)) {
-                if (dx > 0) 2 else 6
+                if (dx > 0) 3 else 7
             } else {
-                if (dy > 0) 4 else 0
+                if (dy > 0) 5 else 1
             }
         }
 
@@ -65,8 +65,8 @@ object GamepadRuntimeCore {
         val sector = (((angle + 360 + 22.5) % 360) / 45.0).toInt() % 8
         // sector 0=E,1=SE,2=S,3=SW,4=W,5=NW,6=N,7=NE → map to hat 0=N..7=NW
         return when (sector) {
-            0 -> 2; 1 -> 3; 2 -> 4; 3 -> 5
-            4 -> 6; 5 -> 7; 6 -> 0; else -> 1
+            0 -> 3; 1 -> 4; 2 -> 5; 3 -> 6
+            4 -> 7; 5 -> 8; 6 -> 1; else -> 2
         }
     }
 
@@ -115,7 +115,7 @@ object AdvancedControls {
 
     /** Diagonal-only filter: cardinal hat values become neutral (8). */
     fun diagonalOnly(hat: Int): Int =
-        if (hat in listOf(1, 3, 5, 7)) hat else 8
+        if (hat in listOf(2, 4, 6, 8)) hat else 0
 
     /**
      * Circular D-pad: continuous zone — ALWAYS 8-way by angle with a small
@@ -123,12 +123,12 @@ object AdvancedControls {
      */
     fun circularHat(dx: Float, dy: Float): Int {
         val dead = 0.15f
-        if (kotlin.math.abs(dx) < dead && kotlin.math.abs(dy) < dead) return 8
+        if (kotlin.math.abs(dx) < dead && kotlin.math.abs(dy) < dead) return 0
         val angle = Math.toDegrees(kotlin.math.atan2(dy.toDouble(), dx.toDouble()))
         val sector = (((angle + 360 + 22.5) % 360) / 45.0).toInt() % 8
         return when (sector) {
-            0 -> 2; 1 -> 3; 2 -> 4; 3 -> 5
-            4 -> 6; 5 -> 7; 6 -> 0; else -> 1
+            0 -> 3; 1 -> 4; 2 -> 5; 3 -> 6
+            4 -> 7; 5 -> 8; 6 -> 1; else -> 2
         }
     }
 

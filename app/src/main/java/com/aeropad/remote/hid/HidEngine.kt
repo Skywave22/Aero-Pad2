@@ -182,6 +182,16 @@ class HidEngine @Inject constructor(
             start()
             return
         }
+        val currentState = hd.getConnectionState(device)
+        if (currentState == BluetoothProfile.STATE_CONNECTED) {
+            connectedDevice = device
+            _state.value = HidConnectionState.Connected(device.toRemote())
+            return
+        } else if (currentState == BluetoothProfile.STATE_CONNECTING) {
+            _state.value = HidConnectionState.Connecting(device.toRemote())
+            return
+        }
+
         _state.value = HidConnectionState.Connecting(device.toRemote())
         val ok = runCatching { hd.connect(device) }
             .onFailure { Timber.e(it, "connect() threw") }

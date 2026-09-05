@@ -44,7 +44,7 @@ object EsportsPrecision {
     fun stickToHat(x: Float, y: Float, threshold: Float = 0.5f): Int {
         val sx = if (x.isNaN()) 0f else x
         val sy = if (y.isNaN()) 0f else y
-        if (sqrt(sx * sx + sy * sy) < threshold.coerceIn(0.1f, 0.9f)) return 8
+        if (sqrt(sx * sx + sy * sy) < threshold.coerceIn(0.1f, 0.9f)) return 0
         val angle = Math.toDegrees(atan2(sy.toDouble(), sx.toDouble()))
         val sector = (((angle + 360 + 22.5) % 360) / 45.0).toInt() % 8
         return when (sector) {

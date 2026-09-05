@@ -17,9 +17,9 @@ enum class GamepadButton(val bit: Int) {
 
 /** 8-way hat/dpad values matching the descriptor (0=N .. 7=NW, 8=neutral). */
 enum class DpadDirection(val hatValue: Int) {
-    UP(0), UP_RIGHT(1), RIGHT(2), DOWN_RIGHT(3),
-    DOWN(4), DOWN_LEFT(5), LEFT(6), UP_LEFT(7),
-    NONE(8)
+    UP(1), UP_RIGHT(2), RIGHT(3), DOWN_RIGHT(4),
+    DOWN(5), DOWN_LEFT(6), LEFT(7), UP_LEFT(8),
+    NONE(0)
 }
 
 /**

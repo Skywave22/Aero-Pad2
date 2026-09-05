@@ -63,10 +63,10 @@ object HidDescriptors {
         0x95.toByte(), 0x06,           //   Report Count 6  -> 6-key rollover
         0x75, 0x08,                    //   Report Size 8
         0x15, 0x00,                    //   Logical Min 0
-        0x25, 0x65,                    //   Logical Max 101
+        0x26, 0xFF.toByte(), 0x00,     //   Logical Max 255
         0x05, 0x07,                    //   Usage Page (Key Codes)
         0x19, 0x00,                    //   Usage Min 0
-        0x29, 0x65,                    //   Usage Max 101
+        0x2A, 0xFF.toByte(), 0x00,     //   Usage Max 255
         0x81.toByte(), 0x00,           //   Input (Data, Array)
         0xC0.toByte()                  // End Collection
     )
@@ -172,11 +172,17 @@ object HidDescriptors {
         0x81.toByte(), 0x02,           //   Input (Data, Var, Abs)
         0x05, 0x01,                    //   Usage Page (Generic Desktop)
         0x09, 0x39,                    //   Usage (Hat Switch)
-        0x15, 0x00,                    //   Logical Min 0
+        0x15, 0x01,                    //   Logical Min 1
         0x25, 0x08,                    //   Logical Max 8
+        0x35, 0x00,                    //   Physical Min 0
+        0x46, 0x3B, 0x01,              //   Physical Max 315
+        0x65, 0x14,                    //   Unit (Eng Rot:Angular Pos)
+        0x75, 0x04,                    //   Report Size 4
         0x95.toByte(), 0x01,           //   Report Count 1
-        0x75, 0x08,                    //   Report Size 8
-        0x81.toByte(), 0x02,           //   Input (Data, Var, Abs)
+        0x81.toByte(), 0x42,           //   Input (Data, Var, Abs, Null State)
+        0x75, 0x04,                    //   Report Size 4
+        0x95.toByte(), 0x01,           //   Report Count 1
+        0x81.toByte(), 0x03,           //   Input (Const)
         0x05, 0x01,                    //   Usage Page (Generic Desktop)
         0x09, 0x30,                    //   Usage (X)  - left stick X
         0x09, 0x31,                    //   Usage (Y)  - left stick Y

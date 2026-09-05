@@ -574,7 +574,7 @@ class GamepadBuilderViewModel @Inject constructor(
                         hidState = GamepadRuntimeCore.withHat(hidState, hat)
                         sendAction(HidAction.GamepadUpdate(hidState))
                         delay(period / 2)
-                        hidState = GamepadRuntimeCore.withHat(hidState, 8)
+                        hidState = GamepadRuntimeCore.withHat(hidState, 0)
                         sendAction(HidAction.GamepadUpdate(hidState))
                         delay(period / 2)
                     }
@@ -585,8 +585,8 @@ class GamepadBuilderViewModel @Inject constructor(
             }
             haptics.play(control.haptic)
         } else {
-            if (hidState.hat != 8) {
-                hidState = GamepadRuntimeCore.withHat(hidState, 8)
+            if (hidState.hat != 0) {
+                hidState = GamepadRuntimeCore.withHat(hidState, 0)
                 sendAction(HidAction.GamepadUpdate(hidState))
             }
         }
@@ -778,8 +778,8 @@ class GamepadBuilderViewModel @Inject constructor(
     }
 
     fun onDpadRelease(@Suppress("UNUSED_PARAMETER") control: GamepadControlSpec) {
-        if (hidState.hat != 8) {
-            hidState = GamepadRuntimeCore.withHat(hidState, 8)
+        if (hidState.hat != 0) {
+            hidState = GamepadRuntimeCore.withHat(hidState, 0)
             sendAction(HidAction.GamepadUpdate(hidState))
         }
     }
