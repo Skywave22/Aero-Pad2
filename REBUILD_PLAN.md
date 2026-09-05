@@ -111,7 +111,7 @@ Deliverable: app builds and shows a home shell. Zero warnings.
 - [x] **Phase 8** — Custom Remote 2.0
 - [x] **Phase 9** — Advanced macros (Repeat loops, KeyHold, RandomDelay, Run sub-macro logic)
 - [x] **Phase 10** — Diagnostics & debugging (Connection Health Tracker, Latency metrics, RSSI integration)
-- [ ] **Phase 11** — Performance & lifecycle hardening
+- [x] **Phase 11** — Performance & lifecycle hardening (Choreographer FrameStats, foreground service binding)
 - [ ] **Phase 12** — Security, privacy & cleanup
 - [ ] **Phase 13** — Final QA & release hardening
 
