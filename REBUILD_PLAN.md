@@ -108,7 +108,7 @@ Deliverable: app builds and shows a home shell. Zero warnings.
 - [x] **Phase 5** — Gamepad reliability (D-pad mapping logic, test suite sync)
 - [x] **Phase 6** — Bluetooth host management (Unpairing logic, auto-reconnect, quick-switch host UI)
 - [x] **Phase 7** — Profiles (Macro profile import/export, Trackpad profiles binding, settings persistence)
-- [ ] **Phase 8** — Custom Remote 2.0
+- [x] **Phase 8** — Custom Remote 2.0
 - [ ] **Phase 9** — Advanced macros
 - [ ] **Phase 10** — Diagnostics & debugging
 - [ ] **Phase 11** — Performance & lifecycle hardening
