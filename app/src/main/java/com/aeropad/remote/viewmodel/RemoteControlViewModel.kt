@@ -63,7 +63,6 @@ class RemoteControlViewModel @Inject constructor(
 
     // OPTIMIZATION: shared TrackpadEngine (was ~30 duplicated lines).
     private val trackpad = com.aeropad.remote.domain.TrackpadEngine { mouseSettings.value }
-
     /** Raw trackpad drag delta in px → settings-adjusted HID mouse move. */
     fun onTrackpadDelta(dxPx: Float, dyPx: Float) {
         // AEROPAD v1.0 #19 — Precision Mode: slow-motion cursor (x0.35).
@@ -71,12 +70,10 @@ class RemoteControlViewModel @Inject constructor(
         val (ix, iy) = trackpad.move(dxPx * scale, dyPx * scale)
         if (ix != 0 || iy != 0) sendAction(HidAction.MouseMove(ix, iy))
     }
-
     // AEROPAD v1.0 #19 — precision mode toggle (session state).
     private val _precisionMode = kotlinx.coroutines.flow.MutableStateFlow(false)
     val precisionMode: kotlinx.coroutines.flow.StateFlow<Boolean> = _precisionMode
     fun setPrecisionMode(on: Boolean) { _precisionMode.value = on }
-
     // AEROPAD v1.0 #22 — click-and-drag lock: LEFT held until unlocked.
     private val _dragLock = kotlinx.coroutines.flow.MutableStateFlow(false)
     val dragLock: kotlinx.coroutines.flow.StateFlow<Boolean> = _dragLock
@@ -89,7 +86,6 @@ class RemoteControlViewModel @Inject constructor(
             sendAction(HidAction.MouseDown(MouseButton.LEFT))
         }
     }
-
     /** Reset motion state when a new gesture starts (prevents smoothing bleed). */
     fun onTrackpadGestureStart() = trackpad.startGesture()
 
@@ -97,11 +93,9 @@ class RemoteControlViewModel @Inject constructor(
     fun onTrackpadTap() {
         if (mouseSettings.value.tapToClick) sendAction(HidAction.MouseClick(MouseButton.LEFT))
     }
-
     fun onTrackpadDoubleTap() {
         if (mouseSettings.value.tapToClick) sendAction(HidAction.MouseDoubleClick(MouseButton.LEFT))
     }
-
     /** Long-press on trackpad → right click. */
     fun onTrackpadLongPress() = sendAction(HidAction.MouseClick(MouseButton.RIGHT))
 
@@ -113,7 +107,6 @@ class RemoteControlViewModel @Inject constructor(
     fun onScrollDelta(dyPx: Float) {
         trackpad.scroll(dyPx).takeIf { it != 0 }?.let { sendAction(HidAction.MouseScroll(it)) }
     }
-
     // ------------------------------------------------------------------
     // Keyboard / text
     // ------------------------------------------------------------------
@@ -128,7 +121,6 @@ class RemoteControlViewModel @Inject constructor(
                 (listOf(text) + _sentHistory.value.filterNot { it == text }).take(10)
         }
     }
-
     // AEROPAD v1.0 #12 — history of texts sent to the host (tap to resend).
     private val _sentHistory = kotlinx.coroutines.flow.MutableStateFlow<List<String>>(emptyList())
     val sentHistory: kotlinx.coroutines.flow.StateFlow<List<String>> = _sentHistory
@@ -183,7 +175,6 @@ class RemoteControlViewModel @Inject constructor(
             }
         }
     }
-
     fun onGamepadButton(button: GamepadButton, pressed: Boolean) {
         when (gamepadSettings.value.mappingMode) {
             GamepadMappingMode.HID_GAMEPAD -> {
@@ -198,7 +189,6 @@ class RemoteControlViewModel @Inject constructor(
             }
         }
     }
-
     fun onDpad(direction: DpadDirection) {
         when (gamepadSettings.value.mappingMode) {
             GamepadMappingMode.HID_GAMEPAD -> {
@@ -214,12 +204,15 @@ class RemoteControlViewModel @Inject constructor(
             }
         }
     }
-
     /** Center sticks + release everything (call when leaving the screen). */
     fun resetGamepad() {
         gamepadState = GamepadSnapshot()
         if (gamepadSettings.value.mappingMode == GamepadMappingMode.HID_GAMEPAD) {
             sendAction(HidAction.GamepadUpdate(gamepadState))
         }
+    }
+    override fun onCleared() {
+        super.onCleared()
+        runCatching { sendAction(com.aeropad.remote.model.HidAction.ReleaseAll) }
     }
 }

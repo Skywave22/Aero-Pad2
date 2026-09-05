@@ -151,6 +151,13 @@ class HidEngine @Inject constructor(
     @SuppressLint("MissingPermission")
     override fun stop() {
         userInitiatedDisconnect = true
+        runCatching {
+            report(HidDescriptors.REPORT_ID_KEYBOARD, HidReportBuilder.keyboardRelease())
+            report(HidDescriptors.REPORT_ID_MOUSE, HidReportBuilder.mouse())
+            report(HidDescriptors.REPORT_ID_CONSUMER, HidReportBuilder.consumerRelease())
+            report(HidDescriptors.REPORT_ID_SYSTEM, HidReportBuilder.systemRelease())
+            report(HidDescriptors.REPORT_ID_GAMEPAD, HidReportBuilder.gamepadNeutral())
+        }
         runCatching { hidDevice?.let { hd -> connectedDevice?.let { hd.disconnect(it) } } }
             .onFailure { Timber.w(it, "disconnect during stop failed") }
         runCatching { hidDevice?.unregisterApp() }
@@ -192,6 +199,15 @@ class HidEngine @Inject constructor(
             return
         }
 
+        if (connectedDevice != null && connectedDevice != device) {
+            runCatching {
+                report(HidDescriptors.REPORT_ID_KEYBOARD, HidReportBuilder.keyboardRelease())
+                report(HidDescriptors.REPORT_ID_MOUSE, HidReportBuilder.mouse())
+                report(HidDescriptors.REPORT_ID_CONSUMER, HidReportBuilder.consumerRelease())
+                report(HidDescriptors.REPORT_ID_SYSTEM, HidReportBuilder.systemRelease())
+                report(HidDescriptors.REPORT_ID_GAMEPAD, HidReportBuilder.gamepadNeutral())
+            }
+        }
         _state.value = HidConnectionState.Connecting(device.toRemote())
         val ok = runCatching { hd.connect(device) }
             .onFailure { Timber.e(it, "connect() threw") }
@@ -221,6 +237,13 @@ class HidEngine @Inject constructor(
     @SuppressLint("MissingPermission")
     override fun disconnect() {
         userInitiatedDisconnect = true
+        runCatching {
+            report(HidDescriptors.REPORT_ID_KEYBOARD, HidReportBuilder.keyboardRelease())
+            report(HidDescriptors.REPORT_ID_MOUSE, HidReportBuilder.mouse())
+            report(HidDescriptors.REPORT_ID_CONSUMER, HidReportBuilder.consumerRelease())
+            report(HidDescriptors.REPORT_ID_SYSTEM, HidReportBuilder.systemRelease())
+            report(HidDescriptors.REPORT_ID_GAMEPAD, HidReportBuilder.gamepadNeutral())
+        }
         val hd = hidDevice ?: return
         val dev = connectedDevice ?: return
         runCatching { hd.disconnect(dev) }
@@ -302,6 +325,13 @@ class HidEngine @Inject constructor(
                 is HidAction.GamepadUpdate ->
                     // V2 PART A — pooled buffer: zero alloc on the hot path.
                     report(HidDescriptors.REPORT_ID_GAMEPAD, ReportPool.gamepadInto(action.snapshot))
+                is HidAction.ReleaseAll -> {
+                    report(HidDescriptors.REPORT_ID_KEYBOARD, HidReportBuilder.keyboardRelease())
+                    report(HidDescriptors.REPORT_ID_MOUSE, HidReportBuilder.mouse())
+                    report(HidDescriptors.REPORT_ID_CONSUMER, HidReportBuilder.consumerRelease())
+                    report(HidDescriptors.REPORT_ID_SYSTEM, HidReportBuilder.systemRelease())
+                    report(HidDescriptors.REPORT_ID_GAMEPAD, HidReportBuilder.gamepadNeutral())
+                }
             }
         } catch (t: Throwable) {
             // Absolute last line of defense: an action must never crash the app.

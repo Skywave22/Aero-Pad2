@@ -30,7 +30,6 @@ import javax.inject.Inject
 
 /** Where the dedicated scroll bar sits in the PC Combo screen. */
 enum class ScrollBarSide { LEFT, RIGHT, HIDDEN }
-
 /**
  * SECTION: "Full PC Control" combo — trackpad (top) + keyboard (bottom)
  * + dedicated scroll bar. Ratio & scroll-bar side persist; the combo can
@@ -75,27 +74,22 @@ class PcComboViewModel @Inject constructor(
     fun setRatio(value: Float) = viewModelScope.launch {
         keyboardStore.setComboRatio(value.coerceIn(0.25f, 0.75f))
     }
-
     fun setScrollSide(side: ScrollBarSide) = viewModelScope.launch {
         keyboardStore.setComboScrollSide(side)
     }
-
     // ---------------- trackpad input ----------------
 
     // OPTIMIZATION: shared TrackpadEngine (was ~25 duplicated lines).
     private val trackpad = com.aeropad.remote.domain.TrackpadEngine { mouse.value }
-
     fun gestureStart() = trackpad.startGesture()
 
     fun move(dx: Float, dy: Float) {
         val (ix, iy) = trackpad.move(dx, dy)
         if (ix != 0 || iy != 0) sendAction(HidAction.MouseMove(ix, iy))
     }
-
     fun scroll(dy: Float) {
         trackpad.scroll(dy).takeIf { it != 0 }?.let { sendAction(HidAction.MouseScroll(it)) }
     }
-
     /** Tap by finger count: 1=left, 2=middle, 3=right. */
     fun tap(fingers: Int) {
         val button = when (fingers) {
@@ -105,7 +99,6 @@ class PcComboViewModel @Inject constructor(
         }
         sendAction(HidAction.MouseClick(button))
     }
-
     fun key(key: KeySpec) = sendAction(HidAction.KeyTap(key.keyCode, key.modifiers))
 
     // ---------------- save as editable layout profile ----------------
@@ -161,6 +154,9 @@ class PcComboViewModel @Inject constructor(
                 .onFailure { _message.value = "Save failed" }
         }
     }
-
     fun consumeMessage() { _message.value = null }
+    override fun onCleared() {
+        super.onCleared()
+        runCatching { sendAction(com.aeropad.remote.model.HidAction.ReleaseAll) }
+    }
 }

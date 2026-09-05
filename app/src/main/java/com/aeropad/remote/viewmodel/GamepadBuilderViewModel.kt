@@ -365,6 +365,11 @@ class GamepadBuilderViewModel @Inject constructor(
 
     init {
         viewModelScope.launch { repository.seedIfEmpty() }
+        observeConnection().onEach { state ->
+            if (!state.isConnected) {
+                hidState = GamepadSnapshot()
+            }
+        }.launchIn(viewModelScope)
     }
 
     // ------------------------------------------------------------------

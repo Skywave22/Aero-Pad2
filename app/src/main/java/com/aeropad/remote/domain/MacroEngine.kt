@@ -14,6 +14,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
+import com.aeropad.remote.domain.usecase.ObserveConnectionUseCase
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import javax.inject.Singleton
 
 /**
@@ -26,8 +29,15 @@ import javax.inject.Singleton
 @Singleton
 class MacroEngine @Inject constructor(
     private val repository: MacroRepository,
-    private val sendAction: SendHidActionUseCase
+    private val sendAction: SendHidActionUseCase,
+    observeConnection: ObserveConnectionUseCase
 ) {
+
+    init {
+        observeConnection().onEach { state ->
+            if (!state.isConnected) stop()
+        }.launchIn(CoroutineScope(SupervisorJob() + Dispatchers.Default))
+    }
 
     companion object {
         /** Pause inserted between consecutive steps so hosts keep up. */
@@ -149,7 +159,7 @@ class MacroEngine @Inject constructor(
      */
     private fun releaseIfHeld(plan: List<PlanEntry>) {
         if (plan.any { it.action is HidAction.KeyDown }) {
-            runCatching { sendAction(HidAction.KeyRelease) }
+            runCatching { sendAction(HidAction.ReleaseAll) }
         }
     }
 

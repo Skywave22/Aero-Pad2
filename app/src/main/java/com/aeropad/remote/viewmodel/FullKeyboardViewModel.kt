@@ -54,7 +54,6 @@ class FullKeyboardViewModel @Inject constructor(
         }
         store.setOneHanded(next)
     }
-
     val isConnected: StateFlow<Boolean> = observeConnection()
         .map { it.isConnected }
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
@@ -74,7 +73,6 @@ class FullKeyboardViewModel @Inject constructor(
     private val _fnActive = MutableStateFlow(false)
     val fnActive: StateFlow<Boolean> = _fnActive.asStateFlow()
     fun toggleFn() { _fnActive.value = !_fnActive.value }
-
     // ------------------------------------------------------------------
     // Input
     // ------------------------------------------------------------------
@@ -91,7 +89,6 @@ class FullKeyboardViewModel @Inject constructor(
             else -> sendAction(HidAction.KeyTap(effective.keyCode, effective.modifiers))
         }
     }
-
     /** Long-press: secondary function if bound; otherwise nothing. */
     fun longPress(key: KeySpec) {
         if (_editMode.value) {
@@ -101,22 +98,18 @@ class FullKeyboardViewModel @Inject constructor(
         val secondary = key.secondaryKeyCode ?: return
         sendAction(HidAction.KeyTap(secondary, key.secondaryModifiers))
     }
-
     // ------------------------------------------------------------------
     // Modes / editor
     // ------------------------------------------------------------------
 
     fun setFullMode(value: Boolean) = viewModelScope.launch { store.setFullMode(value) }
-
     fun toggleEditMode() {
         _editMode.value = !_editMode.value
         if (!_editMode.value) _editingKey.value = null
     }
-
     fun closeEditor() {
         _editingKey.value = null
     }
-
     private var persistJob: kotlinx.coroutines.Job? = null
 
     /** Apply a transform to the edited key everywhere it appears.
@@ -142,7 +135,6 @@ class FullKeyboardViewModel @Inject constructor(
             )
         }
     }
-
     /** Move the edited key within its row (reposition left/right). */
     fun moveEditingKey(offset: Int) {
         val target = _editingKey.value ?: return
@@ -165,7 +157,6 @@ class FullKeyboardViewModel @Inject constructor(
             )
         }
     }
-
     /** Add the edited key (or any combo) to the Favorites row. */
     /**
      * V2 MATRIX 7 — apply a shortcut pack: REPLACES the favorites row with
@@ -185,7 +176,6 @@ class FullKeyboardViewModel @Inject constructor(
             )
         }
     }
-
     fun addToFavorites(key: KeySpec) {
         viewModelScope.launch {
             val current = layout.value
@@ -199,14 +189,12 @@ class FullKeyboardViewModel @Inject constructor(
             )
         }
     }
-
     fun removeFavorite(id: String) {
         viewModelScope.launch {
             val current = layout.value
             store.save(current.copy(favorites = current.favorites.filterNot { it.id == id }))
         }
     }
-
     /** Create a custom combo key straight into Favorites (e.g. Ctrl+C). */
     fun addComboFavorite(label: String, keyCode: Byte, modifiers: Byte) {
         addToFavorites(
@@ -218,6 +206,9 @@ class FullKeyboardViewModel @Inject constructor(
             )
         )
     }
-
     fun resetBoard() = viewModelScope.launch { store.reset() }
+    override fun onCleared() {
+        super.onCleared()
+        runCatching { sendAction(com.aeropad.remote.model.HidAction.ReleaseAll) }
+    }
 }

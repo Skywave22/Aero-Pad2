@@ -38,4 +38,7 @@ sealed interface HidAction {
 
     // ----- Gamepad -----
     data class GamepadUpdate(val snapshot: GamepadSnapshot) : HidAction
+
+    /** V2 MATRIX 2 — global safety: release all keys, mouse buttons, media, and gamepad. */
+    data object ReleaseAll : HidAction
 }

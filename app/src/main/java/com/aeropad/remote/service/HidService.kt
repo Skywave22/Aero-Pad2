@@ -96,6 +96,7 @@ class HidService : Service() {
     }
 
     override fun onDestroy() {
+        hidController.stop()
         serviceScope.cancel()
         Timber.i("HidService destroyed")
         super.onDestroy()
