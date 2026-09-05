@@ -99,6 +99,13 @@ class SettingsViewModel @Inject constructor(
     fun setMouseSensitivity(value: Int) = updateMouse { it.copy(sensitivity = value) }
     fun setScrollSpeed(value: Int) = updateMouse { it.copy(scrollSpeed = value) }
     fun setMovementSmoothing(value: Int) = updateMouse { it.copy(movementSmoothing = value) }
+    fun setAcceleration(value: Int) = updateMouse { it.copy(acceleration = value) }
+    fun setTrackpadProfile(p: com.aeropad.remote.model.TrackpadProfile) = updateMouse { it.copy(profile = p) }
+    fun setAccelerationCurve(c: com.aeropad.remote.model.AccelerationCurve) = updateMouse { it.copy(curve = c) }
+    fun setDragLock(value: Boolean) = updateMouse { it.copy(dragLock = value) }
+    fun setEdgeScroll(value: Boolean) = updateMouse { it.copy(edgeScroll = value) }
+    fun setThreeFingerGestures(value: Boolean) = updateMouse { it.copy(threeFingerGestures = value) }
+    fun setPalmRejection(value: Boolean) = updateMouse { it.copy(palmRejection = value) }
     fun setInvertScroll(value: Boolean) = updateMouse { it.copy(invertScroll = value) }
     fun setTapToClick(value: Boolean) = updateMouse { it.copy(tapToClick = value) }
     fun setPenMode(value: Boolean) = updateMouse { it.copy(penMode = value) }
