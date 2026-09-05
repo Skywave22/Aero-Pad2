@@ -46,6 +46,9 @@ class MacroEngine @Inject constructor(
         /** One entry of the executable plan: optional wait, then optional action. */
         data class PlanEntry(val delayMs: Long, val action: HidAction?)
 
+        const val PLAN_MAX = 500
+        const val MAX_DEPTH = 5
+
         /** V2 M2 b2 — hard cap on the expanded plan (repeat/sub-macro can
          *  multiply steps; a plan can never explode past this). */
         const val PLAN_MAX = 512

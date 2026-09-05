@@ -109,7 +109,7 @@ Deliverable: app builds and shows a home shell. Zero warnings.
 - [x] **Phase 6** — Bluetooth host management (Unpairing logic, auto-reconnect, quick-switch host UI)
 - [x] **Phase 7** — Profiles (Macro profile import/export, Trackpad profiles binding, settings persistence)
 - [x] **Phase 8** — Custom Remote 2.0
-- [ ] **Phase 9** — Advanced macros
+- [x] **Phase 9** — Advanced macros (Repeat loops, KeyHold, RandomDelay, Run sub-macro logic)
 - [ ] **Phase 10** — Diagnostics & debugging
 - [ ] **Phase 11** — Performance & lifecycle hardening
 - [ ] **Phase 12** — Security, privacy & cleanup
