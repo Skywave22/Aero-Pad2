@@ -232,7 +232,6 @@ private fun PressableControl(
                     translationY = size.height * 0.02f * pressT
                 }
             }
-             1.dp else 6.dp, shape, clip = false)
             .background(
                 // V2 PART B — dynamic lighting: the highlight tracks the real
                 // gravity tilt like a fixed world light (LocalDeviceTilt is
@@ -543,7 +542,6 @@ private fun DpadControl(
                     rotationY = tiltX * 10f
                     rotationX = -tiltY * 10f
                 }
-                 2.dp else 5.dp, RoundedCornerShape(20.dp), clip = false)
                 .background(
                     // V2 PART B b2 — device-tilt lighting on the pad face.
                     // (0,0) tilt = the EXACT legacy flat color; real tilt
