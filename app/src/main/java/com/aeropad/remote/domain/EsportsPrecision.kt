@@ -48,8 +48,8 @@ object EsportsPrecision {
         val angle = Math.toDegrees(atan2(sy.toDouble(), sx.toDouble()))
         val sector = (((angle + 360 + 22.5) % 360) / 45.0).toInt() % 8
         return when (sector) {
-            0 -> 2; 1 -> 3; 2 -> 4; 3 -> 5
-            4 -> 6; 5 -> 7; 6 -> 0; else -> 1
+            0 -> 3; 1 -> 4; 2 -> 5; 3 -> 6
+            4 -> 7; 5 -> 8; 6 -> 1; else -> 2
         }
     }
 

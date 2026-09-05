@@ -50,7 +50,7 @@ class EsportsPrecisionTest {
         assertEquals(1, EsportsPrecision.stickToHat(0f, -0.9f))           // north
         assertEquals(2, EsportsPrecision.stickToHat(0.7f, -0.7f))         // north-east
         assertEquals(7, EsportsPrecision.stickToHat(-0.9f, 0f))           // west
-        assertEquals(4, EsportsPrecision.stickToHat(Float.NaN, 0.9f))     // NaN x -> 0; y alone = south
+        assertEquals(5, EsportsPrecision.stickToHat(Float.NaN, 0.9f))     // NaN x -> 0; y alone = south
     }
 
     @Test
