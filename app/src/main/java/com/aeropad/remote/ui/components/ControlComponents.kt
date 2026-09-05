@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -79,8 +80,8 @@ fun KeyCard(
     val spec = LocalAppTheme.current
     val shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp)
     
-    val base = if (emphasized) spec.primaryContainer else spec.surfaceVariant
-    val contentColor = if (emphasized) spec.onPrimaryContainer else spec.onSurfaceVariant
+    val base = if (emphasized) spec.primary else spec.surfaceVariant
+    val contentColor = if (emphasized) spec.onPrimary else spec.onSurfaceVariant
     val labelStyle = MaterialTheme.typography.labelLarge
     
     Box(
