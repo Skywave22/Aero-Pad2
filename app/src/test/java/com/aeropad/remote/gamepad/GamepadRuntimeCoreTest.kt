@@ -93,24 +93,24 @@ class GamepadRuntimeCoreTest {
 
     @Test
     fun `dpad center zone is neutral`() {
-        assertEquals(8, GamepadRuntimeCore.hatFromTouch(0.1f, 0.1f, false))
-        assertEquals(8, GamepadRuntimeCore.hatFromTouch(0f, 0f, true))
+        assertEquals(0, GamepadRuntimeCore.hatFromTouch(0.1f, 0.1f, false))
+        assertEquals(0, GamepadRuntimeCore.hatFromTouch(0f, 0f, true))
     }
 
     @Test
     fun `four way dpad picks dominant axis`() {
-        assertEquals(0, GamepadRuntimeCore.hatFromTouch(0.2f, -0.9f, false))  // up
-        assertEquals(4, GamepadRuntimeCore.hatFromTouch(-0.1f, 0.9f, false))  // down
-        assertEquals(6, GamepadRuntimeCore.hatFromTouch(-0.9f, 0.2f, false))  // left
-        assertEquals(2, GamepadRuntimeCore.hatFromTouch(0.9f, -0.2f, false))  // right
+        assertEquals(1, GamepadRuntimeCore.hatFromTouch(0.2f, -0.9f, false))  // up
+        assertEquals(5, GamepadRuntimeCore.hatFromTouch(-0.1f, 0.9f, false))  // down
+        assertEquals(7, GamepadRuntimeCore.hatFromTouch(-0.9f, 0.2f, false))  // left
+        assertEquals(3, GamepadRuntimeCore.hatFromTouch(0.9f, -0.2f, false))  // right
     }
 
     @Test
     fun `eight way dpad resolves diagonals`() {
-        assertEquals(1, GamepadRuntimeCore.hatFromTouch(0.7f, -0.7f, true))   // up-right
-        assertEquals(3, GamepadRuntimeCore.hatFromTouch(0.7f, 0.7f, true))    // down-right
-        assertEquals(5, GamepadRuntimeCore.hatFromTouch(-0.7f, 0.7f, true))   // down-left
-        assertEquals(7, GamepadRuntimeCore.hatFromTouch(-0.7f, -0.7f, true))  // up-left
+        assertEquals(2, GamepadRuntimeCore.hatFromTouch(0.7f, -0.7f, true))   // up-right
+        assertEquals(4, GamepadRuntimeCore.hatFromTouch(0.7f, 0.7f, true))    // down-right
+        assertEquals(6, GamepadRuntimeCore.hatFromTouch(-0.7f, 0.7f, true))   // down-left
+        assertEquals(8, GamepadRuntimeCore.hatFromTouch(-0.7f, -0.7f, true))  // up-left
     }
 
     // ---------- spec sanitize + JSON ----------

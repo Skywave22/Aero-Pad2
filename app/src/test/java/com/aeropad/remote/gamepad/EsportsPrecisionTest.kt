@@ -45,11 +45,11 @@ class EsportsPrecisionTest {
 
     @Test
     fun `stick-as-dpad maps vectors to hat with threshold`() {
-        assertEquals(8, EsportsPrecision.stickToHat(0.1f, 0.1f))          // below threshold
-        assertEquals(2, EsportsPrecision.stickToHat(0.9f, 0f))            // east
-        assertEquals(0, EsportsPrecision.stickToHat(0f, -0.9f))           // north
-        assertEquals(1, EsportsPrecision.stickToHat(0.7f, -0.7f))         // north-east
-        assertEquals(6, EsportsPrecision.stickToHat(-0.9f, 0f))           // west
+        assertEquals(0, EsportsPrecision.stickToHat(0.1f, 0.1f))          // below threshold
+        assertEquals(3, EsportsPrecision.stickToHat(0.9f, 0f))            // east
+        assertEquals(1, EsportsPrecision.stickToHat(0f, -0.9f))           // north
+        assertEquals(2, EsportsPrecision.stickToHat(0.7f, -0.7f))         // north-east
+        assertEquals(7, EsportsPrecision.stickToHat(-0.9f, 0f))           // west
         assertEquals(4, EsportsPrecision.stickToHat(Float.NaN, 0.9f))     // NaN x -> 0; y alone = south
     }
 
