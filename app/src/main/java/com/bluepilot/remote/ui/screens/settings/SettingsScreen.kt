@@ -60,7 +60,7 @@ import com.bluepilot.remote.viewmodel.SettingsViewModel
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
-    onOpenThemes: () -> Unit = {},
+    
     onOpen3DPreview: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -104,8 +104,8 @@ fun SettingsScreen(
             )
 
             // ---------- General ----------
-            if (matches("theme", "fullscreen", "screen", "vibration", "secure", "gallery", "motion", "3d", "icon", "pack")) SettingsGroup("General") {
-                OutlinedButton(
+            if (matches("fullscreen", "screen", "vibration", "secure", "motion", "icon", "pack")) SettingsGroup("General") {
+                /* OutlinedButton(
                     onClick = onOpenThemes,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -188,7 +188,7 @@ fun SettingsScreen(
                 }
                 // AUDIT FIX: the 3D showcase screen existed but was
                 // unreachable — this button was never rendered.
-                TextButton(onClick = onOpen3DPreview) { Text("Open 3D effects preview") }
+                TextButton(onClick = onOpen3DPreview) { Text("Open 3D effects preview") } */
                 Text("Icon pack", style = MaterialTheme.typography.bodyMedium)
                 Row(modifier = Modifier.padding(vertical = 4.dp)) {
                     listOf("FILLED", "OUTLINED", "ROUNDED", "SHARP").forEach { pack ->
@@ -447,29 +447,3 @@ private fun SliderRow(
 
 /** SECTION 1 — compact theme chips for the auto-schedule pickers. */
 @Composable
-private fun ThemePickerRow(
-    selectedId: String,
-    dark: Boolean,
-    onPick: (String) -> Unit
-) {
-    val options = com.bluepilot.remote.ui.theme.BuiltInThemes.ALL.filter { it.isDark == dark }
-    LazyRow(
-        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
-        modifier = Modifier.padding(vertical = 4.dp)
-    ) {
-        items(options, key = { it.id }) { theme ->
-            FilterChip(
-                selected = theme.id == selectedId,
-                onClick = { onPick(theme.id) },
-                label = { Text(theme.name) },
-                leadingIcon = {
-                    Box(
-                        modifier = Modifier
-                            .size(12.dp)
-                            .background(theme.primary, CircleShape)
-                    )
-                }
-            )
-        }
-    }
-}

@@ -71,7 +71,7 @@ class ConnectionViewModelTest {
             )
         }
         
-        override fun pinFor(profile: com.bluepilot.remote.data.hosts.HostProfile) = ""
+        
         override fun touch(id: String) {}
         override fun remove(id: String) {
             _profiles.value = com.bluepilot.remote.data.hosts.HostProfileCodec.remove(_profiles.value, id)

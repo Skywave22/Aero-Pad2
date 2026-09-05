@@ -102,7 +102,6 @@ private val controlEntries = listOf(
 private val setupEntries = listOf(
     Entry("Connect", "Pair with a PC or device", Icons.Rounded.Bluetooth, Routes.CONNECTION, 0xFF2F6BFF, needsPermissions = true),
     Entry("Health", "Live connection metrics", Icons.Rounded.MonitorHeart, Routes.CONNECTION_HEALTH, 0xFF00C853),
-    Entry("Themes", "Change the whole look", Icons.Rounded.Palette, Routes.THEMES, 0xFFB86BFF),
     Entry("Settings", "Tune everything", Icons.Rounded.Settings, Routes.SETTINGS, 0xFF8B9BB5),
     Entry("Help", "Pairing & troubleshooting", Icons.AutoMirrored.Rounded.HelpOutline, Routes.HELP, 0xFF64B6F0)
 )
@@ -268,66 +267,48 @@ private fun CommandOrb(
 ) {
     val spec = LocalAppTheme.current
     val connected = state is HidConnectionState.Connected
-    val ring = if (connected) spec.primary else spec.outline
     val (title, subtitle) = when (state) {
-        is HidConnectionState.Connected ->
-            state.device.name to "● connected"
+        is HidConnectionState.Connected -> state.device.name to "Connected"
         is HidConnectionState.Connecting -> "Connecting…" to state.device.name
-        HidConnectionState.BluetoothDisabled -> "Bluetooth off" to "tap Connect below"
-        HidConnectionState.PermissionMissing -> "Setup needed" to "grant permissions"
-        is HidConnectionState.Error -> "Not connected" to "tap Connect below"
-        else -> "Not connected" to "tap Connect below"
+        HidConnectionState.BluetoothDisabled -> "Bluetooth off" to "Tap Connect below"
+        HidConnectionState.PermissionMissing -> "Setup needed" to "Grant permissions"
+        is HidConnectionState.Error -> "Not connected" to "Tap Connect below"
+        else -> "Not connected" to "Tap Connect below"
     }
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
+
+    androidx.compose.material3.Surface(
+        modifier = modifier.padding(vertical = 8.dp),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(32.dp),
+        color = if (connected) spec.primary.copy(alpha = 0.1f) else spec.surfaceVariant,
+        contentColor = if (connected) spec.primary else spec.onSurfaceVariant
     ) {
-        Box(
-            modifier = Modifier
-                .size(132.dp)
-                .background(
-                    androidx.compose.ui.graphics.Brush.radialGradient(
-                        listOf(
-                            ring.copy(alpha = if (connected) 0.28f else 0.10f),
-                            androidx.compose.ui.graphics.Color.Transparent
-                        )
-                    ),
-                    CircleShape
-                )
-                .padding(10.dp)
-                .background(spec.surface.copy(alpha = spec.surfaceAlpha), CircleShape)
-                .border(
-                    width = if (connected) 2.dp else 1.dp,
-                    color = ring,
-                    shape = CircleShape
-                ),
-            contentAlignment = Alignment.Center
+        Row(
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    imageVector = Icons.Rounded.Computer,
-                    contentDescription = null,
-                    tint = if (connected) spec.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(34.dp)
-                )
-                Spacer(Modifier.height(4.dp))
+            Icon(
+                imageVector = Icons.Rounded.Computer,
+                contentDescription = null,
+                modifier = Modifier.size(28.dp)
+            )
+            Spacer(Modifier.size(16.dp))
+            Column {
                 Text(
-                    text = title.take(14),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
                     maxLines = 1
                 )
                 Text(
                     text = subtitle,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (connected) spec.connected
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium,
                     maxLines = 1
                 )
             }
         }
     }
 }
+
 
 
 

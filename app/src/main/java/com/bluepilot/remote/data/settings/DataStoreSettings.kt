@@ -105,7 +105,7 @@ class DataStoreSettings @Inject constructor(
     override val appSettings: Flow<AppSettings> = safePrefs.map { p ->
         AppSettings(
             theme = p[Keys.THEME].toEnum(ThemeMode.SYSTEM),
-            themeId = p[Keys.THEME_ID] ?: "obsidian_3d",
+            themeId = p[Keys.THEME_ID] ?: "material_you_light",
             fullscreenMode = p[Keys.FULLSCREEN] ?: false,
             keepScreenOn = p[Keys.KEEP_SCREEN_ON] ?: true,
             touchVibrations = p[Keys.VIBRATIONS] ?: true,
@@ -119,7 +119,7 @@ class DataStoreSettings @Inject constructor(
             favoriteThemes = p[Keys.FAVORITE_THEMES] ?: "",
             autoThemeEnabled = p[Keys.AUTO_THEME] ?: false,
             autoDayTheme = p[Keys.AUTO_DAY_THEME] ?: "stitch_glass_light",
-            autoNightTheme = p[Keys.AUTO_NIGHT_THEME] ?: "obsidian_3d",
+            autoNightTheme = p[Keys.AUTO_NIGHT_THEME] ?: "material_you_light",
             autoNightStart = (p[Keys.AUTO_NIGHT_START] ?: 19).coerceIn(0, 23),
             autoNightEnd = (p[Keys.AUTO_NIGHT_END] ?: 7).coerceIn(0, 23),
             favoriteGamepads = p[Keys.FAV_GAMEPADS] ?: "",

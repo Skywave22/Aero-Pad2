@@ -17,7 +17,7 @@ enum class HapticIntensity { LIGHT, MEDIUM, STRONG }
 data class AppSettings(
     val theme: ThemeMode = ThemeMode.SYSTEM,
     /** Active visual theme id from BuiltInThemes (Section 1 theme engine). */
-    val themeId: String = "obsidian_3d",
+    val themeId: String = "material_you_light",
     val fullscreenMode: Boolean = false,
     val keepScreenOn: Boolean = true,
     val touchVibrations: Boolean = true,
@@ -42,7 +42,7 @@ data class AppSettings(
     /** Theme id used during the day window. */
     val autoDayTheme: String = "stitch_glass_light",
     /** Theme id used during the night window. */
-    val autoNightTheme: String = "obsidian_3d",
+    val autoNightTheme: String = "material_you_light",
     /** Night window start hour 0..23 (default 19:00). */
     val autoNightStart: Int = 19,
     /** Night window end hour 0..23 (default 07:00). */

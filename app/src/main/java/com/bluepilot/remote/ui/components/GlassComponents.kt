@@ -39,44 +39,14 @@ fun GlassCard(
     content: @Composable () -> Unit
 ) {
     val spec = LocalAppTheme.current
-    val surfaceAlpha = spec.surfaceAlpha
-    val surfaceColor = spec.surface.copy(alpha = surfaceAlpha)
-
-    val sheenBrush = Brush.verticalGradient(
-        colors = listOf(
-            Color.White.copy(alpha = 0.12f),
-            Color.White.copy(alpha = 0f)
-        )
-    )
-
-    val borderBrush = Brush.verticalGradient(
-        colors = listOf(
-            Color.White.copy(alpha = 0.35f),
-            spec.outline.copy(alpha = 0.12f)
-        )
-    )
-
-    // NOTE: no Modifier.blur() here — Compose's blur() blurs the card's
-    // CONTENT (children), not the backdrop behind it. Applying it made the
-    // whole Themes screen (and any GlassCard content) an unreadable fog on
-    // Android 12+. The frosted look comes from translucency + sheen alone.
-    //
-    // V2 PART B b2 — micro-tilt: cards lean ~1.5° with real device tilt
-    // (GPU graphicsLayer, draw-phase read; (0,0) tilt = perfectly flat,
-    // the exact pre-B rendering — no gate needed, zero times anything = 0).
-    val (deviceTiltX, deviceTiltY) = LocalDeviceTilt.current
-    Box(
-        modifier = modifier
-            .graphicsLayer {
-                if (deviceTiltX != 0f || deviceTiltY != 0f) {
-                    cameraDistance = 24f * density
-                    rotationY = deviceTiltX * 1.5f
-                    rotationX = deviceTiltY * 1.5f
-                }
-            }
-            .background(surfaceColor, shape)
-            .background(sheenBrush, shape)
-            .border(borderWidth, borderBrush, shape)
+    
+    androidx.compose.material3.Surface(
+        modifier = modifier,
+        shape = shape,
+        color = spec.surface,
+        contentColor = spec.onSurface,
+        tonalElevation = 2.dp,
+        shadowElevation = 1.dp
     ) {
         content()
     }

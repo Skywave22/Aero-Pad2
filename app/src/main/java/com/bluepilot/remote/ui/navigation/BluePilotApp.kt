@@ -52,7 +52,6 @@ import com.bluepilot.remote.ui.screens.multimedia.MultimediaScreen
 import com.bluepilot.remote.ui.screens.numpad.NumpadScreen
 import com.bluepilot.remote.ui.screens.presenter.PresenterScreen
 import com.bluepilot.remote.ui.screens.settings.SettingsScreen
-import com.bluepilot.remote.ui.screens.themes.ThemeGalleryScreen
 
 /**
  * Central navigation graph.
@@ -80,7 +79,7 @@ object Routes {
     const val LAYOUT_EDITOR = "layout_editor"
     const val COMBO_PROFILES = "combo_profiles"
     const val MACROS = "macros"
-    const val THEMES = "themes"
+    
     const val GAMEPAD_BUILDER = "gamepad_builder"
     /** GTA presets — builder in instant-play mode for a seeded preset. */
     const val GAMEPAD_PRESET = "gamepad_preset"
@@ -185,7 +184,7 @@ fun BluePilotApp(
         composable(Routes.SETTINGS) {
             SettingsScreen(
                 onBack = { navController.popBackStack() },
-                onOpenThemes = { navController.navigate(Routes.THEMES) },
+                
                 onOpen3DPreview = { navController.navigate(Routes.PREVIEW_3D) }
             )
         }
@@ -224,7 +223,7 @@ fun BluePilotApp(
             )
         }
         composable(Routes.MACROS) { MacrosScreen(onBack = { navController.popBackStack() }) }
-        composable(Routes.THEMES) { ThemeGalleryScreen(onBack = { navController.popBackStack() }) }
+        
         composable(Routes.GAMEPAD_BUILDER) { GamepadBuilderScreen(onBack = { navController.popBackStack() }) }
         composable(
             route = "${Routes.GAMEPAD_PRESET}/{presetKey}",
