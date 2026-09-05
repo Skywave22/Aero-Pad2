@@ -8,6 +8,7 @@ import com.aeropad.remote.domain.usecase.DisconnectDeviceUseCase
 import com.aeropad.remote.domain.usecase.GetBondedDevicesUseCase
 import com.aeropad.remote.domain.usecase.ObserveConnectionUseCase
 import com.aeropad.remote.domain.usecase.StartHidEngineUseCase
+import com.aeropad.remote.domain.usecase.UnpairDeviceUseCase
 import com.aeropad.remote.model.HidAction
 import com.aeropad.remote.model.HidConnectionState
 import com.aeropad.remote.model.RemoteDevice
@@ -46,6 +47,7 @@ class ConnectionViewModelTest {
         var connectedAddress: String? = null
         var disconnected = false
         var bonded: List<RemoteDevice> = emptyList()
+        var unpaired: List<String> = emptyList()
 
         override val state: StateFlow<HidConnectionState> get() = stateFlow
         override fun start() { started = true }
@@ -53,6 +55,10 @@ class ConnectionViewModelTest {
         override fun connectTo(address: String) { connectedAddress = address }
         override fun disconnect() { disconnected = true }
         override fun bondedDevices(): List<RemoteDevice> = bonded
+        override fun unpair(address: String): Boolean {
+            unpaired = unpaired + address
+            return true
+        }
         override fun send(action: HidAction) {}
     }
 
@@ -110,6 +116,7 @@ class ConnectionViewModelTest {
         observeConnection = ObserveConnectionUseCase(controller),
         startEngine = StartHidEngineUseCase(controller),
         connectDevice = ConnectDeviceUseCase(controller),
+        unpairDevice = UnpairDeviceUseCase(controller),
         disconnectDevice = DisconnectDeviceUseCase(controller),
         getBondedDevices = GetBondedDevicesUseCase(controller),
         permissionChecker = permissions,

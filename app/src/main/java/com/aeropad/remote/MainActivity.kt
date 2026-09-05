@@ -11,6 +11,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -26,6 +27,9 @@ import com.aeropad.remote.ui.theme.AeroPadAppTheme
 import com.aeropad.remote.ui.theme.BuiltInThemes
 import com.aeropad.remote.ui.theme.ThemedBackground
 import com.aeropad.remote.viewmodel.SettingsViewModel
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
 import dagger.hilt.android.AndroidEntryPoint
 
 /**
@@ -56,7 +60,7 @@ class MainActivity : ComponentActivity() {
         autoReconnector.maybeReconnect()
 
         // V2 PART B — bind HidService lifecycle to the activity.
-        androidx.lifecycle.lifecycleScope.launchWhenStarted {
+        lifecycleScope.launchWhenStarted {
             com.aeropad.remote.service.HidService.start(this@MainActivity)
         }
         
@@ -64,90 +68,36 @@ class MainActivity : ComponentActivity() {
             val settingsViewModel: SettingsViewModel = hiltViewModel()
             val app by settingsViewModel.app.collectAsState()
 
+            // V2 PART A — real-time FPS/jank overlay (top-right), fed by Choreographer.
+            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
+            if (app.fpsOverlay && stats.running) {
+                androidx.compose.foundation.layout.Box(
+                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
+                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
+                ) {
+                    androidx.compose.material3.Surface(
+                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
+                        contentColor = androidx.compose.ui.graphics.Color.Green,
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
+                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
+                    ) {
+                        androidx.compose.foundation.layout.Row(
+                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
+                        ) {
+                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
+                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
+                        }
+                    }
+                }
+            }
+
             androidx.compose.runtime.LaunchedEffect(app.fpsOverlay) {
                 if (app.fpsOverlay) {
                     com.aeropad.remote.perf.FrameStats.start()
-                // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
-            }
-
             } else {
                     com.aeropad.remote.perf.FrameStats.stop()
-                // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
             }
-
-            }
-            // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
-            }
-
             }
 
             // Section 1 theme engine: resolve the active AppThemeSpec.
@@ -159,90 +109,12 @@ class MainActivity : ComponentActivity() {
             // day picks day/night theme; re-evaluated every minute.
             var clockHour by androidx.compose.runtime.remember {
                 androidx.compose.runtime.mutableStateOf(java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY))
-            // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
-            }
-
             }
             androidx.compose.runtime.LaunchedEffect(app.autoThemeEnabled) {
                 while (app.autoThemeEnabled) {
                     clockHour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
                     kotlinx.coroutines.delay(60_000)
-                // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
             }
-
-            }
-            // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
-            }
-
             }
             val scheduledId = com.aeropad.remote.ui.theme.ThemeScheduler.scheduledThemeId(
                 enabled = app.autoThemeEnabled,
@@ -258,209 +130,27 @@ class MainActivity : ComponentActivity() {
             // no decision yet → fall through to schedule/manual.
             var lightIsDark by androidx.compose.runtime.remember {
                 androidx.compose.runtime.mutableStateOf<Boolean?>(null)
-            // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
-            }
-
             }
             androidx.compose.runtime.LaunchedEffect(app.lightAutoTheme) {
                 if (app.lightAutoTheme && sensors.hasLight) {
                     val gate = com.aeropad.remote.ui.theme.LightThemeGate()
                     sensors.ambientLight().collect { lux ->
                         lightIsDark = gate.decide(lux, lightIsDark ?: false)
-                    // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
             }
-
-            }
-                // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
-            }
-
             } else {
                     lightIsDark = null   // disabled → release the override
-                // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
             }
-
-            }
-            // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
-            }
-
             }
             val lightThemeId = when (lightIsDark) {
                 true -> app.autoNightTheme
                 false -> app.autoDayTheme
                 null -> null
-            // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
-            }
-
             }.takeIf { app.lightAutoTheme }
             val baseSpec = BuiltInThemes.byId(lightThemeId ?: scheduledId ?: app.themeId)
             val wantDark = when (app.theme) {
                 ThemeMode.LIGHT -> false
                 ThemeMode.DARK -> true
                 ThemeMode.SYSTEM -> systemDark
-            // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
-            }
-
             }
             // Family-aware fallback: forcing Light while Hawaii Night is
             // active gives Hawaii Day (not a generic light theme), etc.
@@ -471,205 +161,23 @@ class MainActivity : ComponentActivity() {
             DisposableEffect(app.keepScreenOn, app.secureScreen, app.fullscreenMode) {
                 if (app.keepScreenOn) {
                     window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
-            }
-
             } else {
                     window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
-            }
-
             }
                 if (app.secureScreen) {
                     window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
-                // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
-            }
-
             } else {
                     window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
-                // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
-            }
-
             }
                 val controller = WindowCompat.getInsetsController(window, window.decorView)
                 if (app.fullscreenMode) {
                     controller.hide(WindowInsetsCompat.Type.systemBars())
                     controller.systemBarsBehavior =
                         WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-                // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
-            }
-
             } else {
                     controller.show(WindowInsetsCompat.Type.systemBars())
-                // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
-            }
-
             }
                 onDispose { }
-            // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
-            }
-
             }
 
             AeroPadAppTheme(spec = spec) {
@@ -685,32 +193,6 @@ class MainActivity : ComponentActivity() {
                         val pm = getSystemService(android.os.PowerManager::class.java)
                         if (pm?.isPowerSaveMode == true) Quality3D.FLAT
                         else runCatching { Quality3D.valueOf(app.quality3D) }.getOrDefault(Quality3D.FULL)
-                    // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
-            }
-
             },
                     // V2 PART B — live device tilt from the real gravity
                     // sensor (low-pass smoothed). Off (0,0) under reduce
@@ -721,63 +203,11 @@ class MainActivity : ComponentActivity() {
                             val pm = getSystemService(android.os.PowerManager::class.java)
                             if (pm?.isPowerSaveMode == true) Quality3D.FLAT
                             else runCatching { Quality3D.valueOf(app.quality3D) }.getOrDefault(Quality3D.FULL)
-                        // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
-            }
-
             }
                         val wantTilt = !app.reduceMotion &&
                             quality != Quality3D.FLAT && sensors.hasGravity
                         var tilt by androidx.compose.runtime.remember {
                             androidx.compose.runtime.mutableStateOf(0f to 0f)
-                        // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
-            }
-
             }
                         androidx.compose.runtime.LaunchedEffect(wantTilt) {
                             if (wantTilt) {
@@ -788,142 +218,12 @@ class MainActivity : ComponentActivity() {
                                     sx = com.aeropad.remote.domain.TiltMath.lowPass(sx, nx)
                                     sy = com.aeropad.remote.domain.TiltMath.lowPass(sy, ny)
                                     tilt = sx to sy
-                                // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
             }
-
-            }
-                            // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
-            }
-
             } else {
                                 tilt = 0f to 0f
-                            // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
             }
-
-            }
-                        // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
-            }
-
             }
                         tilt
-                    // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
-            }
-
             }
                 ) {
                     ThemedBackground {
@@ -933,86 +233,8 @@ class MainActivity : ComponentActivity() {
                             startRoute =
                                 com.aeropad.remote.domain.ShortcutActions.routeFor(intent?.action)
                         )
-                    // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
             }
-
             }
-                // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
-            }
-
-            }
-            // V2 PART A — real-time FPS overlay
-            val fpsOverlay by androidx.compose.runtime.collectAsState(app.fpsOverlay, context = kotlin.coroutines.EmptyCoroutineContext) // Need flow collector or simple check
-            val stats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
-            
-            if (app.fpsOverlay && stats.running) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.TopEnd
-                ) {
-                    androidx.compose.material3.Surface(
-                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                        contentColor = androidx.compose.ui.graphics.Color.Green,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(bottomStart = 8.dp),
-                        modifier = androidx.compose.ui.Modifier.padding(top = 32.dp)
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            modifier = androidx.compose.ui.Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.Text("${stats.fps} FPS", style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                            androidx.compose.material3.Text("${stats.jankPercent}% Jank", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = if (stats.jankPercent > 5) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Green)
-                        }
-                    }
-                }
-            }
-
             }
         }
     }

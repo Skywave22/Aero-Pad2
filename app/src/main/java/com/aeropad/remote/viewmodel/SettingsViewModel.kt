@@ -129,7 +129,7 @@ class SettingsViewModel @Inject constructor(
     // ------------------------------------------------------------------
 
     private fun updateKeyboard(transform: (KeyboardSettings) -> KeyboardSettings) =
-        androidx.lifecycle.viewModelScope.launch { store.updateKeyboard(transform(keyboard.value)) }
+        viewModelScope.launch { store.updateKeyboard(transform(keyboard.value)) }
 
     private fun updateApp(transform: (AppSettings) -> AppSettings) =
         viewModelScope.launch { store.updateApp(transform(app.value)) }

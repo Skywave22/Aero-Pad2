@@ -25,6 +25,7 @@ import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.FiberManualRecord
+import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material.icons.rounded.Save
@@ -340,7 +341,7 @@ fun MacrosScreen(
                             Icon(Icons.Rounded.Edit, contentDescription = "Edit")
                         }
                         IconButton(onClick = { viewModel.requestExport(macro.id) }) {
-                            Icon(androidx.compose.material.icons.Icons.Rounded.FileDownload, contentDescription = "Export")
+                            Icon(Icons.Rounded.FileDownload, contentDescription = "Export")
                         }
                         IconButton(onClick = { viewModel.delete(macro.id) }) {
                             Icon(Icons.Rounded.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)

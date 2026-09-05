@@ -50,6 +50,60 @@ class MacrosViewModel @Inject constructor(
     val draft: StateFlow<Pair<Long?, MacroSpec>?> = _draft.asStateFlow()
 
     // ------------------------------------------------------------------
+    // Phase 7 — import / export + snackbar message plumbing
+    // (SAF file pickers live in MacrosScreen; these expose the payload.)
+    // ------------------------------------------------------------------
+
+    /** One-shot snackbar message; null when idle. */
+    private val _message = MutableStateFlow<String?>(null)
+    val message: StateFlow<String?> = _message.asStateFlow()
+
+    /** Pending export: (suggested file name, json payload); null when idle. */
+    private val _exportPayload = MutableStateFlow<Pair<String, String>?>(null)
+    val exportPayload: StateFlow<Pair<String, String>?> = _exportPayload.asStateFlow()
+
+    /** Build the export payload for [id]; MacrosScreen writes it via SAF. */
+    fun requestExport(id: Long) {
+        viewModelScope.launch {
+            val macro = runCatching { repository.byId(id) }.getOrNull()
+            val json = runCatching { repository.exportJson(id) }.getOrNull()
+            if (macro == null || json == null) {
+                _message.value = "Export failed — macro not found."
+            } else {
+                val safe = macro.spec.name
+                    .replace(Regex("[^A-Za-z0-9 _-]"), "")
+                    .trim()
+                    .ifEmpty { "macro" }
+                _exportPayload.value = "$safe.json" to json
+            }
+        }
+    }
+
+    /** Screen finished (or cancelled) writing the export file. */
+    fun consumeExport() {
+        _exportPayload.value = null
+    }
+
+    /** Import a macro JSON string (null/invalid → snackbar error). */
+    fun importFromJson(json: String?) {
+        if (json.isNullOrBlank()) {
+            _message.value = "Import failed — could not read file."
+            return
+        }
+        viewModelScope.launch {
+            val id = runCatching { repository.importJson(json) }.getOrNull()
+            _message.value = if (id != null) "Macro imported."
+                             else "Import failed — not a valid macro file."
+        }
+    }
+
+    /** Screen showed the snackbar; clear it. */
+    fun consumeMessage() {
+        _message.value = null
+    }
+
+
+    // ------------------------------------------------------------------
     // List actions
     // ------------------------------------------------------------------
 

@@ -15,6 +15,7 @@ import com.aeropad.remote.model.GamepadSnapshot
 import com.aeropad.remote.model.HidAction
 import com.aeropad.remote.model.HidConnectionState
 import com.aeropad.remote.model.HidKeys
+import com.aeropad.remote.model.HidModifiers
 import com.aeropad.remote.model.KeyboardSettings
 import com.aeropad.remote.model.MouseButton
 import com.aeropad.remote.model.MouseSettings
@@ -97,22 +98,27 @@ class RemoteControlViewModel @Inject constructor(
         // threshold for swipe
         if (threeFingerAccumY < -150f) {
             // Swipe Up -> Show Task View / Mission Control (Windows: Win+Tab)
-            sendAction(HidAction.KeyboardCombo(HidKeys.KEY_LEFT_META, HidKeys.KEY_TAB))
+            sendAction(HidAction.KeyTap(HidKeys.TAB, HidModifiers.LEFT_GUI))
             threeFingerAccumY = 0f
             threeFingerAccumX = 0f
         } else if (threeFingerAccumY > 150f) {
             // Swipe Down -> Show Desktop (Windows: Win+D)
-            sendAction(HidAction.KeyboardCombo(HidKeys.KEY_LEFT_META, HidKeys.KEY_D))
+            sendAction(HidAction.KeyTap(HidKeys.D, HidModifiers.LEFT_GUI))
             threeFingerAccumY = 0f
             threeFingerAccumX = 0f
         } else if (threeFingerAccumX > 150f) {
             // Swipe Right -> Next app / tab
-            sendAction(HidAction.KeyboardCombo(HidKeys.KEY_LEFT_ALT, HidKeys.KEY_TAB))
+            sendAction(HidAction.KeyTap(HidKeys.TAB, HidModifiers.LEFT_ALT))
             threeFingerAccumY = 0f
             threeFingerAccumX = 0f
         } else if (threeFingerAccumX < -150f) {
             // Swipe Left -> Prev app
-            sendAction(HidAction.KeyboardCombo(HidKeys.KEY_LEFT_ALT, HidKeys.KEY_LEFTSHIFT, HidKeys.KEY_TAB))
+            sendAction(
+                HidAction.KeyTap(
+                    HidKeys.TAB,
+                    (HidModifiers.LEFT_ALT.toInt() or HidModifiers.LEFT_SHIFT.toInt()).toByte()
+                )
+            )
             threeFingerAccumY = 0f
             threeFingerAccumX = 0f
         }

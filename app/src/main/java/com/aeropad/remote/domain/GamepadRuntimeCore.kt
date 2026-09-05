@@ -158,16 +158,6 @@ object AdvancedControls {
         return snapshot.copy(hat = hat)
     }
 
-    /** Jump out of host deadzone by pushing output to minimum limit */
-    fun antiDeadZone(value: Float, deadZonePercent: Int): Float {
-        if (value == 0f) return 0f
-        val dz = deadZonePercent / 100f
-        val sign = kotlin.math.sign(value)
-        val mag = kotlin.math.abs(value)
-        val res = dz + mag * (1f - dz)
-        return sign * res.coerceIn(0f, 1f)
-    }
-
     /** Toggle-button fold: returns new latched state after a tap. */
     fun toggleAfterTap(latched: Boolean): Boolean = !latched
 }
