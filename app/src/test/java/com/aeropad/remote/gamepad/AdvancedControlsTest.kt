@@ -67,26 +67,26 @@ class AdvancedControlsTest {
 
     @Test
     fun `diagonalOnly passes diagonals, blocks cardinals`() {
-        assertEquals(1, AdvancedControls.diagonalOnly(1))  // NE passes
-        assertEquals(3, AdvancedControls.diagonalOnly(3))
-        assertEquals(5, AdvancedControls.diagonalOnly(5))
-        assertEquals(7, AdvancedControls.diagonalOnly(7))
-        assertEquals(8, AdvancedControls.diagonalOnly(0))  // N blocked
-        assertEquals(8, AdvancedControls.diagonalOnly(2))
-        assertEquals(8, AdvancedControls.diagonalOnly(4))
-        assertEquals(8, AdvancedControls.diagonalOnly(6))
+        assertEquals(2, AdvancedControls.diagonalOnly(2))
+        assertEquals(4, AdvancedControls.diagonalOnly(4))
+        assertEquals(6, AdvancedControls.diagonalOnly(6))
         assertEquals(8, AdvancedControls.diagonalOnly(8))
+        assertEquals(0, AdvancedControls.diagonalOnly(1))
+        assertEquals(0, AdvancedControls.diagonalOnly(3))
+        assertEquals(0, AdvancedControls.diagonalOnly(5))
+        assertEquals(0, AdvancedControls.diagonalOnly(7))
+        assertEquals(0, AdvancedControls.diagonalOnly(0))
     }
 
     // ---------- Circular D-pad ----------
 
     @Test
     fun `circular dpad has smaller dead zone and full 8-way`() {
-        assertEquals(8, AdvancedControls.circularHat(0.05f, 0.05f))   // center
-        assertEquals(2, AdvancedControls.circularHat(0.2f, 0f))       // east @20% (cross pad would be dead)
-        assertEquals(0, AdvancedControls.circularHat(0f, -0.5f))      // north
-        assertEquals(1, AdvancedControls.circularHat(0.5f, -0.5f))    // north-east diagonal
-        assertEquals(5, AdvancedControls.circularHat(-0.5f, 0.5f))    // south-west
+        assertEquals(0, AdvancedControls.circularHat(0.05f, 0.05f))   // center
+        assertEquals(3, AdvancedControls.circularHat(0.2f, 0f))       // east @20% (cross pad would be dead)
+        assertEquals(1, AdvancedControls.circularHat(0f, -0.5f))      // north
+        assertEquals(2, AdvancedControls.circularHat(0.5f, -0.5f))    // north-east diagonal
+        assertEquals(6, AdvancedControls.circularHat(-0.5f, 0.5f))    // south-west
     }
 
     // ---------- Square gate ----------
