@@ -103,7 +103,7 @@ Deliverable: app builds and shows a home shell. Zero warnings.
 - [x] **Phase 0** — Baseline audit and CI health
 - [ ] **Phase 1** — Bluetooth & HID stability
 - [x] **Phase 2** — Global input safety / stuck input fixes
-- [ ] **Phase 3** — Trackpad 2.0
+- [x] **Phase 3** — Trackpad 2.0 (PointerMath, acceleration, profiles, gestures)
 - [ ] **Phase 4** — Keyboard 2.0
 - [ ] **Phase 5** — Gamepad reliability
 - [ ] **Phase 6** — Bluetooth host management
