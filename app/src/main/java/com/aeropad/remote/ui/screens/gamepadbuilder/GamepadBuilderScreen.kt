@@ -1,4 +1,4 @@
-package com.bluepilot.remote.ui.screens.gamepadbuilder
+package com.aeropad.remote.ui.screens.gamepadbuilder
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -70,28 +70,28 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import com.bluepilot.remote.ui.components.toComposeColor
+import com.aeropad.remote.ui.components.toComposeColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.bluepilot.remote.model.gamepad.ControlShape
-import com.bluepilot.remote.model.gamepad.ButtonNaming
-import com.bluepilot.remote.model.gamepad.GamepadButtonNames
-import com.bluepilot.remote.model.gamepad.HapticPattern
-import com.bluepilot.remote.model.gamepad.ResponseCurve
-import com.bluepilot.remote.model.gamepad.GamepadControlSpec
-import com.bluepilot.remote.model.gamepad.GamepadControlType
-import com.bluepilot.remote.model.gamepad.StickSide
-import com.bluepilot.remote.ui.components.NotConnectedBanner
-import com.bluepilot.remote.ui.gamepad.GamepadCanvas
-import com.bluepilot.remote.ui.gamepad.GamepadEvents
-import com.bluepilot.remote.ui.gamepad.RenderGamepadControl
-import com.bluepilot.remote.viewmodel.GamepadBuilderViewModel
-import com.bluepilot.remote.ui.components.GlassCard
-import com.bluepilot.remote.ui.components.cornerBrackets
-import com.bluepilot.remote.ui.theme.LocalAppTheme
+import com.aeropad.remote.model.gamepad.ControlShape
+import com.aeropad.remote.model.gamepad.ButtonNaming
+import com.aeropad.remote.model.gamepad.GamepadButtonNames
+import com.aeropad.remote.model.gamepad.HapticPattern
+import com.aeropad.remote.model.gamepad.ResponseCurve
+import com.aeropad.remote.model.gamepad.GamepadControlSpec
+import com.aeropad.remote.model.gamepad.GamepadControlType
+import com.aeropad.remote.model.gamepad.StickSide
+import com.aeropad.remote.ui.components.NotConnectedBanner
+import com.aeropad.remote.ui.gamepad.GamepadCanvas
+import com.aeropad.remote.ui.gamepad.GamepadEvents
+import com.aeropad.remote.ui.gamepad.RenderGamepadControl
+import com.aeropad.remote.viewmodel.GamepadBuilderViewModel
+import com.aeropad.remote.ui.components.GlassCard
+import com.aeropad.remote.ui.components.cornerBrackets
+import com.aeropad.remote.ui.theme.LocalAppTheme
 import timber.log.Timber
 
 /**
@@ -217,7 +217,7 @@ private fun ProfileList(onBack: () -> Unit, viewModel: GamepadBuilderViewModel) 
                         onClick = { viewModel.setTagFilter(null) },
                         label = { Text("All") }
                     )
-                    com.bluepilot.remote.domain.ProfileSuggester.ALL_TAGS.forEach { tag ->
+                    com.aeropad.remote.domain.ProfileSuggester.ALL_TAGS.forEach { tag ->
                         FilterChip(
                             selected = tagFilter == tag,
                             onClick = { viewModel.setTagFilter(if (tagFilter == tag) null else tag) },
@@ -281,7 +281,7 @@ private fun ProfileList(onBack: () -> Unit, viewModel: GamepadBuilderViewModel) 
                             )
                         }
                         // ADV S3 — favorite pin (favorites sort to top).
-                        val fav = com.bluepilot.remote.ui.theme.ThemeListCodec.contains(
+                        val fav = com.aeropad.remote.ui.theme.ThemeListCodec.contains(
                             appSettings.favoriteGamepads, profile.id.toString())
                         IconButton(onClick = { viewModel.toggleFavorite(profile.id) }) {
                             Icon(
@@ -496,10 +496,10 @@ private fun GamepadPlayer(viewModel: GamepadBuilderViewModel) {
                 ) {
                     Text("Flick", style = MaterialTheme.typography.bodyMedium)
                     listOf(
-                        "↑" to com.bluepilot.remote.domain.FlickDetector.FlickDirection.UP,
-                        "↓" to com.bluepilot.remote.domain.FlickDetector.FlickDirection.DOWN,
-                        "←" to com.bluepilot.remote.domain.FlickDetector.FlickDirection.LEFT,
-                        "→" to com.bluepilot.remote.domain.FlickDetector.FlickDirection.RIGHT
+                        "↑" to com.aeropad.remote.domain.FlickDetector.FlickDirection.UP,
+                        "↓" to com.aeropad.remote.domain.FlickDetector.FlickDirection.DOWN,
+                        "←" to com.aeropad.remote.domain.FlickDetector.FlickDirection.LEFT,
+                        "→" to com.aeropad.remote.domain.FlickDetector.FlickDirection.RIGHT
                     ).forEach { (arrow, dir) ->
                         val mapped = fmap[dir] ?: -1
                         FilterChip(
@@ -508,7 +508,7 @@ private fun GamepadPlayer(viewModel: GamepadBuilderViewModel) {
                             label = {
                                 Text(
                                     arrow + " " +
-                                        com.bluepilot.remote.domain.FlickMapping.label(mapped)
+                                        com.aeropad.remote.domain.FlickMapping.label(mapped)
                                 )
                             }
                         )
@@ -696,20 +696,20 @@ private fun GamepadEditor(viewModel: GamepadBuilderViewModel) {
                             AssistChip(
                                 onClick = {
                                     val next = when (grip) {
-                                        null -> com.bluepilot.remote.domain.LayoutIntelligence.GripStyle.TWO_THUMB
-                                        com.bluepilot.remote.domain.LayoutIntelligence.GripStyle.TWO_THUMB ->
-                                            com.bluepilot.remote.domain.LayoutIntelligence.GripStyle.CLAW
-                                        com.bluepilot.remote.domain.LayoutIntelligence.GripStyle.CLAW ->
-                                            com.bluepilot.remote.domain.LayoutIntelligence.GripStyle.PALM
-                                        com.bluepilot.remote.domain.LayoutIntelligence.GripStyle.PALM -> null
+                                        null -> com.aeropad.remote.domain.LayoutIntelligence.GripStyle.TWO_THUMB
+                                        com.aeropad.remote.domain.LayoutIntelligence.GripStyle.TWO_THUMB ->
+                                            com.aeropad.remote.domain.LayoutIntelligence.GripStyle.CLAW
+                                        com.aeropad.remote.domain.LayoutIntelligence.GripStyle.CLAW ->
+                                            com.aeropad.remote.domain.LayoutIntelligence.GripStyle.PALM
+                                        com.aeropad.remote.domain.LayoutIntelligence.GripStyle.PALM -> null
                                     }
                                     viewModel.setHeatmapGrip(next)
                                 },
                                 label = { Text(when (grip) {
                                     null -> "Reach map"
-                                    com.bluepilot.remote.domain.LayoutIntelligence.GripStyle.TWO_THUMB -> "Reach: thumbs"
-                                    com.bluepilot.remote.domain.LayoutIntelligence.GripStyle.CLAW -> "Reach: claw"
-                                    com.bluepilot.remote.domain.LayoutIntelligence.GripStyle.PALM -> "Reach: palm"
+                                    com.aeropad.remote.domain.LayoutIntelligence.GripStyle.TWO_THUMB -> "Reach: thumbs"
+                                    com.aeropad.remote.domain.LayoutIntelligence.GripStyle.CLAW -> "Reach: claw"
+                                    com.aeropad.remote.domain.LayoutIntelligence.GripStyle.PALM -> "Reach: palm"
                                 }) }
                             )
                             val testOn = viewModel.testMode.collectAsState().value
@@ -734,7 +734,7 @@ private fun GamepadEditor(viewModel: GamepadBuilderViewModel) {
                                 )
                             }
                             // ADV S3 — profile tags.
-                            com.bluepilot.remote.domain.ProfileSuggester.ALL_TAGS.forEach { tag ->
+                            com.aeropad.remote.domain.ProfileSuggester.ALL_TAGS.forEach { tag ->
                                 FilterChip(
                                     selected = tag in spec.tags,
                                     onClick = { viewModel.toggleTag(tag) },
@@ -746,19 +746,19 @@ private fun GamepadEditor(viewModel: GamepadBuilderViewModel) {
                             AssistChip(onClick = { viewModel.mirrorSelected() }, label = { Text("Mirror →") })
                             // V2 MATRIX 1 b5 — quick anchors.
                             AssistChip(
-                                onClick = { viewModel.anchorSelected(com.bluepilot.remote.domain.AnchorLayout.Anchor.BOTTOM_LEFT) },
+                                onClick = { viewModel.anchorSelected(com.aeropad.remote.domain.AnchorLayout.Anchor.BOTTOM_LEFT) },
                                 label = { Text("⌊ BL") }
                             )
                             AssistChip(
-                                onClick = { viewModel.anchorSelected(com.bluepilot.remote.domain.AnchorLayout.Anchor.BOTTOM_RIGHT) },
+                                onClick = { viewModel.anchorSelected(com.aeropad.remote.domain.AnchorLayout.Anchor.BOTTOM_RIGHT) },
                                 label = { Text("BR ⌋") }
                             )
                             AssistChip(
-                                onClick = { viewModel.anchorSelected(com.bluepilot.remote.domain.AnchorLayout.Anchor.CENTER) },
+                                onClick = { viewModel.anchorSelected(com.aeropad.remote.domain.AnchorLayout.Anchor.CENTER) },
                                 label = { Text("◎ Center") }
                             )
                             AssistChip(
-                                onClick = { viewModel.anchorSelected(com.bluepilot.remote.domain.AnchorLayout.Anchor.TOP_RIGHT) },
+                                onClick = { viewModel.anchorSelected(com.aeropad.remote.domain.AnchorLayout.Anchor.TOP_RIGHT) },
                                 label = { Text("TR ⌉") }
                             )
                             val selLayer = viewModel.selectedControl()?.layer ?: 0
@@ -856,7 +856,7 @@ private fun GamepadEditor(viewModel: GamepadBuilderViewModel) {
                 val canvasHDp = with(LocalDensity.current) { hPx.toDp().value }
                 if (!previewMode) {
                     val tooSmall = spec.controls.filter {
-                        com.bluepilot.remote.domain.A11y.isBelowMinTarget(
+                        com.aeropad.remote.domain.A11y.isBelowMinTarget(
                             it.frame.sanitized(), canvasWDp, canvasHDp
                         )
                     }
@@ -910,7 +910,7 @@ private fun GamepadEditor(viewModel: GamepadBuilderViewModel) {
                         }
                         // Thumb-reach heatmap: comfortable (green) + stretch (amber) arcs.
                         grip?.let { g ->
-                            com.bluepilot.remote.domain.LayoutIntelligence.reachZones(g).forEach { z ->
+                            com.aeropad.remote.domain.LayoutIntelligence.reachZones(g).forEach { z ->
                                 val c = androidx.compose.ui.geometry.Offset(z.cx * size.width, z.cy * size.height)
                                 drawCircle(
                                     color = androidx.compose.ui.graphics.Color(0xFFFFB300).copy(alpha = 0.14f),
@@ -1063,7 +1063,7 @@ private fun GamepadEditor(viewModel: GamepadBuilderViewModel) {
                 Spacer(Modifier.height(8.dp))
                 if (versions.isEmpty()) {
                     Text(
-                        "No archived versions yet — each Save of this profile archives the previous layout here (last ${com.bluepilot.remote.data.gamepad.VersionCodec.MAX_VERSIONS}).",
+                        "No archived versions yet — each Save of this profile archives the previous layout here (last ${com.aeropad.remote.data.gamepad.VersionCodec.MAX_VERSIONS}).",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1201,7 +1201,7 @@ private fun ControlPropertiesPanel(viewModel: GamepadBuilderViewModel) {
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                com.bluepilot.remote.model.gamepad.ButtonMode.entries.forEach { m ->
+                com.aeropad.remote.model.gamepad.ButtonMode.entries.forEach { m ->
                     FilterChip(
                         selected = control.buttonMode == m,
                         onClick = { viewModel.updateSelected { it.copy(buttonMode = m) } },
@@ -1209,7 +1209,7 @@ private fun ControlPropertiesPanel(viewModel: GamepadBuilderViewModel) {
                     )
                 }
             }
-            if (control.buttonMode == com.bluepilot.remote.model.gamepad.ButtonMode.MULTI_TAP) {
+            if (control.buttonMode == com.aeropad.remote.model.gamepad.ButtonMode.MULTI_TAP) {
                 Text("Double-tap sends", style = MaterialTheme.typography.bodyMedium)
                 Row(
                     modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
@@ -1224,7 +1224,7 @@ private fun ControlPropertiesPanel(viewModel: GamepadBuilderViewModel) {
                     }
                 }
             }
-            if (control.buttonMode == com.bluepilot.remote.model.gamepad.ButtonMode.RADIAL) {
+            if (control.buttonMode == com.aeropad.remote.model.gamepad.ButtonMode.RADIAL) {
                 Text("Radial wheel options (tap to add/remove)", style = MaterialTheme.typography.bodyMedium)
                 Row(
                     modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
@@ -1238,7 +1238,7 @@ private fun ControlPropertiesPanel(viewModel: GamepadBuilderViewModel) {
                                 viewModel.updateSelected {
                                     it.copy(radialOptions =
                                         if (selectedOpt) it.radialOptions - index
-                                        else (it.radialOptions + index).take(com.bluepilot.remote.model.gamepad.GamepadControlSpec.RADIAL_MAX))
+                                        else (it.radialOptions + index).take(com.aeropad.remote.model.gamepad.GamepadControlSpec.RADIAL_MAX))
                                 }
                             },
                             label = { Text(GamepadButtonNames.label(index, draft?.second?.naming ?: ButtonNaming.XBOX)) }
@@ -1285,7 +1285,7 @@ private fun ControlPropertiesPanel(viewModel: GamepadBuilderViewModel) {
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                com.bluepilot.remote.model.gamepad.MotionStyle.entries.forEach { m ->
+                com.aeropad.remote.model.gamepad.MotionStyle.entries.forEach { m ->
                     FilterChip(
                         selected = control.motionStyle == m,
                         onClick = { viewModel.updateSelected { it.copy(motionStyle = m) } },
@@ -1423,7 +1423,7 @@ private fun ControlPropertiesPanel(viewModel: GamepadBuilderViewModel) {
                 FilterChip(selected = control.icon.isEmpty(),
                     onClick = { viewModel.updateSelected { it.copy(icon = "") } },
                     label = { Text("None") })
-                com.bluepilot.remote.ui.components.ControlGlyphs.ALL.forEach { g ->
+                com.aeropad.remote.ui.components.ControlGlyphs.ALL.forEach { g ->
                     FilterChip(selected = control.icon == g,
                         onClick = { viewModel.updateSelected { it.copy(icon = g) } },
                         label = { Text(g) })
@@ -1509,11 +1509,11 @@ private fun ControlPropertiesPanel(viewModel: GamepadBuilderViewModel) {
             // ADV S1 — advanced stick options.
             Text("Gate shape", style = MaterialTheme.typography.bodyMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                com.bluepilot.remote.model.gamepad.StickGate.entries.forEach { g ->
+                com.aeropad.remote.model.gamepad.StickGate.entries.forEach { g ->
                     FilterChip(
                         selected = control.stickGate == g,
                         onClick = { viewModel.updateSelected { it.copy(stickGate = g) } },
-                        label = { Text(if (g == com.bluepilot.remote.model.gamepad.StickGate.CIRCLE) "Circle" else "Square") }
+                        label = { Text(if (g == com.aeropad.remote.model.gamepad.StickGate.CIRCLE) "Circle" else "Square") }
                     )
                 }
             }
@@ -1647,11 +1647,11 @@ private fun ControlPropertiesPanel(viewModel: GamepadBuilderViewModel) {
             // ADV S1 — D-pad style + diagonal-only.
             Text("D-pad style", style = MaterialTheme.typography.bodyMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                com.bluepilot.remote.model.gamepad.DpadStyle.entries.forEach { s ->
+                com.aeropad.remote.model.gamepad.DpadStyle.entries.forEach { s ->
                     FilterChip(
                         selected = control.dpadStyle == s,
                         onClick = { viewModel.updateSelected { it.copy(dpadStyle = s) } },
-                        label = { Text(if (s == com.bluepilot.remote.model.gamepad.DpadStyle.CROSS) "Cross" else "Circular") }
+                        label = { Text(if (s == com.aeropad.remote.model.gamepad.DpadStyle.CROSS) "Cross" else "Circular") }
                     )
                 }
             }
@@ -1674,7 +1674,7 @@ private fun ControlPropertiesPanel(viewModel: GamepadBuilderViewModel) {
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                com.bluepilot.remote.model.gamepad.ArrowDirection.entries.forEach { d ->
+                com.aeropad.remote.model.gamepad.ArrowDirection.entries.forEach { d ->
                     FilterChip(
                         selected = control.arrowDirection == d,
                         onClick = { viewModel.updateSelected { it.copy(arrowDirection = d) } },
@@ -1684,7 +1684,7 @@ private fun ControlPropertiesPanel(viewModel: GamepadBuilderViewModel) {
             }
             Text("Style", style = MaterialTheme.typography.bodyMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                com.bluepilot.remote.model.gamepad.ArrowStyle.entries.forEach { s ->
+                com.aeropad.remote.model.gamepad.ArrowStyle.entries.forEach { s ->
                     FilterChip(
                         selected = control.arrowStyle == s,
                         onClick = { viewModel.updateSelected { it.copy(arrowStyle = s) } },
