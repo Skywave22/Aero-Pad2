@@ -106,7 +106,7 @@ Deliverable: app builds and shows a home shell. Zero warnings.
 - [x] **Phase 3** — Trackpad 2.0 (PointerMath, acceleration, profiles, gestures)
 - [x] **Phase 4** — Keyboard 2.0 (Numpad, Send on Enter, Configurable type delay)
 - [x] **Phase 5** — Gamepad reliability (D-pad mapping logic, test suite sync)
-- [ ] **Phase 6** — Bluetooth host management
+- [x] **Phase 6** — Bluetooth host management (Unpairing logic, auto-reconnect, quick-switch host UI)
 - [ ] **Phase 7** — Profiles
 - [ ] **Phase 8** — Custom Remote 2.0
 - [ ] **Phase 9** — Advanced macros

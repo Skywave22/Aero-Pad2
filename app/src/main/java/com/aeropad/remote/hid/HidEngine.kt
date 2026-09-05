@@ -258,6 +258,16 @@ class HidEngine @Inject constructor(
         }.getOrDefault(emptyList())
 
     /** Resolve a bonded BluetoothDevice by MAC (for connect-by-address). */
+        @android.annotation.SuppressLint("MissingPermission")
+    override fun unpair(address: String): Boolean {
+        val dev = bondedDeviceByAddress(address) ?: return false
+        return runCatching {
+            val method = dev.javaClass.getMethod("removeBond")
+            method.invoke(dev) as Boolean
+        }.onFailure { timber.log.Timber.w(it, "unpair failed for %s", address) }
+        .getOrDefault(false)
+    }
+
     fun bondedDeviceByAddress(address: String): BluetoothDevice? =
         runCatching {
             bluetoothAdapter?.bondedDevices.orEmpty().firstOrNull { it.address == address }

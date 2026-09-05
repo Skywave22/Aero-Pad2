@@ -94,3 +94,9 @@ class SendHidActionUseCase @Inject constructor(
     }
 }
 
+
+class UnpairDeviceUseCase @javax.inject.Inject constructor(
+    private val controller: com.aeropad.remote.domain.HidController
+) {
+    operator fun invoke(address: String): Boolean = controller.unpair(address)
+}

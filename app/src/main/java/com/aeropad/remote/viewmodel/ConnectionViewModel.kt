@@ -37,6 +37,7 @@ class ConnectionViewModel @Inject constructor(
     observeConnection: ObserveConnectionUseCase,
     private val startEngine: StartHidEngineUseCase,
     private val connectDevice: ConnectDeviceUseCase,
+    private val unpairDevice: com.aeropad.remote.domain.usecase.UnpairDeviceUseCase,
     private val disconnectDevice: DisconnectDeviceUseCase,
     private val getBondedDevices: GetBondedDevicesUseCase,
     private val permissionChecker: PermissionChecker,
@@ -125,6 +126,12 @@ class ConnectionViewModel @Inject constructor(
 
     fun disconnect() {
         disconnectDevice()
+    }
+
+    fun unpair(address: String) {
+        if (unpairDevice(address)) {
+            refreshBondedDevices()
+        }
     }
 
     /** Runs a time-boxed discovery scan; results accumulate without duplicates. */

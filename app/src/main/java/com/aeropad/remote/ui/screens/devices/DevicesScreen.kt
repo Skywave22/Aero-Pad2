@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Computer
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -109,7 +110,8 @@ fun DevicesScreen(
                     device,
                     connected = (state as? HidConnectionState.Connected)?.device?.address == device.address,
                     saved = device.address in savedHosts,
-                    onToggleSave = { viewModel.toggleSavedHost(device) }
+                    onToggleSave = { viewModel.toggleSavedHost(device) },
+                    onUnpair = { viewModel.unpair(device.address) }
                 ) {
                     viewModel.connect(device.address)
                 }
@@ -151,6 +153,7 @@ private fun DeviceRow(
     connected: Boolean,
     saved: Boolean = false,
     onToggleSave: (() -> Unit)? = null,
+    onUnpair: (() -> Unit)? = null,
     onClick: () -> Unit
 ) {
     Card(
@@ -188,6 +191,15 @@ private fun DeviceRow(
                         style = MaterialTheme.typography.titleLarge,
                         color = if (saved) MaterialTheme.colorScheme.primary
                         else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            if (onUnpair != null) {
+                IconButton(onClick = onUnpair) {
+                    Icon(
+                        imageVector = androidx.compose.material.icons.Icons.Rounded.Delete,
+                        contentDescription = "Unpair",
+                        tint = MaterialTheme.colorScheme.error
                     )
                 }
             }

@@ -31,6 +31,7 @@ interface HidController {
 
     /** Currently bonded devices, never throws. */
     fun bondedDevices(): List<RemoteDevice>
+    fun unpair(address: String): Boolean
 
     /** Fire-and-forget input action. */
     fun send(action: HidAction)
