@@ -95,6 +95,10 @@ class HidEngine @Inject constructor(
 
     /** ADV S5 — real measured connection-health metrics (public read). */
     val health = com.aeropad.remote.domain.ConnectionHealthTracker()
+    
+    fun getHealthSnapshot(): com.aeropad.remote.domain.ConnectionHealthTracker.Snapshot {
+        return health.snapshot()
+    }
 
     /** ADV S5 — reconnect status for the dashboard (attempt#, max). */
     private val _reconnectStatus = MutableStateFlow<Pair<Int, Int>?>(null)

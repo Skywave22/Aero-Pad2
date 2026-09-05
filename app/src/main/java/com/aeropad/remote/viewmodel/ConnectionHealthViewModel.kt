@@ -60,7 +60,7 @@ class ConnectionHealthViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             while (true) {
-                _snapshot.value = engine.health.snapshot()
+                _snapshot.value = engine.getHealthSnapshot()
                 readBattery()
                 delay(1000)
             }
