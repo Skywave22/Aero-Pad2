@@ -96,3 +96,21 @@ Deliverable: app builds and shows a home shell. Zero warnings.
 
 ## ✅ REBUILD COMPLETE — all 8 modules delivered
 
+
+---
+## PHASE-BY-PHASE DEVELOPMENT TRACKING
+
+- [x] **Phase 0** — Baseline audit and CI health
+- [ ] **Phase 1** — Bluetooth & HID stability
+- [ ] **Phase 2** — Global input safety / stuck input fixes
+- [ ] **Phase 3** — Trackpad 2.0
+- [ ] **Phase 4** — Keyboard 2.0
+- [ ] **Phase 5** — Gamepad reliability
+- [ ] **Phase 6** — Bluetooth host management
+- [ ] **Phase 7** — Profiles
+- [ ] **Phase 8** — Custom Remote 2.0
+- [ ] **Phase 9** — Advanced macros
+- [ ] **Phase 10** — Diagnostics & debugging
+- [ ] **Phase 11** — Performance & lifecycle hardening
+- [ ] **Phase 12** — Security, privacy & cleanup
+- [ ] **Phase 13** — Final QA & release hardening
