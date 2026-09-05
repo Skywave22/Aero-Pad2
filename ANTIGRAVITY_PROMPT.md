@@ -2,7 +2,7 @@
 
 ---
 
-You are working on **BluePilot Remote v3.1** — a complete, WORKING Android app (Kotlin, 100% Jetpack Compose, Material 3, Hilt, Room, DataStore, minSdk 29, targetSdk 34). It compiles clean with 135 passing unit tests. Do NOT break any functionality — this task is a **pure visual/UI implementation pass**.
+You are working on **AeroPad Remote v3.1** — a complete, WORKING Android app (Kotlin, 100% Jetpack Compose, Material 3, Hilt, Room, DataStore, minSdk 29, targetSdk 34). It compiles clean with 135 passing unit tests. Do NOT break any functionality — this task is a **pure visual/UI implementation pass**.
 
 ## THE TASK
 
@@ -42,10 +42,10 @@ Liquid Glass × Material 3 hybrid. These reflect the app's actual current featur
 
 ## EXISTING ARCHITECTURE YOU MUST USE (do not re-architect)
 
-- **Theme engine**: `app/src/main/java/com/bluepilot/remote/ui/theme/`
+- **Theme engine**: `app/src/main/java/com/aeropad/remote/ui/theme/`
   - `AppThemeSpec.kt` — theme data model: colors, backgroundOrbs, cornerRadius, surfaceAlpha, edgeGlow, glowColor, monoFont
   - `BuiltInThemes.kt` — 13 theme specs already defined, matching the mockup sets (pilot_dark, pilot_glow, liquid_glass, liquid_glass_light, glass_you_dark, glass_you_light, hawaii_night, hawaii_day, cockpit_hud, day_flight, dark_neon, oled_black, minimal_light)
-  - `ThemeEngine.kt` — LocalAppTheme CompositionLocal + BluePilotAppTheme M3 bridge + ThemedBackground orb painter
+  - `ThemeEngine.kt` — LocalAppTheme CompositionLocal + AeroPadAppTheme M3 bridge + ThemedBackground orb painter
   - EXTEND AppThemeSpec with new style tokens as needed (gel icon palettes, specular highlights, dock style) — then consume them in shared components.
 - **Screens** in `ui/screens/`: home, themes, mouse, keyboard, numpad, multimedia, presenter, gamepad, gamepadbuilder, layouts, editor, macros, settings, connection, devices, permission, help.
 - **Shared components** in `ui/components/` (KeyCard has press-scale + haptic intensity — KEEP those behaviors).

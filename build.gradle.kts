@@ -1,4 +1,4 @@
-// Top-level build file for BluePilot Remote v3.
+// Top-level build file for AeroPad Remote v3.
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.kotlin.android) apply false

@@ -1,8 +1,8 @@
-# BluePilot Remote — Play Store Listing
+# AeroPad Remote — Play Store Listing
 
 ## App title (30 chars max)
 ```
-BluePilot Remote: PC Control
+AeroPad Remote: PC Control
 ```
 (28 chars)
 
@@ -15,7 +15,7 @@ Turn your phone into a Bluetooth keyboard, mouse & custom gamepad for any PC.
 ## Full description (under 4000 chars)
 
 ```
-Turn your Android phone into a wireless keyboard, mouse, media remote, presenter and fully custom gamepad — with nothing to install on the PC. BluePilot Remote uses Bluetooth HID, the same standard as real keyboards and mice, so it works with Windows, macOS, Linux, Android TV and most smart TVs out of the box.
+Turn your Android phone into a wireless keyboard, mouse, media remote, presenter and fully custom gamepad — with nothing to install on the PC. AeroPad Remote uses Bluetooth HID, the same standard as real keyboards and mice, so it works with Windows, macOS, Linux, Android TV and most smart TVs out of the box.
 
 REAL BLUETOOTH HID — NO PC SOFTWARE
 Pair once and your phone IS a keyboard and mouse. No server programs, no Wi-Fi, no account, no cloud. Input travels directly over Bluetooth.
@@ -49,7 +49,7 @@ REQUIREMENTS
 - A phone that supports Bluetooth HID Device mode (most modern phones do; the app detects and reports if yours does not)
 - Any host that accepts Bluetooth keyboards/mice
 
-Note: a small number of phone models/ROMs block Android's HID Device mode. BluePilot shows a clear message if your device is affected.
+Note: a small number of phone models/ROMs block Android's HID Device mode. AeroPad shows a clear message if your device is affected.
 ```
 (~2600 chars — comfortably under the limit)
 

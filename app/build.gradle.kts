@@ -1,4 +1,4 @@
-// BluePilot Remote v3 — app module.
+// AeroPad Remote v3 — app module.
 // Clean Kotlin DSL build with KSP (no kapt), version catalog, zero deprecated APIs.
 plugins {
     alias(libs.plugins.android.application)
@@ -9,17 +9,17 @@ plugins {
 }
 
 android {
-    namespace = "com.bluepilot.remote"
+    namespace = "com.aeropad.remote"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.bluepilot.remote"
+        applicationId = "com.aeropad.remote"
         minSdk = 29          // Android 10+ (BluetoothHidDevice API requires 28; 29 confirmed by product decision)
         targetSdk = 34
         versionCode = 340
         versionName = "3.4.0"
 
-        testInstrumentationRunner = "com.bluepilot.remote.HiltTestRunner"
+        testInstrumentationRunner = "com.aeropad.remote.HiltTestRunner"
         vectorDrawables { useSupportLibrary = true }
     }
 

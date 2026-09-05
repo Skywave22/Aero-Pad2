@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Minimal platform theme; all real theming is Compose-side. -->
-    <style name="Theme.BluePilot" parent="android:Theme.Material.NoActionBar">
+    <style name="Theme.AeroPad" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">#0B0F1A</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>

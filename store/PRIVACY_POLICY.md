@@ -1,11 +1,11 @@
-# Privacy Policy — BluePilot Remote
+# Privacy Policy — AeroPad Remote
 
 **Effective date:** July 4, 2026
 
-BluePilot Remote ("the app") is built privacy-first. This policy explains what the app does — and, more importantly, what it does not do.
+AeroPad Remote ("the app") is built privacy-first. This policy explains what the app does — and, more importantly, what it does not do.
 
 ## The short version
-BluePilot Remote collects **no personal data**. Nothing you do in the app leaves your phone, except the Bluetooth input signals (keystrokes, mouse movement, gamepad input) sent directly to the computer or device **you** choose to connect to.
+AeroPad Remote collects **no personal data**. Nothing you do in the app leaves your phone, except the Bluetooth input signals (keystrokes, mouse movement, gamepad input) sent directly to the computer or device **you** choose to connect to.
 
 ## Data collection
 - **We collect nothing.** The app has no analytics, no advertising SDKs, no crash-reporting services, no user accounts and no server backend.
