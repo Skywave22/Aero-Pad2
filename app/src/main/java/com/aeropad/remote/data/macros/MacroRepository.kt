@@ -67,4 +67,14 @@ class MacroRepository @Inject constructor(
     suspend fun delete(id: Long) {
         dao.byId(id)?.let { dao.delete(it) }
     }
+
+    fun exportJson(id: Long): String? = kotlinx.coroutines.runBlocking {
+        val macro = byId(id) ?: return@runBlocking null
+        toJson(macro.spec)
+    }
+
+    suspend fun importJson(raw: String): Long? {
+        val spec = fromJson(raw) ?: return null
+        return save(null, spec.copy(name = spec.name + " (imported)"))
+    }
 }

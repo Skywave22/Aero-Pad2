@@ -79,6 +79,43 @@ fun MacrosScreen(
     viewModel: MacrosViewModel = hiltViewModel()
 ) {
     val draft by viewModel.draft.collectAsState()
+    val message by viewModel.message.collectAsState()
+    val exportPayload by viewModel.exportPayload.collectAsState()
+
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val snackbar = androidx.compose.runtime.remember { androidx.compose.material3.SnackbarHostState() }
+
+    val importLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
+    ) { uri: android.net.Uri? ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        val json = runCatching {
+            context.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() }
+        }.getOrNull()
+        viewModel.importFromJson(json)
+    }
+
+    val exportLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/json")
+    ) { uri: android.net.Uri? ->
+        if (uri == null) { viewModel.consumeExport(); return@rememberLauncherForActivityResult }
+        val payload = exportPayload?.second ?: return@rememberLauncherForActivityResult
+        runCatching {
+            context.contentResolver.openOutputStream(uri)?.use { it.write(payload.toByteArray()) }
+        }
+        viewModel.consumeExport()
+    }
+
+    androidx.compose.runtime.LaunchedEffect(exportPayload) {
+        exportPayload?.let { (name, _) -> exportLauncher.launch(name) }
+    }
+
+    androidx.compose.runtime.LaunchedEffect(message) {
+        message?.let {
+            snackbar.showSnackbar(it)
+            viewModel.consumeMessage()
+        }
+    }
 
     if (draft != null) {
         MacroEditor(viewModel)
@@ -302,6 +339,9 @@ fun MacrosScreen(
                         IconButton(onClick = { viewModel.edit(macro) }) {
                             Icon(Icons.Rounded.Edit, contentDescription = "Edit")
                         }
+                        IconButton(onClick = { viewModel.requestExport(macro.id) }) {
+                            Icon(androidx.compose.material.icons.Icons.Rounded.FileDownload, contentDescription = "Export")
+                        }
                         IconButton(onClick = { viewModel.delete(macro.id) }) {
                             Icon(Icons.Rounded.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
                         }
@@ -321,6 +361,43 @@ fun MacrosScreen(
 @Composable
 private fun MacroEditor(viewModel: MacrosViewModel) {
     val draft by viewModel.draft.collectAsState()
+    val message by viewModel.message.collectAsState()
+    val exportPayload by viewModel.exportPayload.collectAsState()
+
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val snackbar = androidx.compose.runtime.remember { androidx.compose.material3.SnackbarHostState() }
+
+    val importLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
+    ) { uri: android.net.Uri? ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        val json = runCatching {
+            context.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() }
+        }.getOrNull()
+        viewModel.importFromJson(json)
+    }
+
+    val exportLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/json")
+    ) { uri: android.net.Uri? ->
+        if (uri == null) { viewModel.consumeExport(); return@rememberLauncherForActivityResult }
+        val payload = exportPayload?.second ?: return@rememberLauncherForActivityResult
+        runCatching {
+            context.contentResolver.openOutputStream(uri)?.use { it.write(payload.toByteArray()) }
+        }
+        viewModel.consumeExport()
+    }
+
+    androidx.compose.runtime.LaunchedEffect(exportPayload) {
+        exportPayload?.let { (name, _) -> exportLauncher.launch(name) }
+    }
+
+    androidx.compose.runtime.LaunchedEffect(message) {
+        message?.let {
+            snackbar.showSnackbar(it)
+            viewModel.consumeMessage()
+        }
+    }
     val (rowId, spec) = draft ?: return
     val themeSpec = LocalAppTheme.current
     var textInput by remember { mutableStateOf("") }
