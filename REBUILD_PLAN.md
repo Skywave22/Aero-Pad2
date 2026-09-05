@@ -114,3 +114,6 @@ Deliverable: app builds and shows a home shell. Zero warnings.
 - [ ] **Phase 11** — Performance & lifecycle hardening
 - [ ] **Phase 12** — Security, privacy & cleanup
 - [ ] **Phase 13** — Final QA & release hardening
+
+---
+- [x] **Phase 1** — Bluetooth & HID stability
