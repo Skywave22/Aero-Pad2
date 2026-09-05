@@ -105,90 +105,7 @@ fun SettingsScreen(
 
             // ---------- General ----------
             if (matches("fullscreen", "screen", "vibration", "secure", "motion", "icon", "pack")) SettingsGroup("General") {
-                /* OutlinedButton(
-                    onClick = onOpenThemes,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-                        contentColor = spec.primary
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(
-                        width = 1.dp,
-                        color = spec.primary.copy(alpha = 0.5f)
-                    )
-                ) {
-                    Text(
-                        text = if (spec.monoFont) "OPEN THEME GALLERY" else "Open theme gallery",
-                        style = if (spec.monoFont) MaterialTheme.typography.labelLarge.copy(fontFamily = FontFamily.Monospace)
-                        else MaterialTheme.typography.labelLarge
-                    )
-                }
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    text = if (spec.monoFont) "THEME" else "Theme",
-                    style = if (spec.monoFont) MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace)
-                    else MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Row(modifier = Modifier.padding(vertical = 4.dp)) {
-                    ThemeMode.entries.forEach { mode ->
-                        val label = mode.name.lowercase().replaceFirstChar { it.uppercase() }
-                        FilterChip(
-                            selected = app.theme == mode,
-                            onClick = { viewModel.setTheme(mode) },
-                            label = {
-                                Text(
-                                    text = if (spec.monoFont) label.uppercase() else label,
-                                    style = if (spec.monoFont) MaterialTheme.typography.labelLarge.copy(fontFamily = FontFamily.Monospace)
-                                    else MaterialTheme.typography.labelLarge
-                                )
-                            },
-                            modifier = Modifier.padding(end = 8.dp)
-                        )
-                    }
-                }
-                ToggleRow("Fullscreen mode", app.fullscreenMode, viewModel::setFullscreen)
-                ToggleRow("Keep screen on", app.keepScreenOn, viewModel::setKeepScreenOn)
-                ToggleRow("Touch vibrations", app.touchVibrations, viewModel::setTouchVibrations)
-                if (app.touchVibrations) {
-                    Text(
-                        text = if (spec.monoFont) "VIBRATION STRENGTH" else "Vibration strength",
-                        style = if (spec.monoFont) MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace)
-                        else MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Row(modifier = Modifier.padding(vertical = 4.dp)) {
-                        HapticIntensity.entries.forEach { level ->
-                            val label = level.name.lowercase().replaceFirstChar { it.uppercase() }
-                            FilterChip(
-                                selected = app.hapticIntensity == level,
-                                onClick = { viewModel.setHapticIntensity(level) },
-                                label = {
-                                    Text(
-                                        text = if (spec.monoFont) label.uppercase() else label,
-                                        style = if (spec.monoFont) MaterialTheme.typography.labelLarge.copy(fontFamily = FontFamily.Monospace)
-                                        else MaterialTheme.typography.labelLarge
-                                    )
-                                },
-                                modifier = Modifier.padding(end = 8.dp)
-                            )
-                        }
-                    }
-                }
-                Text("3D quality", style = MaterialTheme.typography.bodyMedium)
-                Row(modifier = Modifier.padding(vertical = 4.dp)) {
-                    listOf("FULL", "REDUCED", "FLAT").forEach { q ->
-                        FilterChip(
-                            selected = app.quality3D == q,
-                            onClick = { viewModel.setQuality3D(q) },
-                            label = { Text(q.lowercase().replaceFirstChar { it.uppercase() }) },
-                            modifier = Modifier.padding(end = 6.dp)
-                        )
-                    }
-                }
-                // AUDIT FIX: the 3D showcase screen existed but was
-                // unreachable — this button was never rendered.
-                TextButton(onClick = onOpen3DPreview) { Text("Open 3D effects preview") } */
+                
                 Text("Icon pack", style = MaterialTheme.typography.bodyMedium)
                 Row(modifier = Modifier.padding(vertical = 4.dp)) {
                     listOf("FILLED", "OUTLINED", "ROUNDED", "SHARP").forEach { pack ->
@@ -247,44 +164,6 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            }
-
-            // ---------- SECTION 1: Auto theme scheduling ----------
-            if (matches("theme", "auto", "schedule", "night", "day")) SettingsGroup("Auto theme schedule") {
-                ToggleRow(
-                    "Switch theme by time of day",
-                    app.autoThemeEnabled,
-                    viewModel::setAutoTheme,
-                    subtitle = "Day theme by day, night theme at night (checked every minute)"
-                )
-                ToggleRow(
-                    "Switch theme by room light",
-                    app.lightAutoTheme,
-                    viewModel::setLightAutoTheme,
-                    subtitle = "Real light sensor: dark room → night theme (overrides the clock; needs a light sensor)"
-                )
-                if (app.autoThemeEnabled) {
-                    Text("Day theme", style = MaterialTheme.typography.bodyMedium)
-                    ThemePickerRow(
-                        selectedId = app.autoDayTheme,
-                        dark = false,
-                        onPick = viewModel::setAutoDayTheme
-                    )
-                    Text("Night theme", style = MaterialTheme.typography.bodyMedium)
-                    ThemePickerRow(
-                        selectedId = app.autoNightTheme,
-                        dark = true,
-                        onPick = viewModel::setAutoNightTheme
-                    )
-                    SliderRow(
-                        "Night starts (hour)", app.autoNightStart,
-                        viewModel::setAutoNightStart, max = 23
-                    )
-                    SliderRow(
-                        "Night ends (hour)", app.autoNightEnd,
-                        viewModel::setAutoNightEnd, max = 23
-                    )
-                }
             }
 
             // ---------- Mouse ----------
@@ -445,5 +324,3 @@ private fun SliderRow(
     }
 }
 
-/** SECTION 1 — compact theme chips for the auto-schedule pickers. */
-@Composable
