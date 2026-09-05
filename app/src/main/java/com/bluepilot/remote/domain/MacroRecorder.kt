@@ -51,6 +51,7 @@ class MacroRecorder @Inject constructor() {
 
     /** Begin capturing. Clears any previous unfinished recording. */
     @Synchronized
+    @Synchronized
     fun start() {
         steps.clear()
         _stepCount.value = 0
@@ -63,6 +64,7 @@ class MacroRecorder @Inject constructor() {
      * Called by the send pipeline for every outgoing action.
      * No-op unless recording. [now] injectable for tests.
      */
+    @Synchronized
     @Synchronized
     fun capture(action: HidAction, now: Long = System.currentTimeMillis()) {
         if (!_recording.value) return

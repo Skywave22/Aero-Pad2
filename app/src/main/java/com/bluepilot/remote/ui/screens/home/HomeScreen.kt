@@ -31,7 +31,7 @@ import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Pin
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Slideshow
-import androidx.compose.material.icons.rounded.Wifi
+
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -65,7 +65,7 @@ import com.bluepilot.remote.viewmodel.ConnectionViewModel
  *  Tier 1  HERO      — live status + the 3 daily drivers (Mouse /
  *                      Keyboard / Gamepad) as tall feature cards.
  *  Tier 2  CONTROLS  — the remaining control surfaces, 2-col grid.
- *  Tier 3  SETUP     — Connect / WiFi / Health / Themes / Settings /
+ *  Tier 3  SETUP     — Connect / Health / Themes / Settings /
  *                      Help as compact list rows (half tile height).
  *
  * Result: primary actions reachable in one glance + one tap, secondary
@@ -101,7 +101,6 @@ private val controlEntries = listOf(
 // Tier 3 — setup & tools (compact rows).
 private val setupEntries = listOf(
     Entry("Connect", "Pair with a PC or device", Icons.Rounded.Bluetooth, Routes.CONNECTION, 0xFF2F6BFF, needsPermissions = true),
-    Entry("WiFi Control", "Control over your network", Icons.Rounded.Wifi, Routes.WIFI_CONNECT, 0xFF00B0FF),
     Entry("Health", "Live connection metrics", Icons.Rounded.MonitorHeart, Routes.CONNECTION_HEALTH, 0xFF00C853),
     Entry("Themes", "Change the whole look", Icons.Rounded.Palette, Routes.THEMES, 0xFFB86BFF),
     Entry("Settings", "Tune everything", Icons.Rounded.Settings, Routes.SETTINGS, 0xFF8B9BB5),

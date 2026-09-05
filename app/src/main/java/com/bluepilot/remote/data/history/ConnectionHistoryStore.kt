@@ -11,13 +11,12 @@ import javax.inject.Singleton
 /**
  * AEROPAD v1.0 #41 — connection history log (real sessions only).
  *
- * Entries are appended from REAL connection state transitions (BT and
- * WiFi). File-based JSON (same zero-migration pattern as gamepad
+ * Entries are appended from REAL connection state transitions (BT). File-based JSON (same zero-migration pattern as gamepad
  * versioning); corrupt file = empty history, never a crash. Cap 50.
  */
 @Serializable
 data class ConnectionSession(
-    val transport: String,          // "BLUETOOTH" | "WIFI"
+    val transport: String,          // "BLUETOOTH"
     val hostName: String,
     val startedAt: Long,
     val endedAt: Long = 0L,         // 0 = still open when written

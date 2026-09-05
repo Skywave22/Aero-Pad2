@@ -210,7 +210,7 @@ fun SettingsScreen(
                     "Reconnect on launch",
                     app.autoReconnectLast,
                     viewModel::setAutoReconnectLast,
-                    subtitle = "Auto-connect to your most recent host when the app opens (WiFi needs a remembered PIN)"
+                    subtitle = "Auto-connect to your most recent host when the app opens"
                 )
                 ToggleRow(
                     "Automation API (Tasker)",

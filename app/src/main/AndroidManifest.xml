@@ -25,10 +25,7 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <!-- ADV S4: voice-to-text — used only during active dictation sessions. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <!-- AEROPAD v1.0: WiFi LAN control (local sockets + mDNS discovery). -->
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+
 
     <uses-feature android:name="android.hardware.bluetooth" android:required="true" />
 

@@ -89,8 +89,7 @@ object Routes {
     const val AIR_MOUSE = "air_mouse"
     const val PREVIEW_3D = "preview_3d"
     const val CONNECTION_HEALTH = "connection_health"
-    const val WIFI_CONNECT = "wifi_connect"
-}
+    }
 
 @Composable
 fun BluePilotApp(
@@ -213,9 +212,6 @@ fun BluePilotApp(
                 onOpenBuilder = { navController.navigate(Routes.GAMEPAD_BUILDER) },
                 onOpenPreset = { key -> navController.navigate("${Routes.GAMEPAD_PRESET}/$key") }
             )
-        }
-        composable(Routes.WIFI_CONNECT) {
-            com.bluepilot.remote.ui.screens.wifi.WifiConnectScreen(onBack = { navController.popBackStack() })
         }
         composable(Routes.CONNECTION_HEALTH) {
             ConnectionHealthScreen(onBack = { navController.popBackStack() })

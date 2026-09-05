@@ -52,9 +52,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        // V2 M4 b2 — one-shot, fully gated inside (opt-in setting, saved
-        // PIN required for WiFi, silent on failure).
-        autoReconnector.maybeReconnect(pinFor = { hostProfileStore.pinFor(it) })
+        // V2 M4 b2 — one-shot, fully gated inside (opt-in setting, silent on failure).
+        autoReconnector.maybeReconnect()
+        
         setContent {
             val settingsViewModel: SettingsViewModel = hiltViewModel()
             val app by settingsViewModel.app.collectAsState()

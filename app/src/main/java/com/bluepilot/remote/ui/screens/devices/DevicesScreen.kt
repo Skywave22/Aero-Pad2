@@ -103,8 +103,7 @@ fun DevicesScreen(
                 }
             }
             items(bonded, key = { "b-" + it.address }) { device ->
-                // V2 M4 deferred-item — ★ saves this host for one-tap
-                // quick-switch on the WiFi/transport screen.
+                // V2 M4 deferred-item — ★ saves this host for one-tap quick-switch.
                 val savedHosts by viewModel.savedHostAddresses.collectAsState()
                 DeviceRow(
                     device,

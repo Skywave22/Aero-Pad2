@@ -112,6 +112,7 @@ class HidEngine @Inject constructor(
      * Boots the engine: checks permissions/adapter, obtains the HID_DEVICE
      * proxy and registers our combined HID app. Safe to call repeatedly.
      */
+    @SuppressLint("MissingPermission")
     override fun start() {
         when {
             !permissionManager.hasAllBluetoothPermissions() -> {
@@ -147,6 +148,7 @@ class HidEngine @Inject constructor(
     }
 
     /** Fully tears down registration + proxy. Called from service shutdown. */
+    @SuppressLint("MissingPermission")
     override fun stop() {
         userInitiatedDisconnect = true
         runCatching { hidDevice?.let { hd -> connectedDevice?.let { hd.disconnect(it) } } }
@@ -169,9 +171,10 @@ class HidEngine @Inject constructor(
     // ------------------------------------------------------------------
 
     /** Connect to a bonded host. If registration isn't ready yet, queues it. */
-    fun connect(device: BluetoothDevice) {
+    @SuppressLint("MissingPermission")
+    fun connect(device: BluetoothDevice, isAutoReconnect: Boolean = false) {
         userInitiatedDisconnect = false
-        reconnectAttempts = 0
+        if (!isAutoReconnect) reconnectAttempts = 0
         val hd = hidDevice
         if (hd == null || !appRegistered) {
             Timber.d("connect: engine not ready, queueing %s", device.address)
@@ -192,6 +195,7 @@ class HidEngine @Inject constructor(
      * Connect by MAC address (domain-facing entry point).
      * Uses getRemoteDevice so even a host that is mid-pairing can be targeted.
      */
+    @SuppressLint("MissingPermission")
     override fun connectTo(address: String) {
         val device = runCatching { bluetoothAdapter?.getRemoteDevice(address) }
             .onFailure { Timber.e(it, "getRemoteDevice(%s) failed", address) }
@@ -204,6 +208,7 @@ class HidEngine @Inject constructor(
     }
 
     /** User-initiated disconnect — suppresses auto-reconnect. */
+    @SuppressLint("MissingPermission")
     override fun disconnect() {
         userInitiatedDisconnect = true
         val hd = hidDevice ?: return
@@ -213,6 +218,7 @@ class HidEngine @Inject constructor(
     }
 
     /** Bonded devices for the picker UI (never throws). */
+    @SuppressLint("MissingPermission")
     override fun bondedDevices(): List<RemoteDevice> =
         runCatching {
             bluetoothAdapter?.bondedDevices.orEmpty().map { it.toRemote() }
@@ -438,7 +444,7 @@ class HidEngine @Inject constructor(
             delay(backoff)
             _reconnectNextAtMs.value = null   // #39
             if (connectedDevice == null && !userInitiatedDisconnect && appRegistered) {
-                connect(target)
+                connect(target, isAutoReconnect = true)
             } else {
                 _reconnectStatus.value = null
             }

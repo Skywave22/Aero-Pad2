@@ -25,15 +25,6 @@ import javax.inject.Inject
 
 /**
  * ADV SECTION 5 — Connection Health dashboard driver.
- *
- * ALL surfaced numbers are real:
- *  - report counters / send durations: measured in HidEngine around the
- *    actual sendReport() framework call,
- *  - battery level/current: BatteryManager (hardware fuel gauge),
- *  - battery saver: PowerManager.isPowerSaveMode,
- *  - reconnect status: HidEngine's real backoff state.
- * What Android does NOT provide (host round-trip time, RSSI on a HID
- * Device-role link) is labeled as unavailable in the UI — never invented.
  */
 @HiltViewModel
 class ConnectionHealthViewModel @Inject constructor(
@@ -41,9 +32,6 @@ class ConnectionHealthViewModel @Inject constructor(
     private val engine: HidEngine,
     private val sendAction: SendHidActionUseCase,
     settingsStore: SettingsStore,
-    // AEROPAD v1.0 — WiFi metrics for the dual-mode dashboard.
-    private val wifiEngine: com.bluepilot.remote.wifi.WifiEngine,
-    private val transportManager: com.bluepilot.remote.wifi.TransportManager,
     private val historyStore: com.bluepilot.remote.data.history.ConnectionHistoryStore
 ) : ViewModel() {
 
@@ -51,21 +39,8 @@ class ConnectionHealthViewModel @Inject constructor(
 
     val reconnectStatus: StateFlow<Pair<Int, Int>?> = engine.reconnectStatus
 
-    /** AEROPAD v1.0 #39 — real next-retry timestamp for countdown UI. */
     val reconnectNextAtMs: StateFlow<Long?> = engine.reconnectNextAtMs
 
-    // ----- AEROPAD v1.0: WiFi-side state (all REAL) -----
-    val transportMode: StateFlow<com.bluepilot.remote.wifi.TransportManager.Mode> =
-        transportManager.mode
-    val wifiState: StateFlow<com.bluepilot.remote.wifi.WifiEngine.WifiState> = wifiEngine.state
-    /** Real measured WiFi round-trip time (ping/echo), null until measured. */
-    val wifiLatencyMs: StateFlow<Long?> = wifiEngine.latencyMs
-    /** Real WiFi counters: (sent, failed). */
-    val wifiCounters: StateFlow<Pair<Long, Long>> = wifiEngine.counters
-    fun setTransportMode(mode: com.bluepilot.remote.wifi.TransportManager.Mode) =
-        transportManager.setMode(mode)
-
-    // AEROPAD v1.0 #41 — real past sessions (refreshed on screen open).
     private val _history = MutableStateFlow<List<com.bluepilot.remote.data.history.ConnectionSession>>(emptyList())
     val history: StateFlow<List<com.bluepilot.remote.data.history.ConnectionSession>> = _history.asStateFlow()
     fun refreshHistory() { _history.value = historyStore.all() }
@@ -76,7 +51,6 @@ class ConnectionHealthViewModel @Inject constructor(
     private val _batterySaver = MutableStateFlow(false)
     val batterySaver: StateFlow<Boolean> = _batterySaver.asStateFlow()
 
-    /** (levelPercent, currentMicroAmps?) — both from BatteryManager. */
     private val _battery = MutableStateFlow<Pair<Int, Int?>>(0 to null)
     val battery: StateFlow<Pair<Int, Int?>> = _battery.asStateFlow()
 
@@ -84,7 +58,6 @@ class ConnectionHealthViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.Eagerly, com.bluepilot.remote.model.AppSettings())
 
     init {
-        // 1Hz refresh while this screen is alive (ViewModel scope).
         viewModelScope.launch {
             while (true) {
                 _snapshot.value = engine.health.snapshot()
@@ -100,17 +73,11 @@ class ConnectionHealthViewModel @Inject constructor(
             val pm = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
             _batterySaver.value = pm?.isPowerSaveMode == true
             val level = bm?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: 0
-            // CURRENT_NOW: microamps; negative = discharging on most devices.
             val current = bm?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
                 ?.takeIf { it != Int.MIN_VALUE && it != 0 }
             _battery.value = level to current
         }
     }
-
-    // ------------------------------------------------------------------
-    // Diagnostic test: sends a burst of REAL neutral gamepad reports and
-    // reports the measured stats for exactly that burst.
-    // ------------------------------------------------------------------
 
     data class DiagnosticResult(
         val sent: Int,
@@ -132,12 +99,11 @@ class ConnectionHealthViewModel @Inject constructor(
         viewModelScope.launch {
             val before = engine.health.snapshot()
             val t0 = System.currentTimeMillis()
-            // 25 neutral reports at ~50Hz — harmless (all-neutral state).
             repeat(25) {
                 sendAction(HidAction.GamepadUpdate(GamepadSnapshot()))
                 delay(20)
             }
-            delay(150) // let the HID thread drain
+            delay(150)
             val after = engine.health.snapshot()
             val sent = (after.totalSent - before.totalSent).toInt()
             val failed = (after.totalFailed - before.totalFailed).toInt()
@@ -152,7 +118,6 @@ class ConnectionHealthViewModel @Inject constructor(
         }
     }
 
-    /** Export a plain-text diagnostic log (real values only). */
     fun buildDiagnosticLog(): String {
         val s = _snapshot.value
         val conn = connection.value
@@ -164,8 +129,8 @@ class ConnectionHealthViewModel @Inject constructor(
                 ((conn as? HidConnectionState.Connected)?.device?.let { "  host=${it.name} (${it.address})" } ?: ""))
             appendLine("session: ${s.sessionMs / 1000}s, disconnects=${s.disconnects}")
             appendLine("reports: sent=${s.totalSent} failed=${s.totalFailed} rate=${s.reportsPerSecond}/s")
-            appendLine("send-time (BluetoothHidDevice.sendReport, measured): mean=${s.recentMeanSendUs}µs max=${s.recentMaxSendUs}µs (last 5s)")
-            appendLine("rssi: ${s.rssiDbm?.let { "$it dBm" } ?: "not exposed by platform for HID-device role"}")
+            appendLine("send-time: mean=${s.recentMeanSendUs}µs max=${s.recentMaxSendUs}µs (last 5s)")
+            appendLine("rssi: ${s.rssiDbm?.let { "$it dBm" } ?: "not exposed by platform"}")
             appendLine("battery: ${_battery.value.first}%" +
                 (_battery.value.second?.let { ", current=${it / 1000}mA" } ?: "") +
                 if (_batterySaver.value) ", BATTERY SAVER ON" else "")

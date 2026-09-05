@@ -70,7 +70,7 @@ class ConnectionViewModelTest {
                 )
             )
         }
-        override fun saveWifi(label: String, host: String, port: Int, pin: String?) {}
+        
         override fun pinFor(profile: com.bluepilot.remote.data.hosts.HostProfile) = ""
         override fun touch(id: String) {}
         override fun remove(id: String) {
