@@ -287,7 +287,7 @@ class HidEngine @Inject constructor(
                     report(HidDescriptors.REPORT_ID_KEYBOARD, HidReportBuilder.keyboard(action.modifiers, listOf(action.key)))
                 is HidAction.KeyRelease ->
                     report(HidDescriptors.REPORT_ID_KEYBOARD, HidReportBuilder.keyboardRelease())
-                is HidAction.TypeText -> typeText(action.text)
+                is HidAction.TypeText -> typeText(action.text, action.delayMs)
                 is HidAction.MouseMove ->
                     // V2 PART A — pooled buffer: zero alloc on the hot path.
                     report(HidDescriptors.REPORT_ID_MOUSE, ReportPool.mouseInto(0, action.dx, action.dy, 0))
@@ -340,7 +340,8 @@ class HidEngine @Inject constructor(
     }
 
     /** Types a string as individual keystrokes, handling repeated chars correctly. */
-    private suspend fun typeText(text: String) {
+    private suspend fun typeText(text: String, overrideDelayMs: Long? = null) {
+        val activeDelay = overrideDelayMs ?: KEY_TAP_DELAY_MS
         for (char in text) {
             val stroke = CharToHidMapper.map(char)
             if (stroke == null) {
@@ -348,9 +349,9 @@ class HidEngine @Inject constructor(
                 continue
             }
             report(HidDescriptors.REPORT_ID_KEYBOARD, HidReportBuilder.keyboard(stroke.modifiers, listOf(stroke.key)))
-            delay(KEY_TAP_DELAY_MS)
+            delay(activeDelay)
             report(HidDescriptors.REPORT_ID_KEYBOARD, HidReportBuilder.keyboardRelease())
-            delay(KEY_TAP_DELAY_MS)
+            delay(activeDelay)
         }
     }
 

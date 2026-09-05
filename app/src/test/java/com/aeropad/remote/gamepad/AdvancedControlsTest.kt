@@ -1,6 +1,6 @@
 package com.aeropad.remote.gamepad
 
-import com.aeropad.remote.domain.AdvancedControls
+import com.aeropad.remote.domain.GamepadRuntimeCore
 import com.aeropad.remote.domain.GamepadRuntimeCore
 import com.aeropad.remote.hid.HidReportBuilder
 import com.aeropad.remote.model.GamepadSnapshot
@@ -18,14 +18,14 @@ import org.junit.Test
  * HID signals. These tests assert the EXACT wire bytes (report ID 5
  * payload: btnLo, btnHi, hat, lx, ly, rx, ry).
  */
-class AdvancedControlsTest {
+class GamepadRuntimeCoreTest {
 
     // ---------- Toggle buttons ----------
 
     @Test
     fun `toggle latches on and off`() {
-        assertTrue(AdvancedControls.toggleAfterTap(false))
-        assertFalse(AdvancedControls.toggleAfterTap(true))
+        assertTrue(GamepadRuntimeCore.toggleAfterTap(false))
+        assertFalse(GamepadRuntimeCore.toggleAfterTap(true))
     }
 
     @Test
@@ -67,38 +67,38 @@ class AdvancedControlsTest {
 
     @Test
     fun `diagonalOnly passes diagonals, blocks cardinals`() {
-        assertEquals(2, AdvancedControls.diagonalOnly(2))
-        assertEquals(4, AdvancedControls.diagonalOnly(4))
-        assertEquals(6, AdvancedControls.diagonalOnly(6))
-        assertEquals(8, AdvancedControls.diagonalOnly(8))
-        assertEquals(0, AdvancedControls.diagonalOnly(1))
-        assertEquals(0, AdvancedControls.diagonalOnly(3))
-        assertEquals(0, AdvancedControls.diagonalOnly(5))
-        assertEquals(0, AdvancedControls.diagonalOnly(7))
-        assertEquals(0, AdvancedControls.diagonalOnly(0))
+        assertEquals(2, GamepadRuntimeCore.diagonalOnly(2))
+        assertEquals(4, GamepadRuntimeCore.diagonalOnly(4))
+        assertEquals(6, GamepadRuntimeCore.diagonalOnly(6))
+        assertEquals(8, GamepadRuntimeCore.diagonalOnly(8))
+        assertEquals(0, GamepadRuntimeCore.diagonalOnly(1))
+        assertEquals(0, GamepadRuntimeCore.diagonalOnly(3))
+        assertEquals(0, GamepadRuntimeCore.diagonalOnly(5))
+        assertEquals(0, GamepadRuntimeCore.diagonalOnly(7))
+        assertEquals(0, GamepadRuntimeCore.diagonalOnly(0))
     }
 
     // ---------- Circular D-pad ----------
 
     @Test
     fun `circular dpad has smaller dead zone and full 8-way`() {
-        assertEquals(0, AdvancedControls.circularHat(0.05f, 0.05f))   // center
-        assertEquals(3, AdvancedControls.circularHat(0.2f, 0f))       // east @20% (cross pad would be dead)
-        assertEquals(1, AdvancedControls.circularHat(0f, -0.5f))      // north
-        assertEquals(2, AdvancedControls.circularHat(0.5f, -0.5f))    // north-east diagonal
-        assertEquals(6, AdvancedControls.circularHat(-0.5f, 0.5f))    // south-west
+        assertEquals(0, GamepadRuntimeCore.circularHat(0.05f, 0.05f))   // center
+        assertEquals(3, GamepadRuntimeCore.circularHat(0.2f, 0f))       // east @20% (cross pad would be dead)
+        assertEquals(1, GamepadRuntimeCore.circularHat(0f, -0.5f))      // north
+        assertEquals(2, GamepadRuntimeCore.circularHat(0.5f, -0.5f))    // north-east diagonal
+        assertEquals(6, GamepadRuntimeCore.circularHat(-0.5f, 0.5f))    // south-west
     }
 
     // ---------- Square gate ----------
 
     @Test
     fun `square gate reaches corners, preserves cardinals, zero-safe`() {
-        val (cx, cy) = AdvancedControls.squareGate(0.7071f, 0.7071f)  // 45° circle edge
+        val (cx, cy) = GamepadRuntimeCore.squareGate(0.7071f, 0.7071f)  // 45° circle edge
         assertEquals(1f, cx, 0.01f)                                   // → square corner
         assertEquals(1f, cy, 0.01f)
-        val (px, py) = AdvancedControls.squareGate(1f, 0f)            // pure cardinal
+        val (px, py) = GamepadRuntimeCore.squareGate(1f, 0f)            // pure cardinal
         assertEquals(1f, px, 1e-4f); assertEquals(0f, py, 1e-4f)
-        val (zx, zy) = AdvancedControls.squareGate(0f, 0f)
+        val (zx, zy) = GamepadRuntimeCore.squareGate(0f, 0f)
         assertEquals(0f, zx, 1e-6f); assertEquals(0f, zy, 1e-6f)
     }
 
@@ -106,20 +106,20 @@ class AdvancedControlsTest {
 
     @Test
     fun `anti-deadzone jumps output past host dead spot`() {
-        assertEquals(0.5f, AdvancedControls.antiDeadZone(0.5f, 0), 1e-4f)     // off = pass-through
-        assertEquals(0.0f, AdvancedControls.antiDeadZone(0.0f, 20), 1e-4f)    // center stays center
-        assertEquals(0.2f + 0.01f * 0.8f, AdvancedControls.antiDeadZone(0.01f, 20), 1e-3f) // jumps to ~20%
-        assertEquals(1f, AdvancedControls.antiDeadZone(1f, 20), 1e-4f)        // full stays full
-        assertEquals(-(0.2f + 0.5f * 0.8f), AdvancedControls.antiDeadZone(-0.5f, 20), 1e-3f) // sign preserved
+        assertEquals(0.5f, GamepadRuntimeCore.antiDeadZone(0.5f, 0), 1e-4f)     // off = pass-through
+        assertEquals(0.0f, GamepadRuntimeCore.antiDeadZone(0.0f, 20), 1e-4f)    // center stays center
+        assertEquals(0.2f + 0.01f * 0.8f, GamepadRuntimeCore.antiDeadZone(0.01f, 20), 1e-3f) // jumps to ~20%
+        assertEquals(1f, GamepadRuntimeCore.antiDeadZone(1f, 20), 1e-4f)        // full stays full
+        assertEquals(-(0.2f + 0.5f * 0.8f), GamepadRuntimeCore.antiDeadZone(-0.5f, 20), 1e-3f) // sign preserved
     }
 
     // ---------- Outer range ----------
 
     @Test
     fun `outer range scales partial travel to full output`() {
-        assertEquals(1f, AdvancedControls.outerRange(0.75f, 0.75f), 1e-4f)  // 75% travel = max
-        assertEquals(0.5f, AdvancedControls.outerRange(0.5f, 1f), 1e-4f)    // 100% range = identity
-        assertEquals(-1f, AdvancedControls.outerRange(-0.9f, 0.8f), 1e-4f)  // clamped, sign kept
+        assertEquals(1f, GamepadRuntimeCore.outerRange(0.75f, 0.75f), 1e-4f)  // 75% travel = max
+        assertEquals(0.5f, GamepadRuntimeCore.outerRange(0.5f, 1f), 1e-4f)    // 100% range = identity
+        assertEquals(-1f, GamepadRuntimeCore.outerRange(-0.9f, 0.8f), 1e-4f)  // clamped, sign kept
     }
 
     // ---------- Multi-tap / combo indices on the wire ----------

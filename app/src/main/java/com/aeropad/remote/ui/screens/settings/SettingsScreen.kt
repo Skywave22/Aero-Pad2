@@ -184,8 +184,11 @@ fun SettingsScreen(
             }
 
             // ---------- Keyboard ----------
-            if (matches("keyboard", "text", "input")) SettingsGroup("Keyboard") {
+            if (matches("keyboard", "text", "input", "numpad", "delay")) SettingsGroup("Keyboard") {
                 ToggleRow("Show text input bar", keyboard.showTextInputBar, viewModel::setShowTextInputBar)
+                ToggleRow("Show Numpad overlay", keyboard.showNumpad, viewModel::setShowNumpad)
+                ToggleRow("Send on Enter", keyboard.sendOnEnter, viewModel::setSendOnEnter)
+                SliderRow("Type delay (ms)", keyboard.typeDelay, viewModel::setTypeDelay)
             }
 
             // ---------- Gamepad ----------

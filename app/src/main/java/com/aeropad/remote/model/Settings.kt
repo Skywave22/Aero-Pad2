@@ -101,7 +101,11 @@ data class MouseSettings(
 
 /** Keyboard screen behavior. */
 data class KeyboardSettings(
-    val showTextInputBar: Boolean = true
+    val showTextInputBar: Boolean = true,
+    val showNumpad: Boolean = false,
+    val sendOnEnter: Boolean = true,
+    val textToSpeech: Boolean = false,
+    val typeDelay: Int = 10
 )
 
 /** Gamepad behavior. Percentages 0..100; dead zone capped at 50 (usability). */

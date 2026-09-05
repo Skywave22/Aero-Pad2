@@ -104,7 +104,18 @@ fun KeyboardScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(
                         value = text,
-                        onValueChange = { text = it },
+                        onValueChange = { newValue -> 
+                            text = newValue
+                            if (keyboardSettings.sendOnEnter && text.endsWith("\n")) {
+                                val toSend = text.removeSuffix("\n")
+                                if (toSend.isNotEmpty()) {
+                                    viewModel.typeText(toSend)
+                                    viewModel.keyTap(HidKeys.ENTER, 0)
+                                }
+                                text = ""
+                                haptic()
+                            }
+                        },
                         modifier = Modifier.weight(1f),
                         placeholder = { Text("Type here, send to PC…") },
                         singleLine = true
@@ -155,13 +166,7 @@ fun KeyboardScreen(
 
             // AEROPAD v1.0 #16 — toggleable numpad overlay.
             run {
-                var showNumpad by remember { mutableStateOf(false) }
-                androidx.compose.material3.FilterChip(
-                    selected = showNumpad,
-                    onClick = { showNumpad = !showNumpad },
-                    label = { Text(if (showNumpad) "Hide numpad" else "Numpad") }
-                )
-                if (showNumpad) {
+                if (keyboardSettings.showNumpad) {
                     Spacer(Modifier.height(6.dp))
                     listOf(
                         listOf("7", "8", "9"),

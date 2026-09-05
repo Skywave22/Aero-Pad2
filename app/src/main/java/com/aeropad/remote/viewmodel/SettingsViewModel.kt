@@ -114,8 +114,11 @@ class SettingsViewModel @Inject constructor(
     // SECTION 3 AUDIT FIX: copy the CURRENT settings instead of constructing
     // a fresh KeyboardSettings() — the old code silently reset every other
     // keyboard field to defaults (latent data-loss bug as fields grow).
-    fun setShowTextInputBar(value: Boolean) =
-        viewModelScope.launch { store.updateKeyboard(keyboard.value.copy(showTextInputBar = value)) }
+    fun setShowTextInputBar(value: Boolean) = updateKeyboard { it.copy(showTextInputBar = value) }
+    fun setShowNumpad(value: Boolean) = updateKeyboard { it.copy(showNumpad = value) }
+    fun setSendOnEnter(value: Boolean) = updateKeyboard { it.copy(sendOnEnter = value) }
+    fun setTextToSpeech(value: Boolean) = updateKeyboard { it.copy(textToSpeech = value) }
+    fun setTypeDelay(value: Int) = updateKeyboard { it.copy(typeDelay = value) }
 
     // ----- Gamepad -----
     fun setGamepadMode(mode: GamepadMappingMode) = updateGamepad { it.copy(mappingMode = mode) }
@@ -124,6 +127,9 @@ class SettingsViewModel @Inject constructor(
     fun setHapticFeedback(value: Boolean) = updateGamepad { it.copy(hapticFeedback = value) }
 
     // ------------------------------------------------------------------
+
+    private fun updateKeyboard(transform: (KeyboardSettings) -> KeyboardSettings) =
+        androidx.lifecycle.viewModelScope.launch { store.updateKeyboard(transform(keyboard.value)) }
 
     private fun updateApp(transform: (AppSettings) -> AppSettings) =
         viewModelScope.launch { store.updateApp(transform(app.value)) }

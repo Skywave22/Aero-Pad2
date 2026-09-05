@@ -151,7 +151,8 @@ class RemoteControlViewModel @Inject constructor(
     fun keyTap(key: Byte, modifiers: Byte = 0) = sendAction(HidAction.KeyTap(key, modifiers))
     fun typeText(text: String) {
         if (text.isNotEmpty()) {
-            sendAction(HidAction.TypeText(text))
+            val kb = keyboardSettings.value
+            sendAction(HidAction.TypeText(text, kb.typeDelay.toLong()))
             // AEROPAD v1.0 #12 — clipboard history: last 10 sent texts,
             // newest first, deduped (session-scoped, privacy-friendly).
             _sentHistory.value =

@@ -17,7 +17,7 @@ sealed interface HidAction {
     /** Release all keys and modifiers. */
     data object KeyRelease : HidAction
     /** Type a full text string (translated char-by-char). */
-    data class TypeText(val text: String) : HidAction
+    data class TypeText(val text: String, val delayMs: Long? = null) : HidAction
 
     // ----- Mouse -----
     data class MouseMove(val dx: Int, val dy: Int) : HidAction
