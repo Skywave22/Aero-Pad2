@@ -32,6 +32,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -155,8 +156,10 @@ private fun DeviceRow(
     onClick: () -> Unit
 ) {
     Card(
+        shape = MaterialTheme.shapes.medium,
         modifier = Modifier
             .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
             containerColor = if (connected) MaterialTheme.colorScheme.primaryContainer

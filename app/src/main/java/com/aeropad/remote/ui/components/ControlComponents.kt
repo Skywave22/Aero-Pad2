@@ -15,12 +15,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import com.aeropad.remote.model.HapticIntensity
@@ -90,6 +92,9 @@ fun KeyCard(
     val baseModifier = modifier
         .pressDepth3D(interactionSource)
         .heightIn(min = height)
+        // Clip BEFORE clickable so the ripple follows the rounded key
+        // shape — no square corners flashing outside the key on tap.
+        .clip(shape)
         .clickable(
             interactionSource = interactionSource,
             indication = androidx.compose.foundation.LocalIndication.current,
@@ -131,6 +136,7 @@ fun NotConnectedBanner(visible: Boolean) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 8.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
     ) {
         Text(

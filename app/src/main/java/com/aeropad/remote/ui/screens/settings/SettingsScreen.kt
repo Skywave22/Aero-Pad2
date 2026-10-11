@@ -42,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -272,6 +273,7 @@ fun SettingsScreen(
                                     else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
                                     RoundedCornerShape(12.dp)
                                 )
+                                .clip(RoundedCornerShape(12.dp))
                                 .clickable { viewModel.setGamepadMode(mode) }
                                 .padding(horizontal = 14.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -353,6 +355,7 @@ private fun ModeCard(
                 else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
                 RoundedCornerShape(16.dp)
             )
+            .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
             .padding(vertical = 14.dp)
     ) {
@@ -389,6 +392,7 @@ private fun ChoiceChip(label: String, selected: Boolean, onClick: () -> Unit) {
                 else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
                 RoundedCornerShape(50)
             )
+            .clip(RoundedCornerShape(50))
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 8.dp)
     ) {

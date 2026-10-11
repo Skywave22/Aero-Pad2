@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.HelpOutline
+import androidx.compose.material.icons.rounded.Android
 import androidx.compose.material.icons.rounded.Bluetooth
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Computer
@@ -53,6 +54,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.aeropad.remote.model.HidConnectionState
@@ -89,7 +91,8 @@ private val controlTiles = listOf(
     HomeTile("Numpad", "Numeric keypad", Icons.Rounded.Pin, Routes.NUMPAD, tint = 0xFFFF8C42),
     HomeTile("Multimedia", "Media and volume", Icons.Rounded.MusicNote, Routes.MULTIMEDIA, tint = 0xFF17C3CE),
     HomeTile("Presenter", "Slide control", Icons.Rounded.Slideshow, Routes.PRESENTER, tint = 0xFFF5C542),
-    HomeTile("Gamepad", "Game controller", Icons.Rounded.Gamepad, Routes.GAMEPAD, tint = 0xFFFF5C8A)
+    HomeTile("Gamepad", "Game controller", Icons.Rounded.Gamepad, Routes.GAMEPAD, tint = 0xFFFF5C8A),
+    HomeTile("Android", "Remote for phones & TVs", Icons.Rounded.Android, Routes.ANDROID, tint = 0xFF3DDC84)
 )
 
 private val createTiles = listOf(
@@ -172,10 +175,12 @@ fun HomeScreen(
                 item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
                     ConnectionStatusCard(
                         state = state,
-                        modifier = Modifier.clickable {
-                            if (!permissionsGranted) onNavigate(Routes.PERMISSIONS)
-                            else onNavigate(Routes.CONNECTION)
-                        }
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .clickable {
+                                if (!permissionsGranted) onNavigate(Routes.PERMISSIONS)
+                                else onNavigate(Routes.CONNECTION)
+                            }
                     )
                 }
 
@@ -272,7 +277,10 @@ private fun HomeTileCard(tile: HomeTile, onClick: () -> Unit) {
                 scaleY = scale
             }
             .background(MaterialTheme.colorScheme.surface, MaterialTheme.shapes.medium)
-            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
+            // Clip BEFORE the clickable so the tap ripple stays inside
+            // the rounded card — no square corners on press.
+            .clip(MaterialTheme.shapes.medium)
+            .clickable(interactionSource = interactionSource, onClick = onClick)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             GelIcon(

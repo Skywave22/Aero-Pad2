@@ -12,6 +12,7 @@ Built 100% in Kotlin + Jetpack Compose, MVVM + Clean Architecture, Hilt, Room, D
 - **Numpad** — real keypad usage codes, calculator layout.
 - **Multimedia** — play/pause, stop, tracks, volume, mute, brightness.
 - **Presenter** — big prev/next, start/from-here, black/white screen, end.
+- **Android Remote** — dedicated Home / Back / Recents / Power + volume & media for Android phones, tablets and Android TV (all real HID — no host app needed).
 - **Gamepad** — virtual stick + D-pad + ABXY + shoulders; three modes: real HID gamepad, keyboard fallback, mouse+keyboard hybrid; sensitivity + dead-zone tuning.
 
 ### Customization engine

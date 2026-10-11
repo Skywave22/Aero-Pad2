@@ -38,6 +38,7 @@ import com.aeropad.remote.ui.screens.permission.PermissionScreen
 import com.aeropad.remote.ui.screens.gamepad.GamepadScreen
 import com.aeropad.remote.ui.screens.fullkeyboard.FullKeyboardScreen
 import com.aeropad.remote.ui.screens.airmouse.AirMouseScreen
+import com.aeropad.remote.ui.screens.androidremote.AndroidControlScreen
 import com.aeropad.remote.ui.screens.pccombo.PcComboScreen
 import com.aeropad.remote.ui.screens.preview3d.Preview3DScreen
 import com.aeropad.remote.ui.screens.gamepadbuilder.GamepadBuilderScreen
@@ -73,6 +74,7 @@ object Routes {
     const val MULTIMEDIA = "multimedia"
     const val PRESENTER = "presenter"
     const val GAMEPAD = "gamepad"
+    const val ANDROID = "android_remote"
     const val SETTINGS = "settings"
     const val HELP = "help"
     const val LAYOUTS = "layouts"
@@ -190,6 +192,7 @@ fun AeroPadApp(
         composable(Routes.MULTIMEDIA) { MultimediaScreen(onBack = { navController.popBackStack() }) }
         composable(Routes.PRESENTER) { PresenterScreen(onBack = { navController.popBackStack() }) }
         composable(Routes.GAMEPAD) { GamepadScreen(onBack = { navController.popBackStack() }) }
+        composable(Routes.ANDROID) { AndroidControlScreen(onBack = { navController.popBackStack() }) }
         composable(Routes.CONNECTION_HEALTH) {
             ConnectionHealthScreen(onBack = { navController.popBackStack() })
         }

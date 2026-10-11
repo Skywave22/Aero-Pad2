@@ -139,6 +139,9 @@ class RemoteControlViewModel @Inject constructor(
 
     fun mediaTap(usage: Int) = sendAction(HidAction.MediaTap(usage))
 
+    /** System page tap (power / sleep / wake bits). */
+    fun systemTap(bits: Byte) = sendAction(HidAction.SystemTap(bits))
+
     // ------------------------------------------------------------------
     // Gamepad
     // ------------------------------------------------------------------
