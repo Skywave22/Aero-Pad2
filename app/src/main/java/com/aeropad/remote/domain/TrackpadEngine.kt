@@ -28,9 +28,13 @@ class TrackpadEngine(private val settings: () -> MouseSettings) {
     /** Raw px delta → settings-adjusted int mouse delta (0,0 = don't send). */
     fun move(dxPx: Float, dyPx: Float): Pair<Int, Int> {
         val s = settings()
-        val g = PointerMath.gain(s.sensitivity, s.penMode)
-        smoothX = PointerMath.smooth(smoothX, dxPx * g, s.movementSmoothing)
-        smoothY = PointerMath.smooth(smoothY, dyPx * g, s.movementSmoothing)
+        // Speed-adaptive feel: fast swipes get extra gain and lighter
+        // smoothing (instant response); slow glides stay buttery-smooth.
+        val mag = kotlin.math.sqrt(dxPx * dxPx + dyPx * dyPx)
+        val g = PointerMath.gain(s.sensitivity, s.penMode) * PointerMath.acceleration(mag)
+        val smoothing = (s.movementSmoothing * PointerMath.adaptiveSmoothing(mag)).toInt()
+        smoothX = PointerMath.smooth(smoothX, dxPx * g, smoothing)
+        smoothY = PointerMath.smooth(smoothY, dyPx * g, smoothing)
         val fx = smoothX + fracX
         val fy = smoothY + fracY
         val ix = fx.toInt()

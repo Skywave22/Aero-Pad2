@@ -58,4 +58,25 @@ object PointerMath {
     /** Joystick sensitivity curve: 0..100 → linear gain 0.5..1.5 applied pre-clamp. */
     fun joystickGain(sensitivity: Int): Float =
         0.5f + (sensitivity.coerceIn(0, 100) / 100f)
+
+    /**
+     * Pointer acceleration: slow, precise motion keeps the base gain
+     * (1.0x), while fast swipes get up to +45% extra gain so the cursor
+     * flies across the screen — the classic "smooth AND fast" feel.
+     * [mag] is the raw finger-travel magnitude of the current event (px).
+     */
+    fun acceleration(mag: Float): Float {
+        val t = (mag / 220f).coerceIn(0f, 1f)
+        return 1f + t * 0.45f
+    }
+
+    /**
+     * Velocity-aware smoothing multiplier: heavy damping at slow speed
+     * (buttery gliding), much lighter damping on fast swipes so the
+     * pointer reacts instantly (1.0 = user's setting, 0.4 = 60% less).
+     */
+    fun adaptiveSmoothing(mag: Float): Float {
+        val t = (mag / 220f).coerceIn(0f, 1f)
+        return 1f - t * 0.6f
+    }
 }

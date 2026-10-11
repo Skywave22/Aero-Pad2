@@ -113,9 +113,9 @@ class DataStoreSettings @Inject constructor(
 
     override val mouseSettings: Flow<MouseSettings> = safePrefs.map { p ->
         MouseSettings(
-            sensitivity = p[Keys.M_SENSITIVITY] ?: 65,
-            scrollSpeed = p[Keys.M_SCROLL] ?: 50,
-            movementSmoothing = p[Keys.M_SMOOTHING] ?: 20,
+            sensitivity = p[Keys.M_SENSITIVITY] ?: 75,
+            scrollSpeed = p[Keys.M_SCROLL] ?: 55,
+            movementSmoothing = p[Keys.M_SMOOTHING] ?: 12,
             invertScroll = p[Keys.M_INVERT] ?: false,
             tapToClick = p[Keys.M_TAP_CLICK] ?: true,
             penMode = p[Keys.M_PEN] ?: false

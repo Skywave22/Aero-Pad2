@@ -48,9 +48,9 @@ data class AppSettings(
 
 /** Mouse/trackpad tuning. All percentages 0..100. */
 data class MouseSettings(
-    val sensitivity: Int = 65,
-    val scrollSpeed: Int = 50,
-    val movementSmoothing: Int = 20,
+    val sensitivity: Int = 75,
+    val scrollSpeed: Int = 55,
+    val movementSmoothing: Int = 12,
     val invertScroll: Boolean = false,
     val tapToClick: Boolean = true,
     val penMode: Boolean = false

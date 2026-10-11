@@ -110,4 +110,23 @@ class PointerMathTest {
         assertEquals(1.0f, PointerMath.joystickGain(50), 0.001f)
         assertEquals(1.5f, PointerMath.joystickGain(100), 0.001f)
     }
+
+    // ---------- speed-adaptive acceleration ----------
+
+    @Test
+    fun `acceleration is neutral at rest and tops out at plus 45 percent`() {
+        assertEquals(1.0f, PointerMath.acceleration(0f), 0.001f)
+        assertEquals(1.45f, PointerMath.acceleration(500f), 0.001f)
+        // Half the saturation travel → roughly half the boost.
+        assertEquals(1.225f, PointerMath.acceleration(110f), 0.01f)
+    }
+
+    @Test
+    fun `adaptive smoothing is full at rest and backs off on fast swipes`() {
+        assertEquals(1.0f, PointerMath.adaptiveSmoothing(0f), 0.001f)
+        assertEquals(0.4f, PointerMath.adaptiveSmoothing(500f), 0.001f)
+        // Fast but not extreme → still meaningfully damped.
+        val mid = PointerMath.adaptiveSmoothing(60f)
+        assertTrue(mid > 0.7f && mid < 0.95f)
+    }
 }
