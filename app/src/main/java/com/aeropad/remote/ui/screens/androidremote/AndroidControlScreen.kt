@@ -24,7 +24,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.aeropad.remote.model.HidConsumer
-import com.aeropad.remote.model.HidKeyCodes
+import com.aeropad.remote.model.HidKeys
+import com.aeropad.remote.model.HidModifiers
 import com.aeropad.remote.model.HidSystem
 import com.aeropad.remote.ui.components.KeyCard
 import com.aeropad.remote.ui.components.NotConnectedBanner
@@ -83,7 +84,7 @@ fun AndroidControlScreen(
                     haptic(); viewModel.mediaTap(HidConsumer.AC_HOME)
                 }
                 KeyCard("▭ Recents", Modifier.weight(1f), 64.dp) {
-                    haptic(); viewModel.keyTap(HidKeyCodes.TAB, HidKeyCodes.LEFT_ALT)
+                    haptic(); viewModel.keyTap(HidKeys.TAB, HidModifiers.LEFT_ALT)
                 }
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {

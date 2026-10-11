@@ -280,7 +280,11 @@ private fun HomeTileCard(tile: HomeTile, onClick: () -> Unit) {
             // Clip BEFORE the clickable so the tap ripple stays inside
             // the rounded card — no square corners on press.
             .clip(MaterialTheme.shapes.medium)
-            .clickable(interactionSource = interactionSource, onClick = onClick)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = androidx.compose.foundation.LocalIndication.current,
+                onClick = onClick
+            )
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             GelIcon(
