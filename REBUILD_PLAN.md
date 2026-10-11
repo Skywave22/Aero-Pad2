@@ -1,6 +1,6 @@
-# AeroPad Remote v3 — Full Rebuild Plan (from zero)
+# BluePilot Remote v3 — Full Rebuild Plan (from zero)
 
-> Old code (`AeroPad-Remote-main/`) is kept ONLY as a feature reference — nothing is copied blindly.
+> Old code (`BluePilot-Remote-main/`) is kept ONLY as a feature reference — nothing is copied blindly.
 > Every line in v3 is written fresh, clean, commented, null-safe.
 > Priority: STABILITY → FEATURES → AESTHETICS.
 > Target: Android 10+ (minSdk 29), targetSdk 34, 100% Jetpack Compose, Hilt, MVVM + Clean Architecture.
@@ -80,7 +80,7 @@ Deliverable: app builds and shows a home shell. Zero warnings.
 ## FIXED DECISIONS
 - minSdk **29** (Android 10+) — confirmed by user. HID Device API needs 28+, so 29 is safe.
 - Kotlin 1.9.22 + KSP (no kapt), AGP 8.2.2, Compose BOM 2024.02, Hilt 2.50, Room 2.6.1
-- Package: `com.aeropad.remote` (same appId so it upgrades over old installs)
+- Package: `com.bluepilot.remote` (same appId so it upgrades over old installs)
 - versionName starts at 3.0.0, versionCode 300
 
 ## PROGRESS LOG
@@ -96,24 +96,3 @@ Deliverable: app builds and shows a home shell. Zero warnings.
 
 ## ✅ REBUILD COMPLETE — all 8 modules delivered
 
-
----
-## PHASE-BY-PHASE DEVELOPMENT TRACKING
-
-- [x] **Phase 0** — Baseline audit and CI health
-- [ ] **Phase 1** — Bluetooth & HID stability
-- [x] **Phase 2** — Global input safety / stuck input fixes
-- [x] **Phase 3** — Trackpad 2.0 (PointerMath, acceleration, profiles, gestures)
-- [x] **Phase 4** — Keyboard 2.0 (Numpad, Send on Enter, Configurable type delay)
-- [x] **Phase 5** — Gamepad reliability (D-pad mapping logic, test suite sync)
-- [x] **Phase 6** — Bluetooth host management (Unpairing logic, auto-reconnect, quick-switch host UI)
-- [x] **Phase 7** — Profiles (Macro profile import/export, Trackpad profiles binding, settings persistence)
-- [x] **Phase 8** — Custom Remote 2.0
-- [x] **Phase 9** — Advanced macros (Repeat loops, KeyHold, RandomDelay, Run sub-macro logic)
-- [x] **Phase 10** — Diagnostics & debugging (Connection Health Tracker, Latency metrics, RSSI integration)
-- [x] **Phase 11** — Performance & lifecycle hardening (Choreographer FrameStats, foreground service binding)
-- [x] **Phase 12** — Security, privacy & cleanup (FLAG_SECURE, Local content cleanup, API isolation)
-- [x] **Phase 13** — Final QA & release hardening (Test suite pass, layout verifications)
-
----
-- [x] **Phase 1** — Bluetooth & HID stability

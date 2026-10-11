@@ -1,4 +1,4 @@
-# AeroPad Remote v3 — central version catalog.
+# BluePilot Remote v3 — central version catalog.
 # One place to bump every dependency; keeps app/build.gradle.kts clean.
 
 [versions]

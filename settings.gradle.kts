@@ -1,11 +1,9 @@
-// AeroPad Remote v3 — settings
+// BluePilot Remote v3 — settings
 pluginManagement {
     repositories {
         google()
         mavenCentral()
         gradlePluginPortal()
-        maven { url = uri("https://plugins.gradle.org/m2/") }
-        maven("https://plugins.gradle.org/m2/")
     }
 }
 
@@ -17,5 +15,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "AeroPad Remote"
+rootProject.name = "BluePilot Remote"
 include(":app")
