@@ -70,7 +70,7 @@ object PropertyCatalog {
     /** AppSettings 24 + MouseSettings 6 + KeyboardSettings 1
      *  + GamepadSettings 4 = 35 global toggles/values
      *  (spokenAlerts added in the M5 b2 batch). */
-    const val SETTINGS_PROPS = 35
+    const val SETTINGS_PROPS = 26
 
     /** Keys on the real default board + favorites cap + FN overlay cap. */
     fun keyboardKeyInstances(): Int {
@@ -104,7 +104,7 @@ object PropertyCatalog {
             com.aeropad.remote.model.macros.MacroSpec.STEPS_MAX,
             "each of up to 64 slots holds one of 10 step types (largest = 3 fields)"
         ),
-        Group("Global settings", SETTINGS_PROPS, 1, "theme engine, haptics, 3D quality, automation, sensors"),
+        Group("Global settings", SETTINGS_PROPS, 1, "appearance, haptics, 3D quality, automation"),
     )
 
     /** The honest total for one fully-populated workspace. */
