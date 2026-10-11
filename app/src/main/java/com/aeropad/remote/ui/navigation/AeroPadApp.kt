@@ -250,47 +250,7 @@ fun AeroPadApp(
         )
     }
 
-    // AEROPAD v1.0 #57 — privacy blank: long-press the mini health dot
-    // blanks the screen (connection + input engines stay fully alive);
-    // tap anywhere to restore. State is local = instant, nothing persisted.
-    var privacyBlank by androidx.compose.runtime.remember {
-        androidx.compose.runtime.mutableStateOf(false)
-    }
-    if (currentRoute != Routes.CONNECTION_HEALTH) {
-        // Privacy blank toggle — rendered as a subtle chip so it reads as a
-        // deliberate control (it used to float as a bare emoji over the app bar).
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 36.dp, end = 30.dp)
-                .size(24.dp)
-                .background(
-                    androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.9f),
-                    androidx.compose.foundation.shape.CircleShape
-                )
-                .clickable { privacyBlank = true }
-        ) {
-            androidx.compose.material3.Text(
-                "👁", modifier = Modifier.align(Alignment.Center),
-                style = androidx.compose.material3.MaterialTheme.typography.bodySmall
-            )
-        }
-    }
-    if (privacyBlank) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(androidx.compose.ui.graphics.Color.Black)
-                .clickable { privacyBlank = false },
-            contentAlignment = Alignment.Center
-        ) {
-            androidx.compose.material3.Text(
-                "Screen hidden — connection active • tap to show",
-                color = androidx.compose.ui.graphics.Color(0xFF223044),
-                style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
-            )
-        }
-    }
+
 
     // V2 PART A — real FPS overlay (Choreographer-measured); toggle in
     // Settings. Lifecycle-safe: stops measuring the moment it's disabled.
