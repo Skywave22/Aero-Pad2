@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -178,7 +179,11 @@ fun SettingsScreen(
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(top = 6.dp)
                     )
-                    Row(modifier = Modifier.padding(vertical = 4.dp)) {
+                    Row(
+                        modifier = Modifier
+                            .padding(vertical = 4.dp)
+                            .horizontalScroll(rememberScrollState())
+                    ) {
                         HapticIntensity.entries.forEach { level ->
                             ChoiceChip(
                                 label = level.name.lowercase().replaceFirstChar { it.uppercase() },
@@ -193,7 +198,11 @@ fun SettingsScreen(
             // ---------- Visual style ----------
             if (matches("3d", "quality", "icon", "pack", "preview")) SettingsGroup("Visual style") {
                 Text("3D quality", style = MaterialTheme.typography.bodyMedium)
-                Row(modifier = Modifier.padding(vertical = 4.dp)) {
+                Row(
+                    modifier = Modifier
+                        .padding(vertical = 4.dp)
+                        .horizontalScroll(rememberScrollState())
+                ) {
                     listOf("FULL", "REDUCED", "FLAT").forEach { q ->
                         ChoiceChip(
                             label = q.lowercase().replaceFirstChar { it.uppercase() },
@@ -203,7 +212,11 @@ fun SettingsScreen(
                     }
                 }
                 Text("Icon pack", style = MaterialTheme.typography.bodyMedium)
-                Row(modifier = Modifier.padding(vertical = 4.dp)) {
+                Row(
+                    modifier = Modifier
+                        .padding(vertical = 4.dp)
+                        .horizontalScroll(rememberScrollState())
+                ) {
                     listOf("FILLED", "OUTLINED", "ROUNDED", "SHARP").forEach { pack ->
                         ChoiceChip(
                             label = pack.lowercase().replaceFirstChar { it.uppercase() },
@@ -370,6 +383,7 @@ private fun ModeCard(
         Text(
             text = label,
             style = MaterialTheme.typography.labelLarge,
+            maxLines = 1,
             color = if (selected) MaterialTheme.colorScheme.primary
             else MaterialTheme.colorScheme.onSurface
         )
@@ -399,6 +413,7 @@ private fun ChoiceChip(label: String, selected: Boolean, onClick: () -> Unit) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelLarge,
+            maxLines = 1,
             color = if (selected) MaterialTheme.colorScheme.primary
             else MaterialTheme.colorScheme.onSurface
         )
