@@ -26,7 +26,7 @@ class HistoryCodecTest {
             ConnectionSession("BLUETOOTH", "tv", 50L),                      // open
             ConnectionSession("BLUETOOTH", "old", 10L, endedAt = 20L)            // closed
         )
-        list = HistoryCodec.closeOpen(list, "WIFI", 200L, "user disconnect")
+        list = HistoryCodec.closeOpen(list, "BLUETOOTH", 200L, "user disconnect")
         assertEquals(200L, list[0].endedAt)
         assertEquals("user disconnect", list[0].disconnectReason)
         assertEquals(0L, list[1].endedAt)      // BT session untouched
@@ -45,7 +45,7 @@ class HistoryCodecTest {
     @Test
     fun `closeOpen with no open session is a no-op`() {
         val list = listOf(ConnectionSession("BLUETOOTH", "pc", 1L, 2L))
-        assertEquals(list, HistoryCodec.closeOpen(list, "WIFI", 9L, "x"))
+        assertEquals(list, HistoryCodec.closeOpen(list, "BLUETOOTH", 9L, "x"))
         assertEquals(emptyList<ConnectionSession>(),
             HistoryCodec.closeOpen(emptyList(), "BLUETOOTH", 9L, "x"))
     }

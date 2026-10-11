@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Minimal platform theme; all real theming is Compose-side. -->
+    <!-- Minimal platform theme; all real theming is Compose-side.
+         Day window background is clean white (Dark mode overrides this in
+         values-night to pure black). -->
     <style name="Theme.AeroPad" parent="android:Theme.Material.NoActionBar">
-        <item name="android:windowBackground">#0B0F1A</item>
+        <item name="android:windowBackground">@android:color/white</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>

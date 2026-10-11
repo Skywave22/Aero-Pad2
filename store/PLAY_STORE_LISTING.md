@@ -35,8 +35,8 @@ Create your own remote screens from widgets: trackpads, buttons, sliders, joysti
 MACROS AND GESTURES
 Record real input sequences and replay them with one tap. Build macros step by step: key chords (Ctrl+Alt+Del), text typing, media keys, delays. Bind macros to any custom button or swipe gesture. Two-finger tap gestures supported.
 
-MAKE IT YOURS — THEMES
-8 built-in visual themes with live previews: Liquid Glass, Hawaii Night and Day, Cockpit HUD, Dark Neon, OLED Black, Minimal Light and classic Pilot Dark. The whole app re-skins instantly, dark and light.
+CLEAN, FOCUSED DESIGN
+One pure look in two modes: crisp Light (white) and true Dark (pure black, OLED-friendly). Follows your system setting or stays locked to either — no clutter, no gimmicks, just your controls.
 
 PRIVACY FIRST
 - No account, no ads, no analytics, no internet use
@@ -61,13 +61,13 @@ Note: a small number of phone models/ROMs block Android's HID Device mode. AeroP
 
 | # | Screen | Setup | Caption overlay idea |
 |---|--------|-------|---------------------|
-| 1 | **Home** | Connected to "Desktop-PC", Liquid Glass theme | "Your phone. Your PC's keyboard & mouse." |
+| 1 | **Home** | Connected to "Desktop-PC", Dark mode | "Your phone. Your PC's keyboard & mouse." |
 | 2 | **Mouse trackpad** | Mid-gesture, connected badge visible | "Buttery-smooth trackpad over Bluetooth" |
 | 3 | **Gamepad Builder editor** | FPS layout open, one button selected showing resize handles + properties sheet | "Design your own gamepad" |
 | 4 | **Custom gamepad playing** | Landscape, custom pad with colored buttons | "A real HID controller games recognize" |
-| 5 | **Theme Gallery** | Grid showing all 8 previews, Hawaii Night applied | "8 themes. One tap. Instant." |
+| 5 | **Settings > Appearance** | Light / Dark / Auto cards visible | "Light or Dark. Your choice. Nothing else." |
 | 6 | **Layout editor** | Trackpad+keys combo with style sheet open | "Build any remote you can imagine" |
 | 7 (bonus) | **Macros** | Recorder bar in REC state with steps counted | "Record once. Replay with one tap." |
-| 8 (bonus) | **Keyboard** (light theme) | Minimal Light theme | "Full PC keyboard, shortcuts included" |
+| 8 (bonus) | **Keyboard** (Light mode) | Clean white look | "Full PC keyboard, shortcuts included" |
 
-Feature graphic (1024×500): phone showing Home (Liquid Glass) angled over a desk with a laptop, blue glow accents — the designs/ mockups can serve as art direction.
+Feature graphic (1024×500): phone showing Home (Dark mode) angled over a desk with a laptop, blue accent lighting.

@@ -29,7 +29,8 @@ Built 100% in Kotlin + Jetpack Compose, MVVM + Clean Architecture, Hilt, Room, D
 - Build, reorder, test-play live, save — then bind to any custom button.
 
 ### Settings
-- Theme (Light/Dark/System), fullscreen, keep screen on, touch vibrations, secure screen (blocks screenshots).
+- Appearance: **Light / Dark / Follow system** (clean white or pure black — nothing else).
+- Fullscreen, keep screen on, touch vibrations (3 strengths), secure screen (blocks screenshots), reduce motion, FPS overlay, optional Tasker automation API.
 - Mouse, keyboard and gamepad tuning applied live everywhere.
 
 ## Requirements
@@ -48,7 +49,7 @@ Built 100% in Kotlin + Jetpack Compose, MVVM + Clean Architecture, Hilt, Room, D
 ```bash
 ./gradlew :app:assembleDebug        # debug APK
 ./gradlew :app:assembleRelease      # release APK
-./gradlew :app:testDebugUnitTest    # 103 unit tests
+./gradlew :app:testDebugUnitTest    # 292 unit tests
 ./gradlew :app:connectedDebugAndroidTest   # Compose UI tests (device needed)
 ```
 JDK 17, Android SDK 34. CI (GitHub Actions) runs tests + lint, auto-increments the version, builds both APKs and attaches them to a GitHub Release on every push.

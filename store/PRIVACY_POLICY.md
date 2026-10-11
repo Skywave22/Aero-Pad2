@@ -1,6 +1,6 @@
 # Privacy Policy — AeroPad Remote
 
-**Effective date:** July 4, 2026
+**Effective date:** October 11, 2026
 
 AeroPad Remote ("the app") is built privacy-first. This policy explains what the app does — and, more importantly, what it does not do.
 
@@ -26,7 +26,7 @@ Android requires these permissions for the app to function as a Bluetooth keyboa
 Bluetooth is used **exclusively** to transmit the input you actively perform (keys, pointer movement, media buttons, gamepad controls) to the device you paired with. No input is logged or stored beyond what you explicitly save as a macro on your own phone.
 
 ## Data stored on your device only
-Your settings, themes, custom layouts, gamepad profiles and macros are stored locally in the app's private storage. Android backup of this data is disabled. Exported layout/gamepad files are created only where you choose to save them, and sharing them is entirely under your control.
+Your settings, appearance choice, custom layouts, gamepad profiles and macros are stored locally in the app's private storage. Android backup of this data is disabled. Exported layout/gamepad files are created only where you choose to save them, and sharing them is entirely under your control.
 
 ## Children's privacy
 The app collects no data from anyone, including children.
