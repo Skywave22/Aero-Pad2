@@ -120,4 +120,27 @@ class HidReportBuilderTest {
         assertEquals(false, released.isPressed(GamepadButton.X))
         assertEquals(0, released.buttons)
     }
+
+    // ---------- touch (digitizer) ----------
+
+    @Test
+    fun `touch report encodes contact bits and little endian coords`() {
+        val r = HidReportBuilder.touch(contact = true, x = 32767, y = 1)
+        assertEquals(HidDescriptors.SIZE_TOUCH, r.size)
+        assertEquals(0x03.toByte(), r[0])          // tip switch + in range
+        assertEquals(0xFF.toByte(), r[1])          // x lo
+        assertEquals(0x7F.toByte(), r[2])          // x hi
+        assertEquals(0x01.toByte(), r[3])          // y lo
+        assertEquals(0x00.toByte(), r[4])          // y hi
+    }
+
+    @Test
+    fun `touch release clears contact bits and clamps out of range coords`() {
+        val r = HidReportBuilder.touch(contact = false, x = -5, y = 99999)
+        assertEquals(0x00.toByte(), r[0])          // no contact
+        assertEquals(0x00.toByte(), r[1])          // x clamped -5 → 0
+        assertEquals(0x00.toByte(), r[2])
+        assertEquals(0xFF.toByte(), r[3])          // y clamped → 32767 (lo)
+        assertEquals(0x7F.toByte(), r[4])          //                    (hi)
+    }
 }

@@ -286,6 +286,12 @@ class HidEngine @Inject constructor(
                 is HidAction.GamepadUpdate ->
                     // V2 PART A — pooled buffer: zero alloc on the hot path.
                     report(HidDescriptors.REPORT_ID_GAMEPAD, ReportPool.gamepadInto(action.snapshot))
+                is HidAction.TouchUpdate -> {
+                    // Normalized 0..1 → absolute 15-bit digitizer space.
+                    val tx = (action.x.coerceIn(0f, 1f) * 32767f).toInt()
+                    val ty = (action.y.coerceIn(0f, 1f) * 32767f).toInt()
+                    report(HidDescriptors.REPORT_ID_TOUCH, HidReportBuilder.touch(action.contact, tx, ty))
+                }
             }
         } catch (t: Throwable) {
             // Absolute last line of defense: an action must never crash the app.

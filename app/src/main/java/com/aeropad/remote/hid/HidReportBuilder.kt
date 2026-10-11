@@ -70,6 +70,21 @@ object HidReportBuilder {
     fun systemRelease(): ByteArray = ByteArray(HidDescriptors.SIZE_SYSTEM)
 
     /**
+     * Touch screen (digitizer) — single absolute contact, Report ID 6 payload.
+     * [x]/[y] are 0..32767 (clamped); [contact] drives both Tip Switch and
+     * In Range so the host treats it as a full finger touch/release.
+     */
+    fun touch(contact: Boolean, x: Int, y: Int): ByteArray {
+        val cx = x.coerceIn(0, 32767)
+        val cy = y.coerceIn(0, 32767)
+        return byteArrayOf(
+            if (contact) 0x03 else 0x00,      // bit0 tip-switch, bit1 in-range
+            (cx and 0xFF).toByte(), (cx shr 8 and 0xFF).toByte(),
+            (cy and 0xFF).toByte(), (cy shr 8 and 0xFF).toByte(),
+        )
+    }
+
+    /**
      * Gamepad report layout: btnLo, btnHi, hat, lx, ly, rx, ry.
      * Axes arrive as -1.0..1.0 floats and are mapped to unsigned 0..255
      * centered at 128 (matches descriptor Logical 0..255).

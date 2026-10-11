@@ -142,6 +142,13 @@ class RemoteControlViewModel @Inject constructor(
     /** System page tap (power / sleep / wake bits). */
     fun systemTap(bits: Byte) = sendAction(HidAction.SystemTap(bits))
 
+    /**
+     * Touch-screen control: streams an absolute HID digitizer contact to the
+     * host. [x]/[y] are normalized 0..1 across the host screen.
+     */
+    fun touch(x: Float, y: Float, contact: Boolean) =
+        sendAction(HidAction.TouchUpdate(contact, x, y))
+
     // ------------------------------------------------------------------
     // Gamepad
     // ------------------------------------------------------------------

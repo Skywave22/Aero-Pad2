@@ -39,6 +39,7 @@ import com.aeropad.remote.ui.screens.gamepad.GamepadScreen
 import com.aeropad.remote.ui.screens.fullkeyboard.FullKeyboardScreen
 import com.aeropad.remote.ui.screens.airmouse.AirMouseScreen
 import com.aeropad.remote.ui.screens.androidremote.AndroidControlScreen
+import com.aeropad.remote.ui.screens.androidremote.TouchControlScreen
 import com.aeropad.remote.ui.screens.pccombo.PcComboScreen
 import com.aeropad.remote.ui.screens.preview3d.Preview3DScreen
 import com.aeropad.remote.ui.screens.gamepadbuilder.GamepadBuilderScreen
@@ -75,6 +76,7 @@ object Routes {
     const val PRESENTER = "presenter"
     const val GAMEPAD = "gamepad"
     const val ANDROID = "android_remote"
+    const val TOUCH = "touch_screen"
     const val SETTINGS = "settings"
     const val HELP = "help"
     const val LAYOUTS = "layouts"
@@ -192,7 +194,13 @@ fun AeroPadApp(
         composable(Routes.MULTIMEDIA) { MultimediaScreen(onBack = { navController.popBackStack() }) }
         composable(Routes.PRESENTER) { PresenterScreen(onBack = { navController.popBackStack() }) }
         composable(Routes.GAMEPAD) { GamepadScreen(onBack = { navController.popBackStack() }) }
-        composable(Routes.ANDROID) { AndroidControlScreen(onBack = { navController.popBackStack() }) }
+        composable(Routes.ANDROID) {
+            AndroidControlScreen(
+                onBack = { navController.popBackStack() },
+                onOpenTouch = { navController.navigate(Routes.TOUCH) }
+            )
+        }
+        composable(Routes.TOUCH) { TouchControlScreen(onBack = { navController.popBackStack() }) }
         composable(Routes.CONNECTION_HEALTH) {
             ConnectionHealthScreen(onBack = { navController.popBackStack() })
         }
@@ -249,16 +257,22 @@ fun AeroPadApp(
         androidx.compose.runtime.mutableStateOf(false)
     }
     if (currentRoute != Routes.CONNECTION_HEALTH) {
+        // Privacy blank toggle — rendered as a subtle chip so it reads as a
+        // deliberate control (it used to float as a bare emoji over the app bar).
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(top = 42.dp, end = 34.dp)
+                .padding(top = 36.dp, end = 30.dp)
                 .size(24.dp)
+                .background(
+                    androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.9f),
+                    androidx.compose.foundation.shape.CircleShape
+                )
                 .clickable { privacyBlank = true }
         ) {
             androidx.compose.material3.Text(
                 "👁", modifier = Modifier.align(Alignment.Center),
-                style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
+                style = androidx.compose.material3.MaterialTheme.typography.bodySmall
             )
         }
     }

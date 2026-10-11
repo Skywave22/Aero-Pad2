@@ -38,4 +38,7 @@ sealed interface HidAction {
 
     // ----- Gamepad -----
     data class GamepadUpdate(val snapshot: GamepadSnapshot) : HidAction
+
+    /** Touch screen (digitizer). [x]/[y] normalized 0..1 across the host screen. */
+    data class TouchUpdate(val contact: Boolean, val x: Float, val y: Float) : HidAction
 }

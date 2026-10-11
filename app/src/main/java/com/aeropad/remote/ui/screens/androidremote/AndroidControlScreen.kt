@@ -47,6 +47,7 @@ import com.aeropad.remote.viewmodel.RemoteControlViewModel
 @Composable
 fun AndroidControlScreen(
     onBack: () -> Unit,
+    onOpenTouch: () -> Unit = {},
     viewModel: RemoteControlViewModel = hiltViewModel()
 ) {
     val isConnected by viewModel.isConnected.collectAsState()
@@ -116,6 +117,13 @@ fun AndroidControlScreen(
                 }
                 KeyCard("⏭ Next", Modifier.weight(1f), 64.dp) {
                     haptic(); viewModel.mediaTap(HidConsumer.NEXT_TRACK)
+                }
+            }
+
+            Section("Touch Screen")
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                KeyCard("👆 Touch Screen", Modifier.weight(1f), 64.dp, emphasized = true) {
+                    haptic(); onOpenTouch()
                 }
             }
 

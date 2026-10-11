@@ -22,6 +22,7 @@ object HidDescriptors {
     const val REPORT_ID_CONSUMER: Int = 3
     const val REPORT_ID_SYSTEM: Int = 4
     const val REPORT_ID_GAMEPAD: Int = 5
+    const val REPORT_ID_TOUCH: Int = 6
 
     /** Payload sizes in bytes (excluding the report ID, which Android passes separately). */
     const val SIZE_KEYBOARD: Int = 8   // [modifiers][reserved][key1..key6]
@@ -29,6 +30,7 @@ object HidDescriptors {
     const val SIZE_CONSUMER: Int = 2   // [usage LSB][usage MSB]
     const val SIZE_SYSTEM: Int = 1     // [bit0=power bit1=sleep bit2=wake]
     const val SIZE_GAMEPAD: Int = 7    // [btnLo][btnHi][hat][lx][ly][rx][ry]
+    const val SIZE_TOUCH: Int = 5      // [tipSwitch|inRange bits][xLo][xHi][yLo][yHi] (0..32767)
 
     /**
      * Keyboard, Report ID 1.
@@ -190,6 +192,42 @@ object HidDescriptors {
         0xC0.toByte()                  // End Collection
     )
 
-    /** The single descriptor registered with Android — all five devices combined. */
-    val COMBINED: ByteArray = KEYBOARD + MOUSE + CONSUMER + SYSTEM + GAMEPAD
+    /**
+     * Touch screen (HID digitizer), Report ID 6.
+     * Single absolute pointer: tip-switch + in-range bits, then X/Y as
+     * unsigned 16-bit coordinates in 0..32767. Hosts that support HID
+     * touch input (Android tablet hosts, Windows) render it as a real
+     * finger touch; hosts without digitizer support simply ignore it.
+     */
+    private val TOUCH = byteArrayOf(
+        0x05, 0x0D,                    // Usage Page (Digitizer)
+        0x09, 0x04,                    // Usage (Touch Screen)
+        0xA1.toByte(), 0x01,           // Collection (Application)
+        0x85.toByte(), REPORT_ID_TOUCH.toByte(), //   Report ID 6
+        0x09, 0x22,                    //   Usage (Finger)
+        0xA1.toByte(), 0x00,           //   Collection (Physical)
+        0x09, 0x42,                    //     Usage (Tip Switch)
+        0x09, 0x32,                    //     Usage (In Range)
+        0x15, 0x00,                    //     Logical Min 0
+        0x25, 0x01,                    //     Logical Max 1
+        0x75, 0x01,                    //     Report Size 1
+        0x95.toByte(), 0x02,           //     Report Count 2 -> switch + in-range
+        0x81.toByte(), 0x02,           //     Input (Data, Var, Abs)
+        0x95.toByte(), 0x06,           //     Report Count 6
+        0x75, 0x01,                    //     Report Size 1 -> padding
+        0x81.toByte(), 0x03,           //     Input (Const)
+        0x05, 0x01,                    //     Usage Page (Generic Desktop)
+        0x09, 0x30,                    //     Usage (X)
+        0x09, 0x31,                    //     Usage (Y)
+        0x15, 0x00,                    //     Logical Min 0
+        0x26, 0xFF.toByte(), 0x7F,     //     Logical Max 32767
+        0x75, 0x10,                    //     Report Size 16
+        0x95.toByte(), 0x02,           //     Report Count 2 -> X, Y absolute
+        0x81.toByte(), 0x02,           //     Input (Data, Var, Abs)
+        0xC0.toByte(),                 //   End Collection (Physical)
+        0xC0.toByte()                  // End Collection (Application)
+    )
+
+    /** The single descriptor registered with Android — all six devices combined. */
+    val COMBINED: ByteArray = KEYBOARD + MOUSE + CONSUMER + SYSTEM + GAMEPAD + TOUCH
 }

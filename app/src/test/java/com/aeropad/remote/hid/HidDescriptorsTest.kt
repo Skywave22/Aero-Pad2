@@ -37,7 +37,7 @@ class HidDescriptorsTest {
     }
 
     @Test
-    fun `all five report ids are declared`() {
+    fun `all six report ids are declared`() {
         // 0x85 <id> is the Report ID item.
         val declaredIds = mutableSetOf<Int>()
         for (i in 0 until descriptor.size - 1) {
@@ -51,7 +51,8 @@ class HidDescriptorsTest {
                 HidDescriptors.REPORT_ID_MOUSE,
                 HidDescriptors.REPORT_ID_CONSUMER,
                 HidDescriptors.REPORT_ID_SYSTEM,
-                HidDescriptors.REPORT_ID_GAMEPAD
+                HidDescriptors.REPORT_ID_GAMEPAD,
+                HidDescriptors.REPORT_ID_TOUCH
             )
         ))
     }
@@ -63,5 +64,6 @@ class HidDescriptorsTest {
         assertEquals(HidDescriptors.SIZE_CONSUMER, HidReportBuilder.consumerRelease().size)
         assertEquals(HidDescriptors.SIZE_SYSTEM, HidReportBuilder.systemRelease().size)
         assertEquals(HidDescriptors.SIZE_GAMEPAD, HidReportBuilder.gamepadNeutral().size)
+        assertEquals(HidDescriptors.SIZE_TOUCH, HidReportBuilder.touch(false, 0, 0).size)
     }
 }
