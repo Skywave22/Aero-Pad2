@@ -1,4 +1,4 @@
-# BluePilot Remote v3 — Manual Test Checklist
+# AeroPad Remote v3 — Manual Test Checklist
 
 Run before each release. Needs one Android 10+ phone and at least one host per platform section.
 
@@ -64,7 +64,7 @@ Run before each release. Needs one Android 10+ phone and at least one host per p
 - [ ] Kill from app switcher → service notification clears; relaunch reconnects cleanly.
 - [ ] Rotate on every screen → no crash, state kept.
 - [ ] Toggle phone Bluetooth off/on mid-session → clean state transitions, no crash.
-- [ ] Monkey test 5 min (`adb shell monkey -p com.bluepilot.remote 5000`) → no ANR/crash.
+- [ ] Monkey test 5 min (`adb shell monkey -p com.aeropad.remote 5000`) → no ANR/crash.
 - [ ] Logcat clean of: ClassCastException, NullPointerException, IllegalStateException from app code.
 
 ## 8. HID-unsupported device (if available)

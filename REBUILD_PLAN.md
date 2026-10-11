@@ -1,6 +1,6 @@
-# BluePilot Remote v3 — Full Rebuild Plan (from zero)
+# AeroPad Remote v3 — Full Rebuild Plan (from zero)
 
-> Old code (`BluePilot-Remote-main/`) is kept ONLY as a feature reference — nothing is copied blindly.
+> Old code (`AeroPad-Remote-main/`) is kept ONLY as a feature reference — nothing is copied blindly.
 > Every line in v3 is written fresh, clean, commented, null-safe.
 > Priority: STABILITY → FEATURES → AESTHETICS.
 > Target: Android 10+ (minSdk 29), targetSdk 34, 100% Jetpack Compose, Hilt, MVVM + Clean Architecture.
@@ -80,7 +80,7 @@ Deliverable: app builds and shows a home shell. Zero warnings.
 ## FIXED DECISIONS
 - minSdk **29** (Android 10+) — confirmed by user. HID Device API needs 28+, so 29 is safe.
 - Kotlin 1.9.22 + KSP (no kapt), AGP 8.2.2, Compose BOM 2024.02, Hilt 2.50, Room 2.6.1
-- Package: `com.bluepilot.remote` (same appId so it upgrades over old installs)
+- Package: `com.aeropad.remote` (same appId so it upgrades over old installs)
 - versionName starts at 3.0.0, versionCode 300
 
 ## PROGRESS LOG

@@ -1,4 +1,4 @@
-# BluePilot Remote v3
+# AeroPad Remote v3
 
 Turn your Android phone into a **Bluetooth keyboard, mouse, media remote, presenter and gamepad** for any PC, laptop, TV or device that accepts Bluetooth input — with a fully customizable, widget-based control system.
 
@@ -38,11 +38,11 @@ Built 100% in Kotlin + Jetpack Compose, MVVM + Clean Architecture, Hilt, Room, D
 - A host that accepts Bluetooth keyboards/mice: Windows, macOS, Linux, Android/Google TV, most smart TVs. iOS/iPadOS: keyboard yes; mouse depends on OS version + AssistiveTouch settings.
 
 ## Pairing with a PC (Windows)
-1. Open BluePilot → **Connect** → **Prepare PC pairing** (accept discoverability).
+1. Open AeroPad → **Connect** → **Prepare PC pairing** (accept discoverability).
 2. Windows: Settings → Bluetooth & devices → **Add device** → Bluetooth → select the phone.
 3. Accept pairing on **both** sides; wait for **Connected**.
 4. Test Keyboard (Space) first, then Mouse.
-5. Stuck? Remove the pairing on BOTH sides and retry with BluePilot open.
+5. Stuck? Remove the pairing on BOTH sides and retry with AeroPad open.
 
 ## Build
 ```bash

@@ -1,4 +1,4 @@
-// BluePilot Remote v3 — settings
+// AeroPad Remote v3 — settings
 pluginManagement {
     repositories {
         google()
@@ -15,5 +15,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "BluePilot Remote"
+rootProject.name = "AeroPad Remote"
 include(":app")

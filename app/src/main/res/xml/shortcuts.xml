@@ -9,9 +9,9 @@
         android:icon="@drawable/ic_notification"
         android:shortcutShortLabel="@string/shortcut_keyboard">
         <intent
-            android:action="com.bluepilot.remote.OPEN_KEYBOARD"
-            android:targetPackage="com.bluepilot.remote"
-            android:targetClass="com.bluepilot.remote.MainActivity" />
+            android:action="com.aeropad.remote.OPEN_KEYBOARD"
+            android:targetPackage="com.aeropad.remote"
+            android:targetClass="com.aeropad.remote.MainActivity" />
     </shortcut>
     <shortcut
         android:shortcutId="mouse"
@@ -19,9 +19,9 @@
         android:icon="@drawable/ic_notification"
         android:shortcutShortLabel="@string/shortcut_mouse">
         <intent
-            android:action="com.bluepilot.remote.OPEN_MOUSE"
-            android:targetPackage="com.bluepilot.remote"
-            android:targetClass="com.bluepilot.remote.MainActivity" />
+            android:action="com.aeropad.remote.OPEN_MOUSE"
+            android:targetPackage="com.aeropad.remote"
+            android:targetClass="com.aeropad.remote.MainActivity" />
     </shortcut>
     <shortcut
         android:shortcutId="gamepad"
@@ -29,9 +29,9 @@
         android:icon="@drawable/ic_notification"
         android:shortcutShortLabel="@string/shortcut_gamepad">
         <intent
-            android:action="com.bluepilot.remote.OPEN_GAMEPAD"
-            android:targetPackage="com.bluepilot.remote"
-            android:targetClass="com.bluepilot.remote.MainActivity" />
+            android:action="com.aeropad.remote.OPEN_GAMEPAD"
+            android:targetPackage="com.aeropad.remote"
+            android:targetClass="com.aeropad.remote.MainActivity" />
     </shortcut>
     <shortcut
         android:shortcutId="media"
@@ -39,8 +39,8 @@
         android:icon="@drawable/ic_notification"
         android:shortcutShortLabel="@string/shortcut_media">
         <intent
-            android:action="com.bluepilot.remote.OPEN_MEDIA"
-            android:targetPackage="com.bluepilot.remote"
-            android:targetClass="com.bluepilot.remote.MainActivity" />
+            android:action="com.aeropad.remote.OPEN_MEDIA"
+            android:targetPackage="com.aeropad.remote"
+            android:targetClass="com.aeropad.remote.MainActivity" />
     </shortcut>
 </shortcuts>
