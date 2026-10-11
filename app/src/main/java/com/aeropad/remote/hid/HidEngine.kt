@@ -60,6 +60,8 @@ class HidEngine @Inject constructor(
         const val KEY_TAP_DELAY_MS = 8L
         const val RECONNECT_MAX_ATTEMPTS = 4
         const val RECONNECT_BASE_DELAY_MS = 1000L
+        /** Round 6: "Connecting…" can never hang forever anymore. */
+        const val CONNECT_TIMEOUT_MS = 15_000L
     }
 
     // Single-thread executor keeps report order deterministic and latency low.
@@ -89,6 +91,10 @@ class HidEngine @Inject constructor(
     private var userInitiatedDisconnect = false
     private var reconnectAttempts = 0
     private var lastHostDevice: BluetoothDevice? = null
+    // Round 6 — lifecycle resilience: adapter on/off recovery + connect watchdog.
+    private var stopped = false
+    private var btReceiverRegistered = false
+    private var connectWatchdog: kotlinx.coroutines.Job? = null
 
     private val _state = MutableStateFlow<HidConnectionState>(HidConnectionState.Idle)
     override val state: StateFlow<HidConnectionState> = _state.asStateFlow()
@@ -113,6 +119,8 @@ class HidEngine @Inject constructor(
      * proxy and registers our combined HID app. Safe to call repeatedly.
      */
     override fun start() {
+        stopped = false
+        ensureBtStateReceiver()
         when {
             !permissionManager.hasAllBluetoothPermissions() -> {
                 _state.value = HidConnectionState.PermissionMissing
@@ -148,7 +156,14 @@ class HidEngine @Inject constructor(
 
     /** Fully tears down registration + proxy. Called from service shutdown. */
     override fun stop() {
+        stopped = true
         userInitiatedDisconnect = true
+        connectWatchdog?.cancel()
+        if (btReceiverRegistered) {
+            runCatching { context.unregisterReceiver(btStateReceiver) }
+                .onFailure { Timber.w(it, "unregisterReceiver failed") }
+            btReceiverRegistered = false
+        }
         runCatching { hidDevice?.let { hd -> connectedDevice?.let { hd.disconnect(it) } } }
             .onFailure { Timber.w(it, "disconnect during stop failed") }
         runCatching { hidDevice?.unregisterApp() }
@@ -185,6 +200,22 @@ class HidEngine @Inject constructor(
             .getOrDefault(false)
         if (!ok) {
             _state.value = HidConnectionState.Error("Could not start connection to ${device.safeName()}.")
+            return
+        }
+        // Round 6 — watchdog: a silent connect failure must never leave the
+        // UI stuck on "Connecting…" forever.
+        connectWatchdog?.cancel()
+        connectWatchdog = scope.launch {
+            delay(CONNECT_TIMEOUT_MS)
+            if (connectedDevice == null && _state.value is HidConnectionState.Connecting) {
+                Timber.w("connect watchdog timed out for %s", device.address)
+                runCatching { hd.disconnect(device) }
+                _reconnectStatus.value = null
+                _state.value = HidConnectionState.Error(
+                    "Connection to ${device.safeName()} timed out. " +
+                        "Make sure the host is paired and awake, then try again."
+                )
+            }
         }
     }
 
@@ -350,7 +381,53 @@ class HidEngine @Inject constructor(
             appRegistered = false
             proxyRequested = false
             _state.value = HidConnectionState.Idle
+            // Round 6 — the BT stack restarts the profile when the adapter is
+            // toggled; re-arm instead of leaving the engine dead until app restart.
+            if (!stopped) {
+                scope.launch {
+                    delay(1000)
+                    if (!stopped && hidDevice == null && !proxyRequested) start()
+                }
+            }
         }
+    }
+
+    /**
+     * Round 6 — adapter on/off receiver. Before this, toggling Bluetooth
+     * (or the system restarting the BT stack) left AeroPad permanently
+     * unregistered until the app was force-stopped.
+     */
+    private val btStateReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(c: android.content.Context?, intent: android.content.Intent?) {
+            when (intent?.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR)) {
+                BluetoothAdapter.STATE_OFF -> {
+                    Timber.w("Bluetooth adapter turned off")
+                    connectWatchdog?.cancel()
+                    connectedDevice = null
+                    appRegistered = false
+                    _state.value = HidConnectionState.BluetoothDisabled
+                }
+                BluetoothAdapter.STATE_ON -> {
+                    Timber.i("Bluetooth adapter turned on — re-initializing HID engine")
+                    proxyRequested = false
+                    start()
+                }
+            }
+        }
+    }
+
+    private fun ensureBtStateReceiver() {
+        if (btReceiverRegistered) return
+        val filter = android.content.IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
+        btReceiverRegistered = runCatching {
+            context.registerReceiver(btStateReceiver, filter)
+            true
+        }.recoverCatching {
+            // API 33+ explicit-flag variant for completeness.
+            context.registerReceiver(btStateReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+            true
+        }.getOrDefault(false)
+        if (!btReceiverRegistered) Timber.w("could not register BT state receiver")
     }
 
     private fun registerApp() {
@@ -393,6 +470,7 @@ class HidEngine @Inject constructor(
             Timber.i("onConnectionStateChanged state=%d device=%s", btState, device?.address)
             when (btState) {
                 BluetoothProfile.STATE_CONNECTED -> {
+                    connectWatchdog?.cancel()
                     connectedDevice = device
                     lastHostDevice = device
                     reconnectAttempts = 0
