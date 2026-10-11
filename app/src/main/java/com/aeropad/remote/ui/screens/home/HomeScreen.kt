@@ -25,7 +25,6 @@ import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Keyboard
 import androidx.compose.material.icons.rounded.Mouse
 import androidx.compose.material.icons.rounded.MonitorHeart
-import androidx.compose.material.icons.rounded.Wifi
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Pin
@@ -91,7 +90,6 @@ private val tiles = listOf(
     HomeTile("Macros", "Record & play sequences", Icons.Rounded.Bolt, Routes.MACROS, gel = 0xFF57D163),
     HomeTile("Themes", "Change the whole look", Icons.Rounded.Palette, Routes.THEMES, gel = 0xFFB86BFF),
     HomeTile("Pad Builder", "Design your own gamepad", Icons.Rounded.SportsEsports, Routes.GAMEPAD_BUILDER, gel = 0xFF6E8BFF),
-    HomeTile("WiFi Control", "NEW • control over your network", Icons.Rounded.Wifi, Routes.WIFI_CONNECT, gel = 0xFF00B0FF),
     HomeTile("Health", "Live connection metrics", Icons.Rounded.MonitorHeart, Routes.CONNECTION_HEALTH, gel = 0xFF00C853),
     HomeTile("Settings", "Tune everything", Icons.Rounded.Settings, Routes.SETTINGS, gel = 0xFF8B9BB5),
     HomeTile("Help", "Pairing & troubleshooting", Icons.AutoMirrored.Rounded.HelpOutline, Routes.HELP, gel = 0xFF64B6F0)

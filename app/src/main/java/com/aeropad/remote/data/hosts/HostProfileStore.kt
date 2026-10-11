@@ -14,45 +14,43 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * V2 MATRIX 4 — saved host profiles (multi-host quick-switch).
+ * Saved host profiles (multi-host quick-switch) — Bluetooth only.
  *
- * One entry per machine the user connects to: a Bluetooth host (MAC) or
- * a WiFi host (ip:port + optional saved PIN). Persisted as JSON in app
- * files (same defensive pattern as ConnectionHistoryStore: reads never
- * throw, corrupt file = empty list, writes are atomic-ish via temp file).
+ * One entry per machine the user connects to (MAC address). Persisted as
+ * JSON in app files (same defensive pattern as ConnectionHistoryStore:
+ * reads never throw, corrupt file = empty list, writes are atomic-ish via
+ * temp file).
  *
- * SECURITY NOTE (honest): the WiFi PIN is stored obfuscated (XOR with a
- * per-install key), NOT encrypted — files under /data/data are already
- * app-private; the obfuscation only guards casual backup inspection.
- * Saving the PIN is OPT-IN per profile.
+ * AeroPad is a pure Bluetooth HID remote: legacy WiFi entries that may
+ * still exist in old JSON files are dropped on decode.
  */
 @Serializable
 data class HostProfile(
     val id: String,
     val label: String,
-    /** "BT" or "WIFI". */
+    /** Always "BT" — kept as a field for storage compatibility. */
     val transport: String,
-    /** BT: MAC address. WIFI: ip/hostname. */
+    /** Bluetooth MAC address. */
     val address: String,
     val port: Int = 0,
-    /** Obfuscated PIN, empty = not saved. */
+    /** Legacy field (unused, kept so old JSON decodes cleanly). */
     @SerialName("p") val obfuscatedPin: String = "",
     val lastUsedAt: Long = 0
 ) {
     companion object {
         const val LABEL_MAX = 30
         const val TRANSPORT_BT = "BT"
-        const val TRANSPORT_WIFI = "WIFI"
+        val MAC_REGEX = Regex("^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$")
     }
 
     fun sanitized(): HostProfile = copy(
         label = label.take(LABEL_MAX).ifBlank { address },
-        transport = if (transport == TRANSPORT_WIFI) TRANSPORT_WIFI else TRANSPORT_BT,
+        transport = TRANSPORT_BT,
         port = port.coerceIn(0, 65535)
     )
 }
 
-/** Pure list logic + PIN obfuscation (unit-tested). */
+/** Pure list logic (unit-tested). */
 object HostProfileCodec {
 
     const val MAX_PROFILES = 12
@@ -67,54 +65,34 @@ object HostProfileCodec {
         return runCatching {
             json.decodeFromString(ListSerializer(HostProfile.serializer()), raw)
                 .map { it.sanitized() }
+                // Legacy WiFi entries (non-MAC address) are dropped — the app
+                // is Bluetooth-only now.
+                .filter { HostProfile.MAC_REGEX.matches(it.address) }
         }.getOrDefault(emptyList())
     }
 
     /**
-     * Upsert by (transport, address): same machine updates in place
-     * (keeping its position fresh at the front), new ones prepend.
+     * Upsert by address: same machine updates in place (keeping its
+     * position fresh at the front), new ones prepend.
      * Capped at [MAX_PROFILES] — oldest drops off.
      */
     fun upsert(list: List<HostProfile>, profile: HostProfile): List<HostProfile> {
         val clean = profile.sanitized()
-        val rest = list.filterNot {
-            it.transport == clean.transport && it.address == clean.address
-        }
+        val rest = list.filterNot { it.address == clean.address }
         return (listOf(clean) + rest).take(MAX_PROFILES)
     }
 
     fun remove(list: List<HostProfile>, id: String): List<HostProfile> =
         list.filterNot { it.id == id }
-
-    /** XOR-with-key obfuscation, hex-encoded. Empty in = empty out. */
-    fun obfuscate(pin: String, key: String): String {
-        if (pin.isEmpty() || key.isEmpty()) return ""
-        return pin.toByteArray(Charsets.UTF_8).mapIndexed { i, b ->
-            "%02x".format(b.toInt() xor key[i % key.length].code and 0xFF)
-        }.joinToString("")
-    }
-
-    fun deobfuscate(hex: String, key: String): String {
-        if (hex.isEmpty() || key.isEmpty() || hex.length % 2 != 0) return ""
-        return runCatching {
-            hex.chunked(2)
-                .map { it.toInt(16) }
-                .mapIndexed { i, v -> (v xor key[i % key.length].code and 0xFF).toByte() }
-                .toByteArray()
-                .toString(Charsets.UTF_8)
-        }.getOrDefault("")
-    }
 }
 
 /**
- * V2 M4 — domain-facing seam so ViewModels stay unit-testable with a fake
+ * Domain-facing seam so ViewModels stay unit-testable with a fake
  * (same pattern as HidController). Implemented by [HostProfileStore].
  */
 interface HostProfiles {
     val profiles: StateFlow<List<HostProfile>>
     fun saveBt(label: String, mac: String)
-    fun saveWifi(label: String, host: String, port: Int, pin: String?)
-    fun pinFor(profile: HostProfile): String
     fun touch(id: String)
     fun remove(id: String)
 }
@@ -124,19 +102,9 @@ class HostProfileStore @Inject constructor(
     @ApplicationContext private val context: Context
 ) : HostProfiles {
     private fun file() = java.io.File(context.filesDir, "host_profiles.json")
-    private fun keyFile() = java.io.File(context.filesDir, "host_profiles.key")
 
     private val _profiles = MutableStateFlow(load())
     override val profiles: StateFlow<List<HostProfile>> = _profiles.asStateFlow()
-
-    /** Per-install random key for PIN obfuscation (created on first use). */
-    private fun installKey(): String = runCatching {
-        val f = keyFile()
-        if (!f.exists()) {
-            f.writeText(java.util.UUID.randomUUID().toString())
-        }
-        f.readText()
-    }.getOrDefault("aeropad")
 
     private fun load(): List<HostProfile> = runCatching {
         HostProfileCodec.decode(file().takeIf { it.exists() }?.readText())
@@ -164,30 +132,12 @@ class HostProfileStore @Inject constructor(
         )
     }
 
-    override fun saveWifi(label: String, host: String, port: Int, pin: String?) {
-        persist(
-            HostProfileCodec.upsert(
-                _profiles.value,
-                HostProfile(
-                    id = java.util.UUID.randomUUID().toString(),
-                    label = label, transport = HostProfile.TRANSPORT_WIFI,
-                    address = host, port = port,
-                    obfuscatedPin = pin?.let {
-                        HostProfileCodec.obfuscate(it, installKey())
-                    } ?: "",
-                    lastUsedAt = System.currentTimeMillis()
-                )
-            )
-        )
-    }
-
-    override fun pinFor(profile: HostProfile): String =
-        HostProfileCodec.deobfuscate(profile.obfuscatedPin, installKey())
-
     override fun touch(id: String) {
         val p = _profiles.value.firstOrNull { it.id == id } ?: return
         persist(HostProfileCodec.upsert(_profiles.value, p.copy(lastUsedAt = System.currentTimeMillis())))
     }
 
-    override fun remove(id: String) = persist(HostProfileCodec.remove(_profiles.value, id))
+    override fun remove(id: String) {
+        persist(HostProfileCodec.remove(_profiles.value, id))
+    }
 }

@@ -64,17 +64,13 @@ class GetBondedDevicesUseCase @Inject constructor(
 /** Send any HID input action (keyboard/mouse/media/system/gamepad). */
 class SendHidActionUseCase @Inject constructor(
     private val controller: HidController,
-    private val recorder: com.aeropad.remote.domain.MacroRecorder,
-    // AEROPAD v1.0 — dual-mode transport: the ONLY routing point.
-    private val transport: com.aeropad.remote.wifi.TransportManager,
-    private val wifi: com.aeropad.remote.wifi.WifiEngine
+    private val recorder: com.aeropad.remote.domain.MacroRecorder
 ) {
     operator fun invoke(action: HidAction) {
         // Macro recorder taps the pipeline: captures recordable actions
         // from EVERY screen while armed; zero overhead when idle.
         recorder.capture(action)
-        // WiFi mode routes to the LAN receiver; Bluetooth path unchanged.
-        if (transport.isWifi && wifi.isConnected) wifi.send(action)
-        else controller.send(action)
+        // AeroPad is Bluetooth-only: every action goes to the HID link.
+        controller.send(action)
     }
 }

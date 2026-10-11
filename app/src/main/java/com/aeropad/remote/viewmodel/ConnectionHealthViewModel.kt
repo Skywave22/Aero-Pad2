@@ -41,9 +41,6 @@ class ConnectionHealthViewModel @Inject constructor(
     private val engine: HidEngine,
     private val sendAction: SendHidActionUseCase,
     settingsStore: SettingsStore,
-    // AEROPAD v1.0 — WiFi metrics for the dual-mode dashboard.
-    private val wifiEngine: com.aeropad.remote.wifi.WifiEngine,
-    private val transportManager: com.aeropad.remote.wifi.TransportManager,
     private val historyStore: com.aeropad.remote.data.history.ConnectionHistoryStore
 ) : ViewModel() {
 
@@ -53,17 +50,6 @@ class ConnectionHealthViewModel @Inject constructor(
 
     /** AEROPAD v1.0 #39 — real next-retry timestamp for countdown UI. */
     val reconnectNextAtMs: StateFlow<Long?> = engine.reconnectNextAtMs
-
-    // ----- AEROPAD v1.0: WiFi-side state (all REAL) -----
-    val transportMode: StateFlow<com.aeropad.remote.wifi.TransportManager.Mode> =
-        transportManager.mode
-    val wifiState: StateFlow<com.aeropad.remote.wifi.WifiEngine.WifiState> = wifiEngine.state
-    /** Real measured WiFi round-trip time (ping/echo), null until measured. */
-    val wifiLatencyMs: StateFlow<Long?> = wifiEngine.latencyMs
-    /** Real WiFi counters: (sent, failed). */
-    val wifiCounters: StateFlow<Pair<Long, Long>> = wifiEngine.counters
-    fun setTransportMode(mode: com.aeropad.remote.wifi.TransportManager.Mode) =
-        transportManager.setMode(mode)
 
     // AEROPAD v1.0 #41 — real past sessions (refreshed on screen open).
     private val _history = MutableStateFlow<List<com.aeropad.remote.data.history.ConnectionSession>>(emptyList())

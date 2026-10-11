@@ -176,48 +176,6 @@ fun ConnectionHealthScreen(
                 }
             }
 
-            // ---------- AEROPAD v1.0: transport mode + WiFi metrics ----------
-            run {
-                val mode by viewModel.transportMode.collectAsState()
-                val wifiState by viewModel.wifiState.collectAsState()
-                val wifiLatency by viewModel.wifiLatencyMs.collectAsState()
-                val wifiCounters by viewModel.wifiCounters.collectAsState()
-                GlassCard(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Transport", style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.height(6.dp))
-                        Row {
-                            androidx.compose.material3.FilterChip(
-                                selected = mode == com.aeropad.remote.wifi.TransportManager.Mode.BLUETOOTH,
-                                onClick = { viewModel.setTransportMode(com.aeropad.remote.wifi.TransportManager.Mode.BLUETOOTH) },
-                                label = { Text("Bluetooth") },
-                                modifier = Modifier.padding(end = 8.dp)
-                            )
-                            androidx.compose.material3.FilterChip(
-                                selected = mode == com.aeropad.remote.wifi.TransportManager.Mode.WIFI,
-                                onClick = { viewModel.setTransportMode(com.aeropad.remote.wifi.TransportManager.Mode.WIFI) },
-                                label = { Text("WiFi LAN") }
-                            )
-                        }
-                        if (mode == com.aeropad.remote.wifi.TransportManager.Mode.WIFI) {
-                            val wifiConnected = wifiState is com.aeropad.remote.wifi.WifiEngine.WifiState.Connected
-                            MetricRow(
-                                "WiFi link",
-                                if (wifiConnected)
-                                    "connected — " + (wifiState as com.aeropad.remote.wifi.WifiEngine.WifiState.Connected).name
-                                else "not connected (open WiFi Control)"
-                            )
-                            MetricRow(
-                                "WiFi RTT latency (measured)",
-                                wifiLatency?.let { "${it}ms round-trip" } ?: "—"
-                            )
-                            MetricRow("WiFi packets", "${wifiCounters.first} sent • ${wifiCounters.second} failed")
-                        }
-                    }
-                }
-            }
-
             // ---------- Live metrics ----------
             GlassCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -320,7 +278,7 @@ fun ConnectionHealthScreen(
                                 val dur = if (s.endedAt > 0)
                                     "${(s.endedAt - s.startedAt) / 1000}s" else "open"
                                 MetricRow(
-                                    "${if (s.transport == "WIFI") "📶" else "🔵"} ${s.hostName}",
+                                    "🔵 ${s.hostName}",
                                     "$dur${if (s.disconnectReason.isNotBlank()) " • ${s.disconnectReason}" else ""}"
                                 )
                             }
@@ -335,15 +293,13 @@ fun ConnectionHealthScreen(
                 if (history.isNotEmpty()) {
                     val closed = history.filter { it.endedAt > 0 }
                     val totalMs = closed.sumOf { it.endedAt - it.startedAt }
-                    val btCount = history.count { it.transport == "BLUETOOTH" }
-                    val wifiCount = history.count { it.transport == "WIFI" }
                     val longest = closed.maxOfOrNull { it.endedAt - it.startedAt } ?: 0L
                     GlassCard(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text("Usage statistics", style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.height(4.dp))
-                            MetricRow("Sessions logged", "${history.size} (🔵 $btCount • 📶 $wifiCount)")
+                            MetricRow("Sessions logged", "${history.size}")
                             MetricRow("Total connected time", "${totalMs / 60000}m ${(totalMs / 1000) % 60}s")
                             MetricRow("Longest session", "${longest / 60000}m ${(longest / 1000) % 60}s")
                             MetricRow("Reports this session", "${snapshot.totalSent}")

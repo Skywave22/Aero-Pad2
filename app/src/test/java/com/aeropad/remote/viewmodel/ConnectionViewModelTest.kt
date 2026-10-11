@@ -70,8 +70,6 @@ class ConnectionViewModelTest {
                 )
             )
         }
-        override fun saveWifi(label: String, host: String, port: Int, pin: String?) {}
-        override fun pinFor(profile: com.aeropad.remote.data.hosts.HostProfile) = ""
         override fun touch(id: String) {}
         override fun remove(id: String) {
             _profiles.value = com.aeropad.remote.data.hosts.HostProfileCodec.remove(_profiles.value, id)

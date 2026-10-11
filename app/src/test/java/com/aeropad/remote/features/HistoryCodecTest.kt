@@ -22,9 +22,9 @@ class HistoryCodecTest {
     @Test
     fun `closeOpen closes only the open session of that transport`() {
         var list = listOf(
-            ConnectionSession("WIFI", "pc", 100L),                          // open
+            ConnectionSession("BLUETOOTH", "pc", 100L),                          // open
             ConnectionSession("BLUETOOTH", "tv", 50L),                      // open
-            ConnectionSession("WIFI", "old", 10L, endedAt = 20L)            // closed
+            ConnectionSession("BLUETOOTH", "old", 10L, endedAt = 20L)            // closed
         )
         list = HistoryCodec.closeOpen(list, "WIFI", 200L, "user disconnect")
         assertEquals(200L, list[0].endedAt)
@@ -35,7 +35,7 @@ class HistoryCodecTest {
 
     @Test
     fun `round trip and corrupt input safe`() {
-        val list = listOf(ConnectionSession("WIFI", "Desktop", 1L, 2L, "link dropped"))
+        val list = listOf(ConnectionSession("BLUETOOTH", "Desktop", 1L, 2L, "link dropped"))
         assertEquals(list, HistoryCodec.decode(HistoryCodec.encode(list)))
         assertTrue(HistoryCodec.decode("{bad").isEmpty())
         assertTrue(HistoryCodec.decode(null).isEmpty())
@@ -44,7 +44,7 @@ class HistoryCodecTest {
 
     @Test
     fun `closeOpen with no open session is a no-op`() {
-        val list = listOf(ConnectionSession("WIFI", "pc", 1L, 2L))
+        val list = listOf(ConnectionSession("BLUETOOTH", "pc", 1L, 2L))
         assertEquals(list, HistoryCodec.closeOpen(list, "WIFI", 9L, "x"))
         assertEquals(emptyList<ConnectionSession>(),
             HistoryCodec.closeOpen(emptyList(), "BLUETOOTH", 9L, "x"))

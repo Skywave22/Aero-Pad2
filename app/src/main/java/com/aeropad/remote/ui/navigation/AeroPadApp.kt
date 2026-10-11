@@ -87,7 +87,6 @@ object Routes {
     const val AIR_MOUSE = "air_mouse"
     const val PREVIEW_3D = "preview_3d"
     const val CONNECTION_HEALTH = "connection_health"
-    const val WIFI_CONNECT = "wifi_connect"
 }
 
 @Composable
@@ -194,9 +193,6 @@ fun AeroPadApp(
         composable(Routes.MULTIMEDIA) { MultimediaScreen(onBack = { navController.popBackStack() }) }
         composable(Routes.PRESENTER) { PresenterScreen(onBack = { navController.popBackStack() }) }
         composable(Routes.GAMEPAD) { GamepadScreen(onBack = { navController.popBackStack() }) }
-        composable(Routes.WIFI_CONNECT) {
-            com.aeropad.remote.ui.screens.wifi.WifiConnectScreen(onBack = { navController.popBackStack() })
-        }
         composable(Routes.CONNECTION_HEALTH) {
             ConnectionHealthScreen(onBack = { navController.popBackStack() })
         }
