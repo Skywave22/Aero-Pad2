@@ -99,6 +99,14 @@ class LayoutEditorViewModel @Inject constructor(
     private val _zoom = MutableStateFlow(1f)
     val zoom: StateFlow<Float> = _zoom.asStateFlow()
 
+    // Round 6 — snap is OPT-IN now: default is free, smooth 1:1 movement.
+    private val _snapToGrid = MutableStateFlow(false)
+    val snapToGrid: StateFlow<Boolean> = _snapToGrid.asStateFlow()
+    fun toggleSnap() { _snapToGrid.value = !_snapToGrid.value }
+
+    /** null = apply the layout grid, 0 = free placement. */
+    private fun gridArg(): Float? = if (_snapToGrid.value) null else 0f
+
     private var loadedBuiltIn = false
 
     init {
@@ -152,7 +160,7 @@ class LayoutEditorViewModel @Inject constructor(
             val dy = y - current.frame.y
             com.aeropad.remote.domain.EditorProOps.moveMany(_layout.value, members, dx, dy)
         } else {
-            LayoutEditorOps.place(_layout.value, id, x, y)
+            LayoutEditorOps.place(_layout.value, id, x, y, gridArg())
         }
         _dirty.value = true
         _saved.value = false
@@ -160,7 +168,7 @@ class LayoutEditorViewModel @Inject constructor(
 
     fun resizeSelected(w: Float, h: Float) {
         val id = _selectedId.value ?: return
-        _layout.value = LayoutEditorOps.resize(_layout.value, id, w, h)
+        _layout.value = LayoutEditorOps.resize(_layout.value, id, w, h, gridArg())
         _dirty.value = true
         _saved.value = false
     }

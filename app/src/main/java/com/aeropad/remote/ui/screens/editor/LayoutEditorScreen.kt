@@ -65,8 +65,9 @@ import com.aeropad.remote.viewmodel.LayoutEditorViewModel
  *
  * Edit mode:
  *  - tap widget = select (blue outline + resize handle)
- *  - drag widget body = move (grid snap)
- *  - drag corner handle = resize
+ *  - drag widget body = move — smooth 1:1 tracking from the gesture-start
+ *    frame (🧲 snap-to-grid is opt-in via the toolbar chip)
+ *  - drag corner handle = resize (same smooth tracking)
  *  - palette row adds new widgets; style sheet edits selected widget
  * Preview mode: identical rendering, live HID behavior via WidgetInteractor.
  */
@@ -89,6 +90,15 @@ fun LayoutEditorScreen(
     var showStyleSheet by remember { mutableStateOf(false) }
     // SECTION 2 — profile metadata dialog (name / category / notes).
     var showMetaDialog by remember { mutableStateOf(false) }
+    val snapToGrid by viewModel.snapToGrid.collectAsState()
+
+    // Round 6 — smooth editing: drags/resizes track 1:1 from the frame
+    // captured at gesture start, so sub-grid movement is never lost and
+    // widgets follow the finger pixel-perfectly.
+    var moveBase by remember { mutableStateOf<androidx.compose.ui.geometry.Offset?>(null) }
+    var moveAcc by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+    var resizeBase by remember { mutableStateOf<androidx.compose.ui.geometry.Offset?>(null) }
+    var resizeAcc by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
 
     Scaffold(
         containerColor = androidx.compose.ui.graphics.Color.Transparent,
@@ -145,6 +155,11 @@ fun LayoutEditorScreen(
                     if (selectedId == null) {
                         // SECTION 2 — rename/category/notes
                         AssistChip(onClick = { showMetaDialog = true }, label = { Text("ℹ Info") })
+                        // Round 6 — snap-to-grid is opt-in; default = free smooth move.
+                        AssistChip(
+                            onClick = { viewModel.toggleSnap() },
+                            label = { Text(if (snapToGrid) "🧲 Snap on" else "🧲 Snap off") }
+                        )
                         Text(
                             "Add:",
                             style = MaterialTheme.typography.bodyMedium,
@@ -218,6 +233,15 @@ fun LayoutEditorScreen(
                         )
                     } else {
                         AssistChip(onClick = { showStyleSheet = true }, label = { Text("Style & action") })
+                        AssistChip(
+                            onClick = { viewModel.toggleSnap() },
+                            label = { Text(if (snapToGrid) "🧲 On" else "🧲 Off") }
+                        )
+                        // Round 6 — fine nudge for precise placement.
+                        AssistChip(onClick = { viewModel.nudgeSelected(-0.01f, 0f) }, label = { Text("←") })
+                        AssistChip(onClick = { viewModel.nudgeSelected(0f, -0.01f) }, label = { Text("↑") })
+                        AssistChip(onClick = { viewModel.nudgeSelected(0f, 0.01f) }, label = { Text("↓") })
+                        AssistChip(onClick = { viewModel.nudgeSelected(0.01f, 0f) }, label = { Text("→") })
                         AssistChip(
                             onClick = { viewModel.duplicateSelected() },
                             label = { Text("Duplicate") },
@@ -479,14 +503,21 @@ private fun EditorCanvas(
                                 widgetId = widget.id,
                                 onSelect = { viewModel.select(widget.id) },
                                 onLongPress = { viewModel.toggleMultiSelect(widget.id) },
-                                onDragStart = { viewModel.beginGesture(); viewModel.select(widget.id) },
+                                onDragStart = {
+                                    viewModel.beginGesture()
+                                    viewModel.select(widget.id)
+                                    moveBase = androidx.compose.ui.geometry.Offset(frame.x, frame.y)
+                                    moveAcc = androidx.compose.ui.geometry.Offset.Zero
+                                },
                                 onDrag = { dxPx, dyPx ->
-                                    val current = viewModel.layout.value.widgets.firstOrNull { it.id == widget.id } ?: return@pointerInputSelectAndDrag
+                                    val base = moveBase ?: return@pointerInputSelectAndDrag
+                                    moveAcc += androidx.compose.ui.geometry.Offset(dxPx, dyPx)
                                     viewModel.moveSelected(
-                                        current.frame.x + dxPx / canvasWpx,
-                                        current.frame.y + dyPx / canvasHpx
+                                        base.x + moveAcc.x / canvasWpx,
+                                        base.y + moveAcc.y / canvasHpx
                                     )
-                                }
+                                },
+                                onDragEnd = { moveBase = null }
                             )
                     )
                     // Resize handle (bottom-right corner) for the selected widget.
@@ -494,17 +525,23 @@ private fun EditorCanvas(
                         Box(
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
-                                .size(26.dp)
+                                .size(34.dp)   // round 6: bigger grab target
                                 .background(MaterialTheme.colorScheme.primary, CircleShape)
                                 .pointerInputResize(
-                                    onStart = { viewModel.beginGesture() },
+                                    onStart = {
+                                        viewModel.beginGesture()
+                                        resizeBase = androidx.compose.ui.geometry.Offset(frame.w, frame.h)
+                                        resizeAcc = androidx.compose.ui.geometry.Offset.Zero
+                                    },
                                     onResize = { dxPx, dyPx ->
-                                        val current = viewModel.layout.value.widgets.firstOrNull { it.id == widget.id } ?: return@pointerInputResize
+                                        val base = resizeBase ?: return@pointerInputResize
+                                        resizeAcc += androidx.compose.ui.geometry.Offset(dxPx, dyPx)
                                         viewModel.resizeSelected(
-                                            current.frame.w + dxPx / canvasWpx,
-                                            current.frame.h + dyPx / canvasHpx
+                                            base.x + resizeAcc.x / canvasWpx,
+                                            base.y + resizeAcc.y / canvasHpx
                                         )
-                                    }
+                                    },
+                                    onEnd = { resizeBase = null }
                                 )
                         )
                     }
@@ -532,7 +569,8 @@ private fun Modifier.pointerInputSelectAndDrag(
     onSelect: () -> Unit,
     onLongPress: () -> Unit = {},
     onDragStart: () -> Unit,
-    onDrag: (Float, Float) -> Unit
+    onDrag: (Float, Float) -> Unit,
+    onDragEnd: () -> Unit = {}
 ): Modifier = this
     .pointerInput(widgetId + "-tap") {
         detectTapGestures(
@@ -542,7 +580,9 @@ private fun Modifier.pointerInputSelectAndDrag(
     }
     .pointerInput(widgetId + "-drag") {
         detectDragGestures(
-            onDragStart = { onDragStart() }
+            onDragStart = { onDragStart() },
+            onDragEnd = { onDragEnd() },
+            onDragCancel = { onDragEnd() }
         ) { change, dragAmount ->
             change.consume()
             onDrag(dragAmount.x, dragAmount.y)
@@ -551,10 +591,13 @@ private fun Modifier.pointerInputSelectAndDrag(
 
 private fun Modifier.pointerInputResize(
     onStart: () -> Unit,
-    onResize: (Float, Float) -> Unit
+    onResize: (Float, Float) -> Unit,
+    onEnd: () -> Unit = {}
 ): Modifier = this.pointerInput("resize") {
     detectDragGestures(
-        onDragStart = { onStart() }
+        onDragStart = { onStart() },
+        onDragEnd = { onEnd() },
+        onDragCancel = { onEnd() }
     ) { change, dragAmount ->
         change.consume()
         onResize(dragAmount.x, dragAmount.y)

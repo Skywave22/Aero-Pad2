@@ -21,24 +21,27 @@ object LayoutEditorOps {
     fun snap(value: Float, grid: Float): Float =
         if (grid <= 0f) value else (value / grid).roundToInt() * grid
 
-    /** Place a widget at an absolute fractional position (snap + clamp). */
-    fun place(layout: LayoutSpec, id: String, x: Float, y: Float): LayoutSpec =
+    /** Place a widget at an absolute fractional position (snap + clamp).
+     *  [grid] overrides the layout grid for this call: 0 = free placement
+     *  (smooth 1:1 drag), null = layout's own grid, value = explicit grid. */
+    fun place(layout: LayoutSpec, id: String, x: Float, y: Float, grid: Float? = null): LayoutSpec =
         updateWidget(layout, id) { w ->
             w.copy(
                 frame = w.frame.copy(
-                    x = snap(x, layout.gridSize),
-                    y = snap(y, layout.gridSize)
+                    x = snap(x, grid ?: layout.gridSize),
+                    y = snap(y, grid ?: layout.gridSize)
                 ).sanitized()
             )
         }
 
-    /** Resize a widget to absolute fractional dimensions (snap + clamp). */
-    fun resize(layout: LayoutSpec, id: String, w: Float, h: Float): LayoutSpec =
+    /** Resize a widget to absolute fractional dimensions (snap + clamp).
+     *  [grid] override semantics as in [place]. */
+    fun resize(layout: LayoutSpec, id: String, w: Float, h: Float, grid: Float? = null): LayoutSpec =
         updateWidget(layout, id) { widget ->
             widget.copy(
                 frame = widget.frame.copy(
-                    w = snap(w, layout.gridSize).coerceAtLeast(WidgetFrame.MIN_SIZE),
-                    h = snap(h, layout.gridSize).coerceAtLeast(WidgetFrame.MIN_SIZE)
+                    w = snap(w, grid ?: layout.gridSize).coerceAtLeast(WidgetFrame.MIN_SIZE),
+                    h = snap(h, grid ?: layout.gridSize).coerceAtLeast(WidgetFrame.MIN_SIZE)
                 ).sanitized()
             )
         }

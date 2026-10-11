@@ -51,7 +51,7 @@ data class WidgetFrame(
     val h: Float = 0.15f
 ) {
     companion object {
-        const val MIN_SIZE = 0.05f // 5% of canvas — nothing smaller is touchable
+        const val MIN_SIZE = 0.03f // 3% of canvas — small but still touchable
     }
 
     /** Clamp to the canvas; enforce minimum touchable size. */
