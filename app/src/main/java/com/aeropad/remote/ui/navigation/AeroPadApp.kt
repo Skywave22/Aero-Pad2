@@ -52,7 +52,6 @@ import com.aeropad.remote.ui.screens.multimedia.MultimediaScreen
 import com.aeropad.remote.ui.screens.numpad.NumpadScreen
 import com.aeropad.remote.ui.screens.presenter.PresenterScreen
 import com.aeropad.remote.ui.screens.settings.SettingsScreen
-import com.aeropad.remote.ui.screens.themes.ThemeGalleryScreen
 
 /**
  * Central navigation graph.
@@ -80,7 +79,6 @@ object Routes {
     const val LAYOUT_EDITOR = "layout_editor"
     const val COMBO_PROFILES = "combo_profiles"
     const val MACROS = "macros"
-    const val THEMES = "themes"
     const val GAMEPAD_BUILDER = "gamepad_builder"
     const val FULL_KEYBOARD = "full_keyboard"
     const val PC_COMBO = "pc_combo"
@@ -183,7 +181,6 @@ fun AeroPadApp(
         composable(Routes.SETTINGS) {
             SettingsScreen(
                 onBack = { navController.popBackStack() },
-                onOpenThemes = { navController.navigate(Routes.THEMES) },
                 onOpen3DPreview = { navController.navigate(Routes.PREVIEW_3D) }
             )
         }
@@ -204,7 +201,6 @@ fun AeroPadApp(
             )
         }
         composable(Routes.MACROS) { MacrosScreen(onBack = { navController.popBackStack() }) }
-        composable(Routes.THEMES) { ThemeGalleryScreen(onBack = { navController.popBackStack() }) }
         composable(Routes.GAMEPAD_BUILDER) { GamepadBuilderScreen(onBack = { navController.popBackStack() }) }
         composable(Routes.FULL_KEYBOARD) { FullKeyboardScreen(onBack = { navController.popBackStack() }) }
         composable(Routes.PC_COMBO) { PcComboScreen(onBack = { navController.popBackStack() }) }

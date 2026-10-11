@@ -1,18 +1,11 @@
 package com.aeropad.remote.ui.theme
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
-import androidx.compose.material3.Typography
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -21,77 +14,109 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.compositeOver
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
-import kotlin.math.max
 
 /**
- * Theme engine (Section 1, upgraded for the "implement all designs" pass).
+ * AeroPad theme system — pure and simple.
  *
- * [LocalAppTheme] carries the active [AppThemeSpec] to every composable.
- * [AeroPadAppTheme] bridges the spec into Material3 so ALL existing
- * screens re-skin automatically. The glass look is applied globally:
+ * There are exactly TWO looks: **Light** (clean white) and **Dark**
+ * (pure black, OLED-friendly). No theme gallery, no skins, no schedules —
+ * the user picks Light / Dark / Follow system in Settings and that's it.
  *
- *  - surface / surfaceVariant get the spec's [AppThemeSpec.surfaceAlpha]
- *    baked into the M3 color scheme -> every Card/sheet becomes a frosted
- *    translucent panel and the background orbs glow through, exactly like
- *    the designs/glass-*, lgm-*, hi-* mockups.
- *  - MaterialTheme.shapes are generated from [AppThemeSpec.cornerRadius]
- *    -> HUD themes get tight 8dp instrument corners while glass themes get
- *    soft 24-28dp pills, app-wide, with zero per-screen code.
+ * [LocalAppTheme] carries the active [AppThemeSpec] design tokens to every
+ * composable; [AeroPadAppTheme] bridges the tokens into Material 3 so all
+ * screens are styled consistently from one place.
  */
-val LocalAppTheme = staticCompositionLocalOf { BuiltInThemes.PILOT_DARK }
+val LocalAppTheme = staticCompositionLocalOf { AeroPadSpecs.DARK }
+
+/** The two built-in looks. */
+object AeroPadSpecs {
+
+    /** Shared accent: a confident, high-contrast blue. */
+    private val AccentBlue = androidx.compose.ui.graphics.Color(0xFF2563EB)
+    private val AccentBlueBright = androidx.compose.ui.graphics.Color(0xFF5B8DFF)
+
+    val LIGHT = AppThemeSpec(
+        id = "light",
+        name = "Light",
+        isDark = false,
+        primary = AccentBlue,
+        onPrimary = androidx.compose.ui.graphics.Color.White,
+        secondary = androidx.compose.ui.graphics.Color(0xFF0E7490),
+        background = androidx.compose.ui.graphics.Color(0xFFF7F8FA),
+        onBackground = androidx.compose.ui.graphics.Color(0xFF111827),
+        surface = androidx.compose.ui.graphics.Color.White,
+        onSurface = androidx.compose.ui.graphics.Color(0xFF111827),
+        surfaceVariant = androidx.compose.ui.graphics.Color(0xFFEEF1F5),
+        onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFF4B5563),
+        outline = androidx.compose.ui.graphics.Color(0xFFD3D9E3),
+        surfaceAlpha = 1f,
+        cornerRadius = 20
+    )
+
+    val DARK = AppThemeSpec(
+        id = "dark",
+        name = "Dark",
+        isDark = true,
+        primary = AccentBlueBright,
+        onPrimary = androidx.compose.ui.graphics.Color.Black,
+        secondary = androidx.compose.ui.graphics.Color(0xFF22D3EE),
+        background = androidx.compose.ui.graphics.Color.Black,
+        onBackground = androidx.compose.ui.graphics.Color(0xFFF3F4F6),
+        surface = androidx.compose.ui.graphics.Color(0xFF121212),
+        onSurface = androidx.compose.ui.graphics.Color(0xFFF3F4F6),
+        surfaceVariant = androidx.compose.ui.graphics.Color(0xFF1C1C1E),
+        onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFF9CA3AF),
+        outline = androidx.compose.ui.graphics.Color(0xFF2E2E33),
+        surfaceAlpha = 1f,
+        cornerRadius = 20
+    )
+
+    fun byMode(dark: Boolean): AppThemeSpec = if (dark) DARK else LIGHT
+}
 
 @Composable
 fun AeroPadAppTheme(
     spec: AppThemeSpec,
     content: @Composable () -> Unit
 ) {
-    // Glass materials: translucent surfaces let the themed orbs shine through.
-    val glassSurface = spec.surface.copy(alpha = spec.surfaceAlpha)
-    val glassVariant = spec.surfaceVariant.copy(alpha = spec.surfaceAlpha)
-
-    // FIX (screenshot bug): container colors must be OPAQUE. Translucent
-    // containers on elevated Cards let the shadow show THROUGH the surface,
-    // rendering an ugly dark "box inside a box" on emphasized keys
-    // (ENTER / LEFT CLICK). Composite the tint over the surface instead.
+    // Container colors must stay OPAQUE so elevated cards never show
+    // shadow bleed-through on emphasized keys.
     val primaryContainerC =
-        spec.primary.copy(alpha = if (spec.isDark) 0.75f else 0.15f).compositeOver(spec.surface)
+        spec.primary.copy(alpha = if (spec.isDark) 0.22f else 0.12f).compositeOver(spec.surface)
     val errorContainerC =
-        spec.error.copy(alpha = if (spec.isDark) 0.25f else 0.15f).compositeOver(spec.surface)
+        spec.error.copy(alpha = if (spec.isDark) 0.25f else 0.12f).compositeOver(spec.surface)
 
     val scheme = if (spec.isDark) {
         darkColorScheme(
             primary = spec.primary, onPrimary = spec.onPrimary,
             primaryContainer = primaryContainerC,
-            onPrimaryContainer = spec.onPrimary,
+            onPrimaryContainer = spec.primary,
             secondary = spec.secondary, onSecondary = spec.onPrimary,
             background = spec.background, onBackground = spec.onBackground,
-            surface = glassSurface, onSurface = spec.onSurface,
-            surfaceVariant = glassVariant, onSurfaceVariant = spec.onSurfaceVariant,
+            surface = spec.surface, onSurface = spec.onSurface,
+            surfaceVariant = spec.surfaceVariant, onSurfaceVariant = spec.onSurfaceVariant,
             outline = spec.outline,
-            error = spec.error, onError = spec.onPrimary,
-            errorContainer = errorContainerC, onErrorContainer = spec.onBackground
+            error = spec.error, onError = androidx.compose.ui.graphics.Color.White,
+            errorContainer = errorContainerC, onErrorContainer = spec.error
         )
     } else {
         lightColorScheme(
             primary = spec.primary, onPrimary = spec.onPrimary,
             primaryContainer = primaryContainerC,
             onPrimaryContainer = spec.primary,
-            secondary = spec.secondary, onSecondary = spec.onPrimary,
+            secondary = spec.secondary, onSecondary = androidx.compose.ui.graphics.Color.White,
             background = spec.background, onBackground = spec.onBackground,
-            surface = glassSurface, onSurface = spec.onSurface,
-            surfaceVariant = glassVariant, onSurfaceVariant = spec.onSurfaceVariant,
+            surface = spec.surface, onSurface = spec.onSurface,
+            surfaceVariant = spec.surfaceVariant, onSurfaceVariant = spec.onSurfaceVariant,
             outline = spec.outline,
-            error = spec.error, onError = spec.onPrimary,
+            error = spec.error, onError = androidx.compose.ui.graphics.Color.White,
             errorContainer = errorContainerC, onErrorContainer = spec.error
         )
     }
 
-    // Themed shape scale: small/medium/large derived from the spec radius.
+    // Shape scale derived from the single design-token radius.
     val r = spec.cornerRadius
     val shapes = Shapes(
         extraSmall = RoundedCornerShape((r / 3).coerceAtLeast(2).dp),
@@ -101,26 +126,20 @@ fun AeroPadAppTheme(
         extraLarge = RoundedCornerShape((r * 2).coerceAtMost(56).dp)
     )
 
-    // Cockpit HUD themes flip the type ramp to monospace.
-    val typography = if (spec.monoFont) monoTypography() else AeroPadTypography
-
-    // SECTION 1 — smooth animated theme switch: every scheme color
-    // cross-dissolves (350ms) instead of snapping. Content is NOT
-    // recreated (nav/back-stack state survives). Skipped for the very
-    // first composition and under Reduce Motion.
+    // Smooth Light<->Dark cross-dissolve (350ms); skipped under Reduce Motion.
     val animated = animateColorScheme(scheme)
 
     CompositionLocalProvider(LocalAppTheme provides spec) {
         MaterialTheme(
             colorScheme = animated,
-            typography = typography,
+            typography = AeroPadTypography,
             shapes = shapes,
             content = content
         )
     }
 }
 
-/** Animates the 14 most visible scheme colors on theme change. */
+/** Animates the most visible scheme colors on mode change. */
 @Composable
 private fun animateColorScheme(target: androidx.compose.material3.ColorScheme): androidx.compose.material3.ColorScheme {
     val reduce = com.aeropad.remote.ui.components.LocalReduceMotion.current
@@ -149,19 +168,8 @@ private fun animateColorScheme(target: androidx.compose.material3.ColorScheme): 
     )
 }
 
-private fun monoTypography(): Typography {
-    val base = AeroPadTypography
-    return Typography(
-        headlineMedium = base.headlineMedium.copy(fontFamily = FontFamily.Monospace),
-        titleMedium = base.titleMedium.copy(fontFamily = FontFamily.Monospace),
-        bodyMedium = base.bodyMedium.copy(fontFamily = FontFamily.Monospace),
-        labelLarge = base.labelLarge.copy(fontFamily = FontFamily.Monospace)
-    )
-}
-
 /**
- * Themed background: solid color plus the theme's blurred gradient orbs
- * (aurora / lagoon / neon looks). Pure Canvas — no bitmaps, no blur cost.
+ * App background: a clean solid color from the active mode.
  */
 @Composable
 fun ThemedBackground(
@@ -171,66 +179,13 @@ fun ThemedBackground(
     val spec = LocalAppTheme.current
     val reduceMotion = com.aeropad.remote.ui.components.LocalReduceMotion.current
 
-    // SECTION 1 — theme switch cross-dissolve for the backdrop itself,
-    // matching the animated Material scheme (no background "snap").
     val bgColor by androidx.compose.animation.animateColorAsState(
         targetValue = spec.background,
         animationSpec = if (reduceMotion) tween(0) else tween(350),
         label = "themedBg"
     )
 
-    // SECTION 3D — parallax depth: orbs drift slowly on offset phases so
-    // background layers feel separated. Draw-phase only (reading the
-    // animated value inside Canvas), zero recomposition per frame.
-    val drift = rememberInfiniteTransition(label = "orbDrift")
-    val phase by drift.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            tween(durationMillis = 26_000, easing = LinearEasing),
-            RepeatMode.Restart
-        ),
-        label = "orbPhase"
-    )
-
-    // V2 PART B — gravity parallax: real tilt shifts each orb layer at a
-    // depth-dependent rate (deeper layers move more), so the backdrop
-    // separates into true planes when you tilt the phone. (0,0) tilt =
-    // exact pre-B rendering.
-    val (tiltX, tiltY) = com.aeropad.remote.ui.components.LocalDeviceTilt.current
-
     Box(modifier = modifier.fillMaxSize().background(bgColor)) {
-        if (spec.backgroundOrbs.isNotEmpty()) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val maxEdge = max(size.width, size.height)
-                spec.backgroundOrbs.forEachIndexed { index, orb ->
-                    // Each orb gets its own phase offset + drift radius, so
-                    // layers move at different apparent depths (parallax).
-                    val p = if (reduceMotion) 0f
-                    else ((phase + index * 0.33f) % 1f) * 2f * Math.PI.toFloat()
-                    val driftAmp = maxEdge * 0.015f * (1 + index % 3)
-                    // Depth factor: layer 0 nearest (subtle), deeper layers
-                    // shift up to ~4% of the long edge at full tilt.
-                    val depth = 0.012f * (1 + index % 3)
-                    val px = -tiltX * maxEdge * depth
-                    val py = tiltY * maxEdge * depth
-                    val cx = size.width * orb.x + kotlin.math.sin(p) * driftAmp + px
-                    val cy = size.height * orb.y + kotlin.math.cos(p * 0.8f) * driftAmp + py
-                    drawCircle(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                orb.color.copy(alpha = orb.alpha),
-                                orb.color.copy(alpha = 0f)
-                            ),
-                            center = Offset(cx, cy),
-                            radius = maxEdge * orb.radius
-                        ),
-                        radius = maxEdge * orb.radius,
-                        center = Offset(cx, cy)
-                    )
-                }
-            }
-        }
         content()
     }
 }

@@ -3,16 +3,11 @@ package com.aeropad.remote.ui.theme
 import androidx.compose.ui.graphics.Color
 
 /**
- * SECTION 1 — Theme engine data model.
+ * Design-token model for the app's look.
  *
- * An [AppThemeSpec] fully describes a visual theme: colors, background
- * treatment, widget/button styling and typography flavor. Every screen
- * reads these tokens through [LocalAppTheme], so switching the spec
- * re-skins the entire app instantly with zero restart.
- *
- * The 6 built-in themes encode the design mockups produced during the
- * redesign phase (Liquid Glass, Hawaii Harmony night/day, Cockpit HUD,
- * Dark Neon, OLED Black, Minimal Light).
+ * An [AppThemeSpec] describes colors and component styling tokens. Every
+ * screen reads these tokens through [LocalAppTheme]. AeroPad ships exactly
+ * two specs — Light (white) and Dark (black) — see [AeroPadSpecs].
  */
 // V2 PART C compression — @Immutable: every field is a val of stable type;
 // declaring it lets Compose skip recomposition wherever a theme is passed.

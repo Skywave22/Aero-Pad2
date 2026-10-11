@@ -8,7 +8,6 @@ import com.aeropad.remote.data.db.AeroPadDatabase
 import com.aeropad.remote.data.db.GamepadProfileDao
 import com.aeropad.remote.data.db.LayoutProfileDao
 import com.aeropad.remote.data.db.MacroDao
-import com.aeropad.remote.data.db.SkinDao
 import com.aeropad.remote.data.settings.DataStoreSettings
 import com.aeropad.remote.domain.SettingsStore
 import dagger.Binds
@@ -50,15 +49,24 @@ object DataProvidersModule {
         }
     }
 
+    /**
+     * v2 -> v3: drops the legacy `skins` table (theme gallery removed —
+     * the app is Light/Dark only now). Layouts/macros/gamepads untouched.
+     */
+    private val MIGRATION_2_3 = object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("DROP TABLE IF EXISTS `skins`")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AeroPadDatabase =
         Room.databaseBuilder(context, AeroPadDatabase::class.java, "aeropad.db")
-            .addMigrations(MIGRATION_1_2)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
             .build()
 
     @Provides fun provideLayoutProfileDao(db: AeroPadDatabase): LayoutProfileDao = db.layoutProfileDao()
     @Provides fun provideMacroDao(db: AeroPadDatabase): MacroDao = db.macroDao()
-    @Provides fun provideSkinDao(db: AeroPadDatabase): SkinDao = db.skinDao()
     @Provides fun provideGamepadProfileDao(db: AeroPadDatabase): GamepadProfileDao = db.gamepadProfileDao()
 }

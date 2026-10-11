@@ -23,14 +23,14 @@ import com.aeropad.remote.ui.components.LocalReduceMotion
 import com.aeropad.remote.ui.components.Quality3D
 import com.aeropad.remote.ui.navigation.AeroPadApp
 import com.aeropad.remote.ui.theme.AeroPadAppTheme
-import com.aeropad.remote.ui.theme.BuiltInThemes
+import com.aeropad.remote.ui.theme.AeroPadSpecs
 import com.aeropad.remote.ui.theme.ThemedBackground
 import com.aeropad.remote.viewmodel.SettingsViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 /**
  * Single-activity host. Applies live app settings:
- *  - theme (Light/Dark/System)
+ *  - appearance (Light / Dark / Follow system — the ONLY appearance choice)
  *  - keep screen on
  *  - secure screen (FLAG_SECURE)
  *  - fullscreen (immersive) mode
@@ -38,7 +38,7 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    /** V2 MATRIX 3 finale — ambient light for the light-auto-theme. */
+    /** Motion sensors: gravity for the subtle device-tilt parallax. */
     @javax.inject.Inject
     lateinit var sensors: com.aeropad.remote.sensors.MotionSensorSource
 
@@ -49,62 +49,13 @@ class MainActivity : ComponentActivity() {
             val settingsViewModel: SettingsViewModel = hiltViewModel()
             val app by settingsViewModel.app.collectAsState()
 
-            // Section 1 theme engine: resolve the active AppThemeSpec.
-            // Light/Dark/System mode maps onto the spec catalog: if the user
-            // forces LIGHT but picked a dark spec (or vice versa), we swap to
-            // the closest built-in of the requested brightness.
+            // Pure two-mode appearance: Light / Dark / Follow system.
             val systemDark = isSystemInDarkTheme()
-            // SECTION 1: auto theme scheduling — when enabled, the hour of
-            // day picks day/night theme; re-evaluated every minute.
-            var clockHour by androidx.compose.runtime.remember {
-                androidx.compose.runtime.mutableStateOf(java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY))
-            }
-            androidx.compose.runtime.LaunchedEffect(app.autoThemeEnabled) {
-                while (app.autoThemeEnabled) {
-                    clockHour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
-                    kotlinx.coroutines.delay(60_000)
-                }
-            }
-            val scheduledId = com.aeropad.remote.ui.theme.ThemeScheduler.scheduledThemeId(
-                enabled = app.autoThemeEnabled,
-                hour = clockHour,
-                nightStart = app.autoNightStart,
-                nightEnd = app.autoNightEnd,
-                dayTheme = app.autoDayTheme,
-                nightTheme = app.autoNightTheme
-            )
-            // V2 MATRIX 3 finale — ambient-light theme: while enabled (and a
-            // real light sensor exists), lux decides day/night with
-            // hysteresis and TAKES PRIORITY over clock scheduling. null =
-            // no decision yet → fall through to schedule/manual.
-            var lightIsDark by androidx.compose.runtime.remember {
-                androidx.compose.runtime.mutableStateOf<Boolean?>(null)
-            }
-            androidx.compose.runtime.LaunchedEffect(app.lightAutoTheme) {
-                if (app.lightAutoTheme && sensors.hasLight) {
-                    val gate = com.aeropad.remote.ui.theme.LightThemeGate()
-                    sensors.ambientLight().collect { lux ->
-                        lightIsDark = gate.decide(lux, lightIsDark ?: false)
-                    }
-                } else {
-                    lightIsDark = null   // disabled → release the override
-                }
-            }
-            val lightThemeId = when (lightIsDark) {
-                true -> app.autoNightTheme
-                false -> app.autoDayTheme
-                null -> null
-            }.takeIf { app.lightAutoTheme }
-            val baseSpec = BuiltInThemes.byId(lightThemeId ?: scheduledId ?: app.themeId)
-            val wantDark = when (app.theme) {
+            val darkTheme = when (app.theme) {
                 ThemeMode.LIGHT -> false
                 ThemeMode.DARK -> true
                 ThemeMode.SYSTEM -> systemDark
             }
-            // Family-aware fallback: forcing Light while Hawaii Night is
-            // active gives Hawaii Day (not a generic light theme), etc.
-            val spec = if (baseSpec.isDark == wantDark) baseSpec
-            else BuiltInThemes.counterpart(baseSpec)
 
             // Apply window-level settings as side effects, restoring on change.
             DisposableEffect(app.keepScreenOn, app.secureScreen, app.fullscreenMode) {
@@ -129,24 +80,23 @@ class MainActivity : ComponentActivity() {
                 onDispose { }
             }
 
-            AeroPadAppTheme(spec = spec) {
+            AeroPadAppTheme(spec = AeroPadSpecs.byMode(darkTheme)) {
                 val iconPack = runCatching { IconPack.valueOf(app.iconPack) }
                     .getOrDefault(IconPack.ROUNDED)
                 androidx.compose.runtime.CompositionLocalProvider(
                     LocalHapticIntensity provides app.hapticIntensity,
                     LocalReduceMotion provides app.reduceMotion,
                     LocalIconPack provides iconPack,
-                    // AEROPAD v1.0 #60 — battery-aware: real PowerManager
-                    // saver state auto-drops 3D to FLAT (user pref untouched).
+                    // Battery-aware: real PowerManager saver state
+                    // auto-drops 3D to FLAT (user pref untouched).
                     LocalQuality3D provides run {
                         val pm = getSystemService(android.os.PowerManager::class.java)
                         if (pm?.isPowerSaveMode == true) Quality3D.FLAT
                         else runCatching { Quality3D.valueOf(app.quality3D) }.getOrDefault(Quality3D.FULL)
                     },
-                    // V2 PART B — live device tilt from the real gravity
-                    // sensor (low-pass smoothed). Off (0,0) under reduce
-                    // motion / FLAT quality / no sensor — those paths render
-                    // the exact pre-B visuals.
+                    // Live device tilt from the real gravity sensor
+                    // (low-pass smoothed). Off (0,0) under reduce motion /
+                    // FLAT quality / no sensor.
                     com.aeropad.remote.ui.components.LocalDeviceTilt provides run {
                         val quality = run {
                             val pm = getSystemService(android.os.PowerManager::class.java)
@@ -176,8 +126,8 @@ class MainActivity : ComponentActivity() {
                     }
                 ) {
                     ThemedBackground {
-                        // V2 MATRIX 8 — launcher shortcuts: the intent action
-                        // picks the start screen (pure mapping, HOME default).
+                        // Launcher shortcuts: the intent action picks the
+                        // start screen (pure mapping, HOME default).
                         AeroPadApp(
                             startRoute =
                                 com.aeropad.remote.domain.ShortcutActions.routeFor(intent?.action)

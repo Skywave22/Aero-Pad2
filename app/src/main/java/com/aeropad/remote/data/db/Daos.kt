@@ -45,21 +45,6 @@ interface MacroDao {
 }
 
 @Dao
-interface SkinDao {
-    @Query("SELECT * FROM skins ORDER BY name")
-    fun observeAll(): Flow<List<SkinEntity>>
-
-    @Query("SELECT * FROM skins WHERE id = :id")
-    suspend fun byId(id: Long): SkinEntity?
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsert(skin: SkinEntity): Long
-
-    @Query("DELETE FROM skins WHERE id = :id AND isBuiltIn = 0")
-    suspend fun deleteById(id: Long)
-}
-
-@Dao
 interface GamepadProfileDao {
     @Query("SELECT * FROM gamepad_profiles ORDER BY updatedAt DESC")
     fun observeAll(): Flow<List<GamepadProfileEntity>>

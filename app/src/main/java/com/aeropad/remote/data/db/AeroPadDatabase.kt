@@ -6,22 +6,21 @@ import androidx.room.RoomDatabase
 /**
  * AeroPad Room database.
  *
- * Version 1 schema is intentionally future-proof: layouts/macros/skins carry
- * their payload as JSON, so Modules 5–7 iterate WITHOUT schema migrations.
+ * Layouts/macros/gamepad profiles carry their payload as JSON, so feature
+ * work iterates WITHOUT schema migrations. v3 dropped the legacy `skins`
+ * table (theme gallery removed — the app is Light/Dark only now).
  */
 @Database(
     entities = [
         LayoutProfileEntity::class,
         MacroEntity::class,
-        SkinEntity::class,
         GamepadProfileEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AeroPadDatabase : RoomDatabase() {
     abstract fun layoutProfileDao(): LayoutProfileDao
     abstract fun macroDao(): MacroDao
-    abstract fun skinDao(): SkinDao
     abstract fun gamepadProfileDao(): GamepadProfileDao
 }

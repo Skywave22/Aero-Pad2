@@ -44,19 +44,6 @@ data class MacroEntity(
 )
 
 /**
- * A skin: full visual preset (color scheme + widget style defaults).
- * `valuesJson` holds a serialized SkinSpec (Module 5).
- */
-@Entity(tableName = "skins")
-data class SkinEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val name: String,
-    /** Serialized SkinSpec — colors, radii, fonts, opacities. */
-    val valuesJson: String,
-    val isBuiltIn: Boolean = false
-)
-
-/**
  * A custom gamepad profile (Section 2 builder).
  * `layoutJson` holds a serialized GamepadLayoutSpec.
  */

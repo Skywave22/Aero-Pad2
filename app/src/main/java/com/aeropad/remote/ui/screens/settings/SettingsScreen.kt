@@ -60,7 +60,6 @@ import com.aeropad.remote.viewmodel.SettingsViewModel
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
-    onOpenThemes: () -> Unit = {},
     onOpen3DPreview: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -104,26 +103,7 @@ fun SettingsScreen(
             )
 
             // ---------- General ----------
-            if (matches("theme", "fullscreen", "screen", "vibration", "secure", "gallery", "motion", "3d", "icon", "pack")) SettingsGroup("General") {
-                OutlinedButton(
-                    onClick = onOpenThemes,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-                        contentColor = spec.primary
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(
-                        width = 1.dp,
-                        color = spec.primary.copy(alpha = 0.5f)
-                    )
-                ) {
-                    Text(
-                        text = if (spec.monoFont) "OPEN THEME GALLERY" else "Open theme gallery",
-                        style = if (spec.monoFont) MaterialTheme.typography.labelLarge.copy(fontFamily = FontFamily.Monospace)
-                        else MaterialTheme.typography.labelLarge
-                    )
-                }
-                Spacer(Modifier.height(12.dp))
+            if (matches("theme", "fullscreen", "screen", "vibration", "secure", "motion", "3d", "icon", "pack")) SettingsGroup("General") {
                 Text(
                     text = if (spec.monoFont) "THEME" else "Theme",
                     style = if (spec.monoFont) MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace)
@@ -241,44 +221,6 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            }
-
-            // ---------- SECTION 1: Auto theme scheduling ----------
-            if (matches("theme", "auto", "schedule", "night", "day")) SettingsGroup("Auto theme schedule") {
-                ToggleRow(
-                    "Switch theme by time of day",
-                    app.autoThemeEnabled,
-                    viewModel::setAutoTheme,
-                    subtitle = "Day theme by day, night theme at night (checked every minute)"
-                )
-                ToggleRow(
-                    "Switch theme by room light",
-                    app.lightAutoTheme,
-                    viewModel::setLightAutoTheme,
-                    subtitle = "Real light sensor: dark room → night theme (overrides the clock; needs a light sensor)"
-                )
-                if (app.autoThemeEnabled) {
-                    Text("Day theme", style = MaterialTheme.typography.bodyMedium)
-                    ThemePickerRow(
-                        selectedId = app.autoDayTheme,
-                        dark = false,
-                        onPick = viewModel::setAutoDayTheme
-                    )
-                    Text("Night theme", style = MaterialTheme.typography.bodyMedium)
-                    ThemePickerRow(
-                        selectedId = app.autoNightTheme,
-                        dark = true,
-                        onPick = viewModel::setAutoNightTheme
-                    )
-                    SliderRow(
-                        "Night starts (hour)", app.autoNightStart,
-                        viewModel::setAutoNightStart, max = 23
-                    )
-                    SliderRow(
-                        "Night ends (hour)", app.autoNightEnd,
-                        viewModel::setAutoNightEnd, max = 23
-                    )
-                }
             }
 
             // ---------- Mouse ----------
@@ -439,31 +381,4 @@ private fun SliderRow(
     }
 }
 
-/** SECTION 1 — compact theme chips for the auto-schedule pickers. */
-@Composable
-private fun ThemePickerRow(
-    selectedId: String,
-    dark: Boolean,
-    onPick: (String) -> Unit
-) {
-    val options = com.aeropad.remote.ui.theme.BuiltInThemes.ALL.filter { it.isDark == dark }
-    LazyRow(
-        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
-        modifier = Modifier.padding(vertical = 4.dp)
-    ) {
-        items(options, key = { it.id }) { theme ->
-            FilterChip(
-                selected = theme.id == selectedId,
-                onClick = { onPick(theme.id) },
-                label = { Text(theme.name) },
-                leadingIcon = {
-                    Box(
-                        modifier = Modifier
-                            .size(12.dp)
-                            .background(theme.primary, CircleShape)
-                    )
-                }
-            )
-        }
-    }
-}
+

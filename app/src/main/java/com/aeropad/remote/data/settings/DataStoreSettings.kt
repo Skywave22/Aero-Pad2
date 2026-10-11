@@ -46,7 +46,6 @@ class DataStoreSettings @Inject constructor(
     private object Keys {
         // App
         val THEME = stringPreferencesKey("theme")
-        val THEME_ID = stringPreferencesKey("theme_id")
         val FULLSCREEN = booleanPreferencesKey("fullscreen")
         val KEEP_SCREEN_ON = booleanPreferencesKey("keep_screen_on")
         val VIBRATIONS = booleanPreferencesKey("vibrations")
@@ -56,19 +55,10 @@ class DataStoreSettings @Inject constructor(
         val REDUCE_MOTION = booleanPreferencesKey("reduce_motion")
         val ICON_PACK = stringPreferencesKey("icon_pack")
         val QUALITY_3D = stringPreferencesKey("quality_3d")
-        // Section 1 deep theme pass
-        val RECENT_THEMES = stringPreferencesKey("recent_themes")
-        val FAVORITE_THEMES = stringPreferencesKey("favorite_themes")
-        val AUTO_THEME = booleanPreferencesKey("auto_theme")
-        val AUTO_DAY_THEME = stringPreferencesKey("auto_day_theme")
-        val AUTO_NIGHT_THEME = stringPreferencesKey("auto_night_theme")
-        val AUTO_NIGHT_START = intPreferencesKey("auto_night_start")
-        val AUTO_NIGHT_END = intPreferencesKey("auto_night_end")
         val FAV_GAMEPADS = stringPreferencesKey("fav_gamepads")
         val RECENT_GAMEPADS = stringPreferencesKey("recent_gamepads")
         val FPS_OVERLAY = booleanPreferencesKey("fps_overlay")
         val AUTOMATION_API = booleanPreferencesKey("automation_api")   // V2 M8 b2
-        val LIGHT_AUTO_THEME = booleanPreferencesKey("light_auto_theme")   // V2 M3
         val SPOKEN_ALERTS = booleanPreferencesKey("spoken_alerts")   // V2 M5 b2
         // Mouse
         val M_SENSITIVITY = intPreferencesKey("m_sensitivity")
@@ -104,7 +94,6 @@ class DataStoreSettings @Inject constructor(
     override val appSettings: Flow<AppSettings> = safePrefs.map { p ->
         AppSettings(
             theme = p[Keys.THEME].toEnum(ThemeMode.SYSTEM),
-            themeId = p[Keys.THEME_ID] ?: "aero_glass",
             fullscreenMode = p[Keys.FULLSCREEN] ?: false,
             keepScreenOn = p[Keys.KEEP_SCREEN_ON] ?: true,
             touchVibrations = p[Keys.VIBRATIONS] ?: true,
@@ -114,18 +103,10 @@ class DataStoreSettings @Inject constructor(
             reduceMotion = p[Keys.REDUCE_MOTION] ?: false,
             iconPack = p[Keys.ICON_PACK] ?: "ROUNDED",
             quality3D = p[Keys.QUALITY_3D] ?: "FULL",
-            recentThemes = p[Keys.RECENT_THEMES] ?: "",
-            favoriteThemes = p[Keys.FAVORITE_THEMES] ?: "",
-            autoThemeEnabled = p[Keys.AUTO_THEME] ?: false,
-            autoDayTheme = p[Keys.AUTO_DAY_THEME] ?: "minimal_light",
-            autoNightTheme = p[Keys.AUTO_NIGHT_THEME] ?: "pilot_dark",
-            autoNightStart = (p[Keys.AUTO_NIGHT_START] ?: 19).coerceIn(0, 23),
-            autoNightEnd = (p[Keys.AUTO_NIGHT_END] ?: 7).coerceIn(0, 23),
             favoriteGamepads = p[Keys.FAV_GAMEPADS] ?: "",
             recentGamepads = p[Keys.RECENT_GAMEPADS] ?: "",
             fpsOverlay = p[Keys.FPS_OVERLAY] ?: false,
             automationApi = p[Keys.AUTOMATION_API] ?: false,
-            lightAutoTheme = p[Keys.LIGHT_AUTO_THEME] ?: false,
             spokenAlerts = p[Keys.SPOKEN_ALERTS] ?: true
         )
     }
@@ -161,7 +142,6 @@ class DataStoreSettings @Inject constructor(
     override suspend fun updateApp(settings: AppSettings) {
         safeEdit { p ->
             p[Keys.THEME] = settings.theme.name
-            p[Keys.THEME_ID] = settings.themeId
             p[Keys.FULLSCREEN] = settings.fullscreenMode
             p[Keys.KEEP_SCREEN_ON] = settings.keepScreenOn
             p[Keys.VIBRATIONS] = settings.touchVibrations
@@ -171,18 +151,10 @@ class DataStoreSettings @Inject constructor(
             p[Keys.REDUCE_MOTION] = settings.reduceMotion
             p[Keys.ICON_PACK] = settings.iconPack
             p[Keys.QUALITY_3D] = settings.quality3D
-            p[Keys.RECENT_THEMES] = settings.recentThemes
-            p[Keys.FAVORITE_THEMES] = settings.favoriteThemes
-            p[Keys.AUTO_THEME] = settings.autoThemeEnabled
-            p[Keys.AUTO_DAY_THEME] = settings.autoDayTheme
-            p[Keys.AUTO_NIGHT_THEME] = settings.autoNightTheme
-            p[Keys.AUTO_NIGHT_START] = settings.autoNightStart.coerceIn(0, 23)
-            p[Keys.AUTO_NIGHT_END] = settings.autoNightEnd.coerceIn(0, 23)
             p[Keys.FAV_GAMEPADS] = settings.favoriteGamepads
             p[Keys.RECENT_GAMEPADS] = settings.recentGamepads
             p[Keys.FPS_OVERLAY] = settings.fpsOverlay
             p[Keys.AUTOMATION_API] = settings.automationApi
-            p[Keys.LIGHT_AUTO_THEME] = settings.lightAutoTheme
             p[Keys.SPOKEN_ALERTS] = settings.spokenAlerts
         }
     }

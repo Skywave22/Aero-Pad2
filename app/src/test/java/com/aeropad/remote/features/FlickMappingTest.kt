@@ -2,13 +2,12 @@ package com.aeropad.remote.features
 
 import com.aeropad.remote.domain.FlickDetector.FlickDirection
 import com.aeropad.remote.domain.FlickMapping
-import com.aeropad.remote.ui.theme.LightThemeGate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** V2 MATRIX 3 finale — flick mapping cycle + light-theme hysteresis. */
+/** Flick mapping cycle sanity tests. */
 class FlickMappingTest {
 
     @Test
@@ -80,32 +79,5 @@ class FlickMappingTest {
             flickMap = mapOf("UP" to 1, "DIAGONAL" to 2, "LEFT" to 99)
         ).sanitized()
         assertEquals(mapOf("UP" to 1, "LEFT" to 15), spec.flickMap)
-    }
-
-    // ------------------------------------------------------------------
-    // LightThemeGate hysteresis
-    // ------------------------------------------------------------------
-
-    @Test
-    fun `dark below threshold light above threshold`() {
-        val gate = LightThemeGate(darkBelowLux = 15f, lightAboveLux = 60f)
-        assertTrue(gate.decide(5f, wasDark = false))     // dark room → dark
-        assertFalse(gate.decide(500f, wasDark = true))   // bright → light
-    }
-
-    @Test
-    fun `hysteresis band holds previous state`() {
-        val gate = LightThemeGate(15f, 60f)
-        // 30 lux is between thresholds: state must NOT flip either way.
-        assertTrue(gate.decide(30f, wasDark = true))
-        assertFalse(gate.decide(30f, wasDark = false))
-    }
-
-    @Test
-    fun `garbage lux holds state`() {
-        val gate = LightThemeGate()
-        assertTrue(gate.decide(Float.NaN, wasDark = true))
-        assertFalse(gate.decide(Float.NaN, wasDark = false))
-        assertTrue(gate.decide(-3f, wasDark = true))
     }
 }

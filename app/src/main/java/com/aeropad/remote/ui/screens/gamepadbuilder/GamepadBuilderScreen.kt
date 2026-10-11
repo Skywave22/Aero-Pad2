@@ -276,7 +276,7 @@ private fun ProfileList(onBack: () -> Unit, viewModel: GamepadBuilderViewModel) 
                             )
                         }
                         // ADV S3 — favorite pin (favorites sort to top).
-                        val fav = com.aeropad.remote.ui.theme.ThemeListCodec.contains(
+                        val fav = com.aeropad.remote.domain.CsvListCodec.contains(
                             appSettings.favoriteGamepads, profile.id.toString())
                         IconButton(onClick = { viewModel.toggleFavorite(profile.id) }) {
                             Icon(

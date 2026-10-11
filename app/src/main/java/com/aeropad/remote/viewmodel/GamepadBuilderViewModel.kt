@@ -1065,19 +1065,19 @@ class GamepadBuilderViewModel @Inject constructor(
         viewModelScope.launch {
             val cur = appSettings.value
             settingsStore.updateApp(cur.copy(
-                favoriteGamepads = com.aeropad.remote.ui.theme.ThemeListCodec.toggle(cur.favoriteGamepads, id.toString())
+                favoriteGamepads = com.aeropad.remote.domain.CsvListCodec.toggle(cur.favoriteGamepads, id.toString())
             ))
         }
     }
 
     fun isFavorite(id: Long): Boolean =
-        com.aeropad.remote.ui.theme.ThemeListCodec.contains(appSettings.value.favoriteGamepads, id.toString())
+        com.aeropad.remote.domain.CsvListCodec.contains(appSettings.value.favoriteGamepads, id.toString())
 
     private fun recordRecent(id: Long) {
         viewModelScope.launch {
             val cur = appSettings.value
             settingsStore.updateApp(cur.copy(
-                recentGamepads = com.aeropad.remote.ui.theme.ThemeListCodec.push(cur.recentGamepads, id.toString())
+                recentGamepads = com.aeropad.remote.domain.CsvListCodec.push(cur.recentGamepads, id.toString())
             ))
         }
     }
@@ -1101,7 +1101,7 @@ class GamepadBuilderViewModel @Inject constructor(
         kotlinx.coroutines.flow.combine(
             profiles, _profileQuery, _tagFilter, appSettings
         ) { list, q, tag, settings ->
-            val favs = com.aeropad.remote.ui.theme.ThemeListCodec.decode(settings.favoriteGamepads)
+            val favs = com.aeropad.remote.domain.CsvListCodec.decode(settings.favoriteGamepads)
             list.filter { p ->
                 (q.isBlank() || p.spec.name.contains(q, true) ||
                     p.spec.tags.any { it.contains(q, true) }) &&
@@ -1112,7 +1112,7 @@ class GamepadBuilderViewModel @Inject constructor(
     /** Recently played profiles resolved against the live list. */
     val recentProfiles: StateFlow<List<GamepadProfile>> =
         kotlinx.coroutines.flow.combine(profiles, appSettings) { list, settings ->
-            com.aeropad.remote.ui.theme.ThemeListCodec.decode(settings.recentGamepads)
+            com.aeropad.remote.domain.CsvListCodec.decode(settings.recentGamepads)
                 .mapNotNull { idStr -> list.firstOrNull { it.id.toString() == idStr } }
         }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
