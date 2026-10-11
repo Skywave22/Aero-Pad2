@@ -76,19 +76,10 @@ fun KeyCard(
     onClick: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-    // SECTION 3D: true press-depth — key tips back and sinks in, and its
-    // shadow collapses (light-source simulation). Honors Reduce Motion.
+    // True press-depth: the key tips back and sinks in, and its shadow
+    // collapses while pressed (light-source simulation). Honors Reduce Motion.
     val elevation = pressedElevation(interactionSource, idle = 6f, pressed = 1f)
-    val spec = LocalAppTheme.current
     val shape = MaterialTheme.shapes.medium
-
-    // Monospace & uppercase for HUD theme compatibility
-    val finalLabel = if (spec.monoFont) label.uppercase() else label
-    val labelStyle = if (spec.monoFont) {
-        MaterialTheme.typography.labelLarge.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
-    } else {
-        MaterialTheme.typography.labelLarge
-    }
 
     val contentColor = if (emphasized) {
         MaterialTheme.colorScheme.onPrimaryContainer
@@ -106,79 +97,29 @@ fun KeyCard(
             onClick = onClick
         )
 
-    if (spec.surfaceAlpha < 1f) {
-        // Glass look: use custom sheen gradient and border
-        val surfaceColor = if (emphasized) {
-            spec.primary.copy(alpha = 0.35f)
-        } else {
-            spec.surfaceVariant.copy(alpha = spec.surfaceAlpha)
-        }
+    // Solid key: gradient fake-lighting (top-left light source) + dynamic
+    // shadow that collapses while pressed. Emphasized keys (ENTER, LEFT
+    // CLICK…) use the primary container so they stand out instantly.
+    val base = if (emphasized) MaterialTheme.colorScheme.primaryContainer
+    else MaterialTheme.colorScheme.surfaceVariant
 
-        val sheenBrush = Brush.verticalGradient(
-            colors = listOf(
-                Color.White.copy(alpha = 0.12f),
-                Color.White.copy(alpha = 0f)
-            )
+    Box(
+        modifier = baseModifier
+            .surface3D(
+                base = base,
+                shape = shape,
+                material = Material3D.GLOSSY,
+                elevation = elevation.dp
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            color = contentColor,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 4.dp)
         )
-
-        val borderBrush = Brush.verticalGradient(
-            colors = listOf(
-                Color.White.copy(alpha = 0.35f),
-                spec.outline.copy(alpha = 0.15f)
-            )
-        )
-
-        Box(
-            modifier = baseModifier
-                .background(surfaceColor, shape)
-                .background(sheenBrush, shape)
-                .border(1.dp, borderBrush, shape),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = finalLabel,
-                style = labelStyle,
-                color = contentColor,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 4.dp)
-            )
-        }
-    } else {
-        // Solid look — real 3D key: gradient fake-lighting (top-left light
-        // source) + dynamic shadow that collapses while pressed. This
-        // replaces the old elevated Card, whose shadow bled through
-        // translucent container colors and painted a dark "box inside a
-        // box" on emphasized keys (ENTER / LEFT CLICK screenshot bug).
-        val base = if (emphasized) MaterialTheme.colorScheme.primaryContainer
-        else MaterialTheme.colorScheme.surfaceVariant
-
-        val edgeModifier = if (spec.edgeGlow) {
-            Modifier.border(
-                width = 1.dp,
-                color = (spec.glowColor ?: spec.onSurface).copy(alpha = 0.22f),
-                shape = shape
-            )
-        } else Modifier
-
-        Box(
-            modifier = baseModifier
-                .surface3D(
-                    base = base,
-                    shape = shape,
-                    material = Material3D.GLOSSY,
-                    elevation = elevation.dp
-                )
-                .then(edgeModifier),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = finalLabel,
-                style = labelStyle,
-                color = contentColor,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 4.dp)
-            )
-        }
     }
 }
 

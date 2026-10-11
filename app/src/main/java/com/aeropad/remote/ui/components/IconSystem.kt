@@ -14,7 +14,6 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Mouse
 import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Pin
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Slideshow
@@ -29,7 +28,6 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Keyboard
 import androidx.compose.material.icons.outlined.Mouse
 import androidx.compose.material.icons.outlined.MusicNote
-import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Pin
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Slideshow
@@ -44,7 +42,6 @@ import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Keyboard
 import androidx.compose.material.icons.rounded.Mouse
 import androidx.compose.material.icons.rounded.MusicNote
-import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Pin
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Slideshow
@@ -59,7 +56,6 @@ import androidx.compose.material.icons.sharp.Home
 import androidx.compose.material.icons.sharp.Keyboard
 import androidx.compose.material.icons.sharp.Mouse
 import androidx.compose.material.icons.sharp.MusicNote
-import androidx.compose.material.icons.sharp.Palette
 import androidx.compose.material.icons.sharp.Pin
 import androidx.compose.material.icons.sharp.Settings
 import androidx.compose.material.icons.sharp.Slideshow
@@ -78,7 +74,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 enum class IconPack { FILLED, OUTLINED, ROUNDED, SHARP }
 
 enum class AppIcon {
-    HOME, DEVICES, SETTINGS, LAYOUTS, THEMES, MACROS,
+    HOME, DEVICES, SETTINGS, LAYOUTS, MACROS,
     MOUSE, KEYBOARD, NUMPAD, MULTIMEDIA, PRESENTER,
     GAMEPAD, PAD_BUILDER, CONNECT, HAPTICS, HELP
 }
@@ -91,9 +87,7 @@ fun iconFor(icon: AppIcon, pack: IconPack): ImageVector = when (pack) {
         AppIcon.HOME -> Icons.Filled.Home
         AppIcon.DEVICES -> Icons.Filled.Computer
         AppIcon.SETTINGS -> Icons.Filled.Settings
-        AppIcon.LAYOUTS -> Icons.Filled.Dashboard
-        AppIcon.THEMES -> Icons.Filled.Palette
-        AppIcon.MACROS -> Icons.Filled.Bolt
+        AppIcon.LAYOUTS -> Icons.Filled.Dashboard        AppIcon.MACROS -> Icons.Filled.Bolt
         AppIcon.MOUSE -> Icons.Filled.Mouse
         AppIcon.KEYBOARD -> Icons.Filled.Keyboard
         AppIcon.NUMPAD -> Icons.Filled.Pin
@@ -109,9 +103,7 @@ fun iconFor(icon: AppIcon, pack: IconPack): ImageVector = when (pack) {
         AppIcon.HOME -> Icons.Outlined.Home
         AppIcon.DEVICES -> Icons.Outlined.Computer
         AppIcon.SETTINGS -> Icons.Outlined.Settings
-        AppIcon.LAYOUTS -> Icons.Outlined.Dashboard
-        AppIcon.THEMES -> Icons.Outlined.Palette
-        AppIcon.MACROS -> Icons.Outlined.Bolt
+        AppIcon.LAYOUTS -> Icons.Outlined.Dashboard        AppIcon.MACROS -> Icons.Outlined.Bolt
         AppIcon.MOUSE -> Icons.Outlined.Mouse
         AppIcon.KEYBOARD -> Icons.Outlined.Keyboard
         AppIcon.NUMPAD -> Icons.Outlined.Pin
@@ -127,9 +119,7 @@ fun iconFor(icon: AppIcon, pack: IconPack): ImageVector = when (pack) {
         AppIcon.HOME -> Icons.Rounded.Home
         AppIcon.DEVICES -> Icons.Rounded.Computer
         AppIcon.SETTINGS -> Icons.Rounded.Settings
-        AppIcon.LAYOUTS -> Icons.Rounded.Dashboard
-        AppIcon.THEMES -> Icons.Rounded.Palette
-        AppIcon.MACROS -> Icons.Rounded.Bolt
+        AppIcon.LAYOUTS -> Icons.Rounded.Dashboard        AppIcon.MACROS -> Icons.Rounded.Bolt
         AppIcon.MOUSE -> Icons.Rounded.Mouse
         AppIcon.KEYBOARD -> Icons.Rounded.Keyboard
         AppIcon.NUMPAD -> Icons.Rounded.Pin
@@ -145,9 +135,7 @@ fun iconFor(icon: AppIcon, pack: IconPack): ImageVector = when (pack) {
         AppIcon.HOME -> Icons.Sharp.Home
         AppIcon.DEVICES -> Icons.Sharp.Computer
         AppIcon.SETTINGS -> Icons.Sharp.Settings
-        AppIcon.LAYOUTS -> Icons.Sharp.Dashboard
-        AppIcon.THEMES -> Icons.Sharp.Palette
-        AppIcon.MACROS -> Icons.Sharp.Bolt
+        AppIcon.LAYOUTS -> Icons.Sharp.Dashboard        AppIcon.MACROS -> Icons.Sharp.Bolt
         AppIcon.MOUSE -> Icons.Sharp.Mouse
         AppIcon.KEYBOARD -> Icons.Sharp.Keyboard
         AppIcon.NUMPAD -> Icons.Sharp.Pin

@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -22,17 +21,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 
 /**
- * UI/UX REDESIGN — Floating glass bottom dock (the pill dock from the
- * v2-01 mockups). Shown on top-level destinations only; navigation between
- * the app's four hubs: Home, Layouts, Devices, Settings.
- *
- * Bottom navigation was chosen over a side drawer: this is a one-handed
- * controller app used in portrait AND landscape — thumb-reachable tabs
- * beat a hidden drawer for its core loop (pick a control surface fast).
+ * Floating bottom dock — the app's four hubs: Home, Layouts, Devices,
+ * Settings. One-handed friendly: thumb-reachable tabs, shown only on
+ * top-level destinations so control surfaces keep the full screen.
  */
 data class DockItem(val route: String, val label: String, val icon: AppIcon)
 
@@ -49,13 +45,13 @@ fun GlassDock(
     onNavigate: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    GlassCard(
+    Box(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
             .padding(horizontal = 40.dp, vertical = 10.dp)
-            .shadow(DepthLayer.FLOATING, CircleShape, clip = false),
-        shape = CircleShape
+            .shadow(DepthLayer.FLOATING, CircleShape, clip = false)
+            .background(MaterialTheme.colorScheme.surface, CircleShape)
     ) {
         Row(
             modifier = Modifier
@@ -84,8 +80,8 @@ fun GlassDock(
                         modifier = Modifier
                             .size(34.dp)
                             .background(
-                                if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
-                                else androidx.compose.ui.graphics.Color.Transparent,
+                                if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+                                else Color.Transparent,
                                 CircleShape
                             ),
                         contentAlignment = Alignment.Center

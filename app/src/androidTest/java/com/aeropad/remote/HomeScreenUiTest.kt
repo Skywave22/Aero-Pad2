@@ -33,8 +33,8 @@ class HomeScreenUiTest {
 
     @Test
     fun homeShowsAppTitleAndTiles() {
-        composeRule.onNodeWithText("AeroPad Remote").assertIsDisplayed()
-        composeRule.onNodeWithText("Connect").assertIsDisplayed()
+        composeRule.onNodeWithText("AeroPad").assertIsDisplayed()
+        composeRule.onNodeWithText("Connect to a device").assertIsDisplayed()
         composeRule.onNodeWithText("Mouse").assertIsDisplayed()
         composeRule.onNodeWithText("Keyboard").assertIsDisplayed()
         composeRule.onNodeWithText("Layouts").assertIsDisplayed()
@@ -44,7 +44,7 @@ class HomeScreenUiTest {
     @Test
     fun settingsTileOpensSettings() {
         composeRule.onNodeWithText("Settings").performClick()
-        composeRule.onNodeWithText("General").assertIsDisplayed()
+        composeRule.onNodeWithText("Appearance").assertIsDisplayed()
         composeRule.onNodeWithText("Mouse & trackpad").assertIsDisplayed()
     }
 
