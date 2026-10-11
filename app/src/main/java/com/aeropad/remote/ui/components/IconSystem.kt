@@ -87,7 +87,8 @@ fun iconFor(icon: AppIcon, pack: IconPack): ImageVector = when (pack) {
         AppIcon.HOME -> Icons.Filled.Home
         AppIcon.DEVICES -> Icons.Filled.Computer
         AppIcon.SETTINGS -> Icons.Filled.Settings
-        AppIcon.LAYOUTS -> Icons.Filled.Dashboard        AppIcon.MACROS -> Icons.Filled.Bolt
+        AppIcon.LAYOUTS -> Icons.Filled.Dashboard
+        AppIcon.MACROS -> Icons.Filled.Bolt
         AppIcon.MOUSE -> Icons.Filled.Mouse
         AppIcon.KEYBOARD -> Icons.Filled.Keyboard
         AppIcon.NUMPAD -> Icons.Filled.Pin
@@ -103,7 +104,8 @@ fun iconFor(icon: AppIcon, pack: IconPack): ImageVector = when (pack) {
         AppIcon.HOME -> Icons.Outlined.Home
         AppIcon.DEVICES -> Icons.Outlined.Computer
         AppIcon.SETTINGS -> Icons.Outlined.Settings
-        AppIcon.LAYOUTS -> Icons.Outlined.Dashboard        AppIcon.MACROS -> Icons.Outlined.Bolt
+        AppIcon.LAYOUTS -> Icons.Outlined.Dashboard
+        AppIcon.MACROS -> Icons.Outlined.Bolt
         AppIcon.MOUSE -> Icons.Outlined.Mouse
         AppIcon.KEYBOARD -> Icons.Outlined.Keyboard
         AppIcon.NUMPAD -> Icons.Outlined.Pin
@@ -119,7 +121,8 @@ fun iconFor(icon: AppIcon, pack: IconPack): ImageVector = when (pack) {
         AppIcon.HOME -> Icons.Rounded.Home
         AppIcon.DEVICES -> Icons.Rounded.Computer
         AppIcon.SETTINGS -> Icons.Rounded.Settings
-        AppIcon.LAYOUTS -> Icons.Rounded.Dashboard        AppIcon.MACROS -> Icons.Rounded.Bolt
+        AppIcon.LAYOUTS -> Icons.Rounded.Dashboard
+        AppIcon.MACROS -> Icons.Rounded.Bolt
         AppIcon.MOUSE -> Icons.Rounded.Mouse
         AppIcon.KEYBOARD -> Icons.Rounded.Keyboard
         AppIcon.NUMPAD -> Icons.Rounded.Pin
@@ -135,7 +138,8 @@ fun iconFor(icon: AppIcon, pack: IconPack): ImageVector = when (pack) {
         AppIcon.HOME -> Icons.Sharp.Home
         AppIcon.DEVICES -> Icons.Sharp.Computer
         AppIcon.SETTINGS -> Icons.Sharp.Settings
-        AppIcon.LAYOUTS -> Icons.Sharp.Dashboard        AppIcon.MACROS -> Icons.Sharp.Bolt
+        AppIcon.LAYOUTS -> Icons.Sharp.Dashboard
+        AppIcon.MACROS -> Icons.Sharp.Bolt
         AppIcon.MOUSE -> Icons.Sharp.Mouse
         AppIcon.KEYBOARD -> Icons.Sharp.Keyboard
         AppIcon.NUMPAD -> Icons.Sharp.Pin
