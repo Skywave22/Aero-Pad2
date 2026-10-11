@@ -92,14 +92,6 @@ fun LayoutEditorScreen(
     var showMetaDialog by remember { mutableStateOf(false) }
     val snapToGrid by viewModel.snapToGrid.collectAsState()
 
-    // Round 6 — smooth editing: drags/resizes track 1:1 from the frame
-    // captured at gesture start, so sub-grid movement is never lost and
-    // widgets follow the finger pixel-perfectly.
-    var moveBase by remember { mutableStateOf<androidx.compose.ui.geometry.Offset?>(null) }
-    var moveAcc by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
-    var resizeBase by remember { mutableStateOf<androidx.compose.ui.geometry.Offset?>(null) }
-    var resizeAcc by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
-
     Scaffold(
         containerColor = androidx.compose.ui.graphics.Color.Transparent,
         topBar = {
@@ -403,6 +395,14 @@ private fun EditorCanvas(
     modifier: Modifier = Modifier
 ) {
     val layout by viewModel.layout.collectAsState()
+
+    // Round 6 — smooth editing: drags/resizes track 1:1 from the frame
+    // captured at gesture start, so sub-grid movement is never lost and
+    // widgets follow the finger pixel-perfectly.
+    var moveBase by remember { mutableStateOf<androidx.compose.ui.geometry.Offset?>(null) }
+    var moveAcc by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+    var resizeBase by remember { mutableStateOf<androidx.compose.ui.geometry.Offset?>(null) }
+    var resizeAcc by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
 
     BoxWithConstraints(
         modifier = modifier
