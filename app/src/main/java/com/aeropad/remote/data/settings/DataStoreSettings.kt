@@ -74,6 +74,12 @@ class DataStoreSettings @Inject constructor(
         val G_SENSITIVITY = intPreferencesKey("g_sensitivity")
         val G_DEADZONE = intPreferencesKey("g_deadzone")
         val G_HAPTIC = booleanPreferencesKey("g_haptic")
+        val G_GYRO_AIM = booleanPreferencesKey("g_gyro_aim")
+        val G_TILT_STEER = booleanPreferencesKey("g_tilt_steer")
+        val G_GYRO_SENS = intPreferencesKey("g_gyro_sens")
+        val G_TILT_SENS = intPreferencesKey("g_tilt_sens")
+        val UI_STYLE = stringPreferencesKey("ui_style")
+        val HIDDEN_TILES = stringPreferencesKey("hidden_tiles")
     }
 
     /** Preferences flow that never throws: IO errors → defaults. */
@@ -107,7 +113,9 @@ class DataStoreSettings @Inject constructor(
             recentGamepads = p[Keys.RECENT_GAMEPADS] ?: "",
             fpsOverlay = p[Keys.FPS_OVERLAY] ?: false,
             automationApi = p[Keys.AUTOMATION_API] ?: false,
-            spokenAlerts = p[Keys.SPOKEN_ALERTS] ?: true
+            spokenAlerts = p[Keys.SPOKEN_ALERTS] ?: true,
+            uiStyle = p[Keys.UI_STYLE] ?: "MATERIAL",
+            hiddenTiles = p[Keys.HIDDEN_TILES] ?: ""
         )
     }
 
@@ -131,7 +139,11 @@ class DataStoreSettings @Inject constructor(
             mappingMode = p[Keys.G_MODE].toEnum(GamepadMappingMode.HID_GAMEPAD),
             joystickSensitivity = p[Keys.G_SENSITIVITY] ?: 70,
             deadZone = p[Keys.G_DEADZONE] ?: 10,
-            hapticFeedback = p[Keys.G_HAPTIC] ?: true
+            hapticFeedback = p[Keys.G_HAPTIC] ?: true,
+            gyroAim = p[Keys.G_GYRO_AIM] ?: false,
+            tiltSteer = p[Keys.G_TILT_STEER] ?: false,
+            gyroSensitivity = p[Keys.G_GYRO_SENS] ?: 50,
+            tiltSensitivity = p[Keys.G_TILT_SENS] ?: 50
         ).sanitized()
     }
 
@@ -156,6 +168,8 @@ class DataStoreSettings @Inject constructor(
             p[Keys.FPS_OVERLAY] = settings.fpsOverlay
             p[Keys.AUTOMATION_API] = settings.automationApi
             p[Keys.SPOKEN_ALERTS] = settings.spokenAlerts
+            p[Keys.UI_STYLE] = settings.uiStyle
+            p[Keys.HIDDEN_TILES] = settings.hiddenTiles
         }
     }
 
@@ -182,6 +196,10 @@ class DataStoreSettings @Inject constructor(
             p[Keys.G_SENSITIVITY] = s.joystickSensitivity
             p[Keys.G_DEADZONE] = s.deadZone
             p[Keys.G_HAPTIC] = s.hapticFeedback
+            p[Keys.G_GYRO_AIM] = s.gyroAim
+            p[Keys.G_TILT_STEER] = s.tiltSteer
+            p[Keys.G_GYRO_SENS] = s.gyroSensitivity
+            p[Keys.G_TILT_SENS] = s.tiltSensitivity
         }
     }
 

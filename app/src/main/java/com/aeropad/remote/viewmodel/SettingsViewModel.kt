@@ -55,6 +55,9 @@ class SettingsViewModel @Inject constructor(
     // ----- App -----
     /** Appearance: Light / Dark / Follow system. */
     fun setTheme(theme: ThemeMode) = updateApp { it.copy(theme = theme) }
+    // Round 7 — personalization.
+    fun setUiStyle(style: String) = updateApp { it.copy(uiStyle = style) }
+    fun setHiddenTiles(csv: String) = updateApp { it.copy(hiddenTiles = csv) }
     fun setFullscreen(value: Boolean) = updateApp { it.copy(fullscreenMode = value) }
     fun setKeepScreenOn(value: Boolean) = updateApp { it.copy(keepScreenOn = value) }
     fun setTouchVibrations(value: Boolean) = updateApp { it.copy(touchVibrations = value) }
@@ -88,6 +91,15 @@ class SettingsViewModel @Inject constructor(
     fun setJoystickSensitivity(value: Int) = updateGamepad { it.copy(joystickSensitivity = value) }
     fun setDeadZone(value: Int) = updateGamepad { it.copy(deadZone = value) }
     fun setHapticFeedback(value: Boolean) = updateGamepad { it.copy(hapticFeedback = value) }
+    // Round 7 — Pro gamepad settings.
+    fun setGyroAim(value: Boolean) = updateGamepad { it.copy(gyroAim = value) }
+    fun setTiltSteer(value: Boolean) = updateGamepad { it.copy(tiltSteer = value) }
+    fun setGyroSensitivity(value: Int) = updateGamepad { it.copy(gyroSensitivity = value) }
+    fun setTiltSensitivity(value: Int) = updateGamepad { it.copy(tiltSensitivity = value) }
+    fun setJoystickSens(value: Int) = updateGamepad { it.copy(joystickSensitivity = value) }
+    fun setDeadZoneValue(value: Int) = updateGamepad { it.copy(deadZone = value) }
+    /** Apply a whole saved per-game profile. */
+    fun applyGamepad(settings: GamepadSettings) = updateGamepad { settings }
 
     // ------------------------------------------------------------------
 

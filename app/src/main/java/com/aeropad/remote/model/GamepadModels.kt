@@ -32,7 +32,10 @@ data class GamepadSnapshot(
     val leftX: Float = 0f,
     val leftY: Float = 0f,
     val rightX: Float = 0f,
-    val rightY: Float = 0f
+    val rightY: Float = 0f,
+    // Round 7 — Pro gamepad: analog triggers 0..1 (HID axes Rx/Ry).
+    val leftTrigger: Float = 0f,
+    val rightTrigger: Float = 0f
 ) {
     fun isPressed(button: GamepadButton): Boolean = (buttons and button.mask) != 0
     fun press(button: GamepadButton): GamepadSnapshot = copy(buttons = buttons or button.mask)

@@ -43,6 +43,8 @@ object ReportPool {
         gamepadBuf[4] = HidReportBuilder.axisToByte(s.leftY)
         gamepadBuf[5] = HidReportBuilder.axisToByte(s.rightX)
         gamepadBuf[6] = HidReportBuilder.axisToByte(s.rightY)
+        gamepadBuf[7] = HidReportBuilder.triggerToByte(s.leftTrigger)
+        gamepadBuf[8] = HidReportBuilder.triggerToByte(s.rightTrigger)
         return gamepadBuf
     }
 }

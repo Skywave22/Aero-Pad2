@@ -100,12 +100,18 @@ object HidReportBuilder {
             axisToByte(snapshot.leftX),
             axisToByte(snapshot.leftY),
             axisToByte(snapshot.rightX),
-            axisToByte(snapshot.rightY)
+            axisToByte(snapshot.rightY),
+            triggerToByte(snapshot.leftTrigger),
+            triggerToByte(snapshot.rightTrigger)
         )
     }
 
     /** Neutral gamepad report (no buttons, hat neutral=8, sticks centered). */
     fun gamepadNeutral(): ByteArray = gamepad(GamepadSnapshot())
+
+    /** 0..1 trigger pressure → unsigned axis byte (round 7 Pro triggers). */
+    fun triggerToByte(t: Float): Byte =
+        (t.coerceIn(0f, 1f) * 255f).toInt().toByte()
 
     /** Map -1.0..1.0 to 0..255 with 128 center. NaN is treated as center (defensive). */
     internal fun axisToByte(value: Float): Byte {

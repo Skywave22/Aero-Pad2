@@ -34,7 +34,10 @@ import javax.inject.Inject
 class RemoteControlViewModel @Inject constructor(
     observeConnection: ObserveConnectionUseCase,
     private val sendAction: SendHidActionUseCase,
-    settingsStore: SettingsStore
+    settingsStore: SettingsStore,
+    // Round 7 — Pro gamepad: motion input + per-game profiles.
+    val motionSource: com.aeropad.remote.domain.MotionSource,
+    val gamepadProfiles: com.aeropad.remote.data.gamepad.GamepadProfileStore
 ) : ViewModel() {
 
     val connectionState: StateFlow<HidConnectionState> = observeConnection()
@@ -149,6 +152,9 @@ class RemoteControlViewModel @Inject constructor(
     fun touch(x: Float, y: Float, contact: Boolean) =
         sendAction(HidAction.TouchUpdate(contact, x, y))
 
+    /** Types arbitrary text on the host as real HID keystrokes. */
+    fun type(text: String) = sendAction(HidAction.TypeText(text))
+
     // ------------------------------------------------------------------
     // Gamepad
     // ------------------------------------------------------------------
@@ -192,6 +198,36 @@ class RemoteControlViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    /** Round 7 — analog trigger 0..1 (pressure-style, HID axes Rx/Ry). */
+    fun onTrigger(right: Boolean, pressure: Float) {
+        if (gamepadSettings.value.mappingMode != GamepadMappingMode.HID_GAMEPAD) return
+        val p = pressure.coerceIn(0f, 1f)
+        gamepadState = if (right) gamepadState.copy(rightTrigger = p)
+        else gamepadState.copy(leftTrigger = p)
+        sendAction(HidAction.GamepadUpdate(gamepadState))
+    }
+
+    /** Round 7 — tilt steering (left X) + gyro aiming (right stick). */
+    fun onMotion(steer: Float, aimX: Float, aimY: Float) {
+        val gs = gamepadSettings.value
+        if (gs.mappingMode != GamepadMappingMode.HID_GAMEPAD) return
+        if (!gs.gyroAim && !gs.tiltSteer) return
+        var s = gamepadState
+        if (gs.tiltSteer) {
+            val g = 0.5f + gs.tiltSensitivity / 100f
+            s = s.copy(leftX = (steer * g).coerceIn(-1f, 1f))
+        }
+        if (gs.gyroAim) {
+            val g = 0.5f + gs.gyroSensitivity / 100f
+            s = s.copy(
+                rightX = (aimX * g).coerceIn(-1f, 1f),
+                rightY = (aimY * g).coerceIn(-1f, 1f)
+            )
+        }
+        gamepadState = s
+        sendAction(HidAction.GamepadUpdate(s))
     }
 
     fun onGamepadButton(button: GamepadButton, pressed: Boolean) {

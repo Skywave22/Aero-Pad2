@@ -29,7 +29,7 @@ object HidDescriptors {
     const val SIZE_MOUSE: Int = 4      // [buttons][dx][dy][wheel]
     const val SIZE_CONSUMER: Int = 2   // [usage LSB][usage MSB]
     const val SIZE_SYSTEM: Int = 1     // [bit0=power bit1=sleep bit2=wake]
-    const val SIZE_GAMEPAD: Int = 7    // [btnLo][btnHi][hat][lx][ly][rx][ry]
+    const val SIZE_GAMEPAD: Int = 9    // [btnLo][btnHi][hat][lx][ly][rx][ry][lt][rt]
     const val SIZE_TOUCH: Int = 5      // [tipSwitch|inRange bits][xLo][xHi][yLo][yHi] (0..32767)
 
     /**
@@ -184,10 +184,12 @@ object HidDescriptors {
         0x09, 0x31,                    //   Usage (Y)  - left stick Y
         0x09, 0x32,                    //   Usage (Z)  - right stick X
         0x09, 0x35,                    //   Usage (Rz) - right stick Y
+        0x09, 0x33,                    //   Usage (Rx) - left trigger  (round 7)
+        0x09, 0x34,                    //   Usage (Ry) - right trigger (round 7)
         0x15, 0x00,                    //   Logical Min 0
         0x26, 0xFF.toByte(), 0x00,     //   Logical Max 255
         0x75, 0x08,                    //   Report Size 8
-        0x95.toByte(), 0x04,           //   Report Count 4
+        0x95.toByte(), 0x06,           //   Report Count 6
         0x81.toByte(), 0x02,           //   Input (Data, Var, Abs)
         0xC0.toByte()                  // End Collection
     )

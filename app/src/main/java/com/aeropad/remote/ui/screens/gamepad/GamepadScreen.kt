@@ -3,6 +3,8 @@ package com.aeropad.remote.ui.screens.gamepad
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -17,9 +19,17 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.draw.clip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +38,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +63,7 @@ import com.aeropad.remote.ui.components.KeyCard
 import com.aeropad.remote.ui.components.NotConnectedBanner
 import com.aeropad.remote.ui.components.rememberHaptic
 import com.aeropad.remote.viewmodel.RemoteControlViewModel
+import com.aeropad.remote.viewmodel.SettingsViewModel
 import kotlin.math.roundToInt
 
 /**
@@ -69,6 +81,23 @@ fun GamepadScreen(
     val gamepadSettings by viewModel.gamepadSettings.collectAsState()
     val vibration by viewModel.vibrationsEnabled.collectAsState()
     val haptic = rememberHaptic(vibration)
+    // Round 7 — Pro gamepad.
+    val settingsVm: SettingsViewModel = hiltViewModel()
+    val profiles by viewModel.gamepadProfiles.profiles.collectAsState()
+    var showPro by remember { mutableStateOf(false) }
+
+    // Gyro aim / tilt steering: sensors live only while enabled.
+    val motionOn = gamepadSettings.gyroAim || gamepadSettings.tiltSteer
+    LaunchedEffect(motionOn) {
+        if (!motionOn) {
+            viewModel.motionSource.stop()
+            return@LaunchedEffect
+        }
+        viewModel.motionSource.start()
+        viewModel.motionSource.motion.collect { m ->
+            viewModel.onMotion(m.steer, m.aimX, m.aimY)
+        }
+    }
 
     // Neutralize everything when this screen goes away.
     DisposableEffect(Unit) {
@@ -144,6 +173,19 @@ fun GamepadScreen(
                 }
             }
 
+            // ---------- Round 7 — Pro: analog triggers + pro panel ----------
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                TriggerPad("L2") { v -> viewModel.onTrigger(right = false, v) }
+                AssistChip(onClick = { showPro = true }, label = { Text("⚙ Pro") })
+                TriggerPad("R2") { v -> viewModel.onTrigger(right = true, v) }
+            }
+
             // ---------- Bottom: menu buttons ----------
             Row(
                 modifier = Modifier
@@ -156,6 +198,18 @@ fun GamepadScreen(
                 KeyCard("Start", Modifier.weight(1f)) { haptic(); pressAndRelease(viewModel, GamepadButton.START) }
             }
         }
+    }
+
+    if (showPro) {
+        ProDialog(
+            settings = gamepadSettings,
+            profiles = profiles,
+            onDismiss = { showPro = false },
+            settingsVm = settingsVm,
+            onSaveProfile = { name -> viewModel.gamepadProfiles.save(name, gamepadSettings) },
+            onApplyProfile = { p -> settingsVm.applyGamepad(p.toSettings()) },
+            onRemoveProfile = { p -> viewModel.gamepadProfiles.remove(p.id) }
+        )
     }
 }
 
@@ -375,4 +429,135 @@ private fun DpadKey(label: String, onPressChange: (Boolean) -> Unit) {
     ) {
         Text(label, color = MaterialTheme.colorScheme.onSurface)
     }
+}
+
+/** Round 7 — pressure-style trigger: pull down to press, release to zero. */
+@Composable
+private fun TriggerPad(label: String, onValue: (Float) -> Unit) {
+    var value by remember { mutableStateOf(0f) }
+    Box(
+        modifier = Modifier
+            .size(width = 64.dp, height = 92.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .pointerInput(Unit) {
+                detectDragGestures(
+                    onDragStart = { off ->
+                        value = (off.y / size.height).coerceIn(0f, 1f)
+                        onValue(value)
+                    },
+                    onDragEnd = { value = 0f; onValue(0f) },
+                    onDragCancel = { value = 0f; onValue(0f) }
+                ) { change, _ ->
+                    change.consume()
+                    value = (change.position.y / size.height).coerceIn(0f, 1f)
+                    onValue(value)
+                }
+            }
+    ) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .fillMaxHeight(value)
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.55f))
+        )
+        Text(
+            label,
+            modifier = Modifier.align(Alignment.Center),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+/** Round 7 — Pro panel: motion options, stick tuning, per-game profiles. */
+@Composable
+private fun ProDialog(
+    settings: com.aeropad.remote.model.GamepadSettings,
+    profiles: List<com.aeropad.remote.data.gamepad.GamepadProfile>,
+    settingsVm: SettingsViewModel,
+    onDismiss: () -> Unit,
+    onSaveProfile: (String) -> Unit,
+    onApplyProfile: (com.aeropad.remote.data.gamepad.GamepadProfile) -> Unit,
+    onRemoveProfile: (com.aeropad.remote.data.gamepad.GamepadProfile) -> Unit
+) {
+    var profileName by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Pro gamepad") },
+        text = {
+            Column(
+                modifier = Modifier
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Gyro aiming", modifier = Modifier.weight(1f))
+                    Switch(settings.gyroAim, { settingsVm.setGyroAim(it) })
+                }
+                if (settings.gyroAim) {
+                    Text("Gyro sensitivity ${settings.gyroSensitivity}")
+                    Slider(
+                        settings.gyroSensitivity.toFloat(),
+                        { settingsVm.setGyroSensitivity(it.toInt()) },
+                        valueRange = 0f..100f
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Tilt steering", modifier = Modifier.weight(1f))
+                    Switch(settings.tiltSteer, { settingsVm.setTiltSteer(it) })
+                }
+                if (settings.tiltSteer) {
+                    Text("Tilt sensitivity ${settings.tiltSensitivity}")
+                    Slider(
+                        settings.tiltSensitivity.toFloat(),
+                        { settingsVm.setTiltSensitivity(it.toInt()) },
+                        valueRange = 0f..100f
+                    )
+                }
+                Text("Stick sensitivity ${settings.joystickSensitivity}")
+                Slider(
+                    settings.joystickSensitivity.toFloat(),
+                    { settingsVm.setJoystickSens(it.toInt()) },
+                    valueRange = 0f..100f
+                )
+                Text("Dead zone ${settings.deadZone}")
+                Slider(
+                    settings.deadZone.toFloat(),
+                    { settingsVm.setDeadZoneValue(it.toInt()) },
+                    valueRange = 0f..50f
+                )
+
+                Text("Per-game profiles", style = MaterialTheme.typography.titleSmall)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        profileName, { profileName = it },
+                        label = { Text("Profile name") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                    TextButton(onClick = {
+                        onSaveProfile(profileName); profileName = ""
+                    }) { Text("Save") }
+                }
+                profiles.forEach { p ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = { onApplyProfile(p) }, modifier = Modifier.weight(1f)) {
+                            Text("• " + p.name)
+                        }
+                        TextButton(onClick = { onRemoveProfile(p) }) { Text("✕") }
+                    }
+                }
+                Text(
+                    "Gyro aim moves the right stick from phone rotation; tilt steer " +
+                        "drives the left stick by tilting. Some Windows games need a " +
+                        "companion for full controller compatibility.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } }
+    )
 }
