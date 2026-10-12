@@ -62,6 +62,10 @@ class HidEngine @Inject constructor(
         const val RECONNECT_BASE_DELAY_MS = 1000L
         /** Round 6: "Connecting…" can never hang forever anymore. */
         const val CONNECT_TIMEOUT_MS = 15_000L
+        // Round 8 — anti-flap: detect connect/drop ping-pong and break it.
+        const val CONNECT_DEBOUNCE_MS = 3_000L
+        const val STABLE_LINK_MS = 5_000L
+        const val MAX_FLAPS = 3
     }
 
     // Single-thread executor keeps report order deterministic and latency low.
@@ -95,6 +99,9 @@ class HidEngine @Inject constructor(
     private var stopped = false
     private var btReceiverRegistered = false
     private var connectWatchdog: kotlinx.coroutines.Job? = null
+    private var connectingSinceMs = 0L
+    private var connectedAtMs = 0L
+    private var flapCount = 0
 
     private val _state = MutableStateFlow<HidConnectionState>(HidConnectionState.Idle)
     override val state: StateFlow<HidConnectionState> = _state.asStateFlow()
@@ -183,10 +190,35 @@ class HidEngine @Inject constructor(
     // Connection control
     // ------------------------------------------------------------------
 
-    /** Connect to a bonded host. If registration isn't ready yet, queues it. */
+    /** User-initiated connect: resets backoff + flap counters. */
     fun connect(device: BluetoothDevice) {
-        userInitiatedDisconnect = false
         reconnectAttempts = 0
+        flapCount = 0
+        autoConnect(device)
+    }
+
+    /**
+     * Round 8 — anti-flap connect core. Duplicate connects to the same host
+     * inside the debounce window are ignored (the #1 cause of
+     * connect/disconnect ping-pong is stacking connect() calls on a link
+     * that is still settling), and the watchdog no longer force-tears the
+     * stack on timeout.
+     */
+    private fun autoConnect(device: BluetoothDevice) {
+        userInitiatedDisconnect = false
+        val now = System.currentTimeMillis()
+        val cur = _state.value
+        if (cur is HidConnectionState.Connecting &&
+            cur.device.address == device.address &&
+            now - connectingSinceMs < CONNECT_DEBOUNCE_MS
+        ) {
+            Timber.d("connect(%s) debounced", device.address)
+            return
+        }
+        if (connectedDevice?.address == device.address) {
+            Timber.d("connect(%s): already connected", device.address)
+            return
+        }
         val hd = hidDevice
         if (hd == null || !appRegistered) {
             Timber.d("connect: engine not ready, queueing %s", device.address)
@@ -194,6 +226,7 @@ class HidEngine @Inject constructor(
             start()
             return
         }
+        connectingSinceMs = now
         _state.value = HidConnectionState.Connecting(device.toRemote())
         val ok = runCatching { hd.connect(device) }
             .onFailure { Timber.e(it, "connect() threw") }
@@ -202,14 +235,12 @@ class HidEngine @Inject constructor(
             _state.value = HidConnectionState.Error("Could not start connection to ${device.safeName()}.")
             return
         }
-        // Round 6 — watchdog: a silent connect failure must never leave the
-        // UI stuck on "Connecting…" forever.
+        // Round 6 watchdog — reports the stall but never yanks the stack.
         connectWatchdog?.cancel()
         connectWatchdog = scope.launch {
             delay(CONNECT_TIMEOUT_MS)
             if (connectedDevice == null && _state.value is HidConnectionState.Connecting) {
                 Timber.w("connect watchdog timed out for %s", device.address)
-                runCatching { hd.disconnect(device) }
                 _reconnectStatus.value = null
                 _state.value = HidConnectionState.Error(
                     "Connection to ${device.safeName()} timed out. " +
@@ -479,6 +510,7 @@ class HidEngine @Inject constructor(
                 BluetoothProfile.STATE_CONNECTED -> {
                     connectWatchdog?.cancel()
                     connectedDevice = device
+                    connectedAtMs = System.currentTimeMillis()
                     lastHostDevice = device
                     reconnectAttempts = 0
                     _reconnectStatus.value = null           // ADV S5
@@ -499,7 +531,23 @@ class HidEngine @Inject constructor(
                         history.onDisconnected("BLUETOOTH",
                             if (userInitiatedDisconnect) "user disconnect" else "link dropped")  // #41
                     }
-                    if (wasConnected && !userInitiatedDisconnect) scheduleReconnect()
+                    if (wasConnected && !userInitiatedDisconnect) {
+                        // Round 8 — break the connect/drop ping-pong: a link
+                        // that dies within 5s counts as a flap; three flaps
+                        // stops auto-reconnect and asks for a manual retry.
+                        val heldMs = System.currentTimeMillis() - connectedAtMs
+                        if (heldMs >= STABLE_LINK_MS) flapCount = 0 else flapCount++
+                        if (flapCount >= MAX_FLAPS) {
+                            _reconnectStatus.value = null
+                            _state.value = HidConnectionState.Error(
+                                "Connection kept dropping right after connecting. " +
+                                    "Reconnect manually — keep the host awake and " +
+                                    "nearby, and re-pair if it repeats."
+                            )
+                        } else {
+                            scheduleReconnect()
+                        }
+                    }
                 }
                 // STATE_DISCONNECTING: transient; we wait for DISCONNECTED.
             }
@@ -529,7 +577,7 @@ class HidEngine @Inject constructor(
             delay(backoff)
             _reconnectNextAtMs.value = null   // #39
             if (connectedDevice == null && !userInitiatedDisconnect && appRegistered) {
-                connect(target)
+                autoConnect(target)
             } else {
                 _reconnectStatus.value = null
             }
