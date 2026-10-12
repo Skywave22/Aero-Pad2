@@ -40,6 +40,9 @@ class HidService : Service() {
     companion object {
         private const val CHANNEL_ID = "aeropad_hid"
         private const val NOTIFICATION_ID = 42
+        // Round 7 — Quick Connect actions straight from the notification.
+        private const val ACTION_RECONNECT = "aeropad.action.RECONNECT"
+        private const val ACTION_DISCONNECT = "aeropad.action.DISCONNECT"
 
         /** Starts the service (safe if already running). */
         fun start(context: Context) {
@@ -71,9 +74,11 @@ class HidService : Service() {
         // NotificationManager is only touched when the visible text actually
         // changes (state spam like repeated Idle costs zero wakeups).
         hidController.state
-            .map { stateLabel(it) }
             .distinctUntilChanged()
-            .onEach { label -> updateNotification(label) }
+            .onEach { st ->
+                currentState = st
+                updateNotification(stateLabel(st))
+            }
             .launchIn(serviceScope)
         // SECTION 8 — connection event haptics: double pulse on connect,
         // heavy thud on error (distinctUntilChanged = one buzz per change).
@@ -91,7 +96,14 @@ class HidService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        hidController.start()
+        when (intent?.action) {
+            ACTION_RECONNECT -> {
+                hidController.start()
+                hidController.reconnectLast()
+            }
+            ACTION_DISCONNECT -> hidController.disconnect()
+            else -> hidController.start()
+        }
         return START_STICKY // restart if the system kills us; engine re-registers safely
     }
 
@@ -127,20 +139,35 @@ class HidService : Service() {
         runCatching { manager.createNotificationChannel(channel) }
     }
 
+    private var currentState: HidConnectionState = HidConnectionState.Idle
+
+    private fun serviceAction(action: String, code: Int): PendingIntent =
+        PendingIntent.getService(
+            this, code,
+            Intent(this, HidService::class.java).setAction(action),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
     private fun buildNotification(text: String): Notification {
         val contentIntent = PendingIntent.getActivity(
             this, 0,
             Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(getString(R.string.app_name))
             .setContentText(text)
             .setContentIntent(contentIntent)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
-            .build()
+        // Round 7 — Quick Connect: act without opening the app.
+        if (currentState is HidConnectionState.Connected) {
+            builder.addAction(0, "Disconnect", serviceAction(ACTION_DISCONNECT, 2))
+        } else {
+            builder.addAction(0, "Reconnect", serviceAction(ACTION_RECONNECT, 1))
+        }
+        return builder.build()
     }
 
     private fun updateNotification(text: String) {

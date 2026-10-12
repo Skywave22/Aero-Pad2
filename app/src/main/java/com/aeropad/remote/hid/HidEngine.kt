@@ -234,6 +234,13 @@ class HidEngine @Inject constructor(
         connect(device)
     }
 
+    /** Round 7 — Quick Connect: re-target the most recent host. */
+    override fun reconnectLast() {
+        val target = lastHostDevice ?: return
+        userInitiatedDisconnect = false
+        connect(target)
+    }
+
     /** User-initiated disconnect — suppresses auto-reconnect. */
     override fun disconnect() {
         userInitiatedDisconnect = true

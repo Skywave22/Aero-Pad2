@@ -29,6 +29,9 @@ interface HidController {
     /** User-initiated disconnect (suppresses auto-reconnect). */
     fun disconnect()
 
+    /** Round 7 — one-tap reconnect to the most recent host (Quick Connect). */
+    fun reconnectLast() {}
+
     /** Currently bonded devices, never throws. */
     fun bondedDevices(): List<RemoteDevice>
 

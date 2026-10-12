@@ -47,6 +47,8 @@ class AeroPadTileService : TileService() {
             runCatching { hid.send(HidAction.MediaTap(HidConsumer.PLAY_PAUSE)) }
                 .onFailure { Timber.w(it, "tile media tap failed") }
         } else {
+            // Round 7 — Quick Connect: try the last host immediately.
+            runCatching { hid.reconnectLast() }
             // Open the app to connect (collapses the shade first).
             val intent = Intent(this, com.aeropad.remote.MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
