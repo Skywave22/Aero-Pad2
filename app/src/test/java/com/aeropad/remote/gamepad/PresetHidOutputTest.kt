@@ -26,7 +26,7 @@ class PresetHidOutputTest {
         buttons.forEach { st = GamepadRuntimeCore.withButton(st, it.buttonIndex, true) }
         assertEquals(6, Integer.bitCount(st.buttons))
         val report = HidReportBuilder.gamepad(st)
-        assertEquals(7, report.size)
+        assertEquals(com.aeropad.remote.hid.HidDescriptors.SIZE_GAMEPAD, report.size)
     }
 
     @Test
