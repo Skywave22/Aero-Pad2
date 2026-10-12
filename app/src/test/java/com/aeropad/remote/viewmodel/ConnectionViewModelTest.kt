@@ -74,6 +74,13 @@ class ConnectionViewModelTest {
         override fun remove(id: String) {
             _profiles.value = com.aeropad.remote.data.hosts.HostProfileCodec.remove(_profiles.value, id)
         }
+        override fun bindLayout(address: String, layoutId: Long) {
+            _profiles.value = _profiles.value.map {
+                if (it.address == address) it.copy(layoutId = layoutId) else it
+            }
+        }
+        override fun layoutFor(address: String): Long =
+            _profiles.value.firstOrNull { it.address == address }?.layoutId ?: 0L
     }
 
     private class FakePermissions(var granted: Boolean) : PermissionChecker {
