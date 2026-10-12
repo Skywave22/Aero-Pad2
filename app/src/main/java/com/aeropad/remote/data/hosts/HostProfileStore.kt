@@ -35,7 +35,9 @@ data class HostProfile(
     val port: Int = 0,
     /** Legacy field (unused, kept so old JSON decodes cleanly). */
     @SerialName("p") val obfuscatedPin: String = "",
-    val lastUsedAt: Long = 0
+    val lastUsedAt: Long = 0,
+    // Round 7 — multi-device profiles: layout bound to this host (0 = none).
+    val layoutId: Long = 0
 ) {
     companion object {
         const val LABEL_MAX = 30
@@ -95,6 +97,9 @@ interface HostProfiles {
     fun saveBt(label: String, mac: String)
     fun touch(id: String)
     fun remove(id: String)
+    /** Bind a custom layout to a host address (creates the profile if new). */
+    fun bindLayout(address: String, layoutId: Long)
+    fun layoutFor(address: String): Long
 }
 
 @Singleton
@@ -140,4 +145,21 @@ class HostProfileStore @Inject constructor(
     override fun remove(id: String) {
         persist(HostProfileCodec.remove(_profiles.value, id))
     }
+
+    override fun bindLayout(address: String, layoutId: Long) {
+        val existing = _profiles.value.firstOrNull { it.address == address }
+        persist(
+            HostProfileCodec.upsert(
+                _profiles.value,
+                (existing ?: HostProfile(
+                    id = java.util.UUID.randomUUID().toString(),
+                    label = address, transport = HostProfile.TRANSPORT_BT,
+                    address = address, lastUsedAt = System.currentTimeMillis()
+                )).copy(layoutId = layoutId)
+            )
+        )
+    }
+
+    override fun layoutFor(address: String): Long =
+        _profiles.value.firstOrNull { it.address == address }?.layoutId ?: 0L
 }

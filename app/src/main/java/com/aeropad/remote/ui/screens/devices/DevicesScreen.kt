@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Dashboard
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Computer
 import androidx.compose.material.icons.rounded.Refresh
@@ -52,6 +53,13 @@ fun DevicesScreen(
 ) {
     val state by viewModel.connectionState.collectAsState()
     val bonded by viewModel.bondedDevices.collectAsState()
+    // Round 7 — multi-device profiles: bind a layout per paired host.
+    val hostLayouts: com.aeropad.remote.viewmodel.HostLayoutsViewModel = hiltViewModel()
+    val layouts by hostLayouts.layouts.collectAsState()
+    val hostProfiles by hostLayouts.hostProfiles.collectAsState()
+    var bindTarget by androidx.compose.runtime.remember {
+        androidx.compose.runtime.mutableStateOf<com.aeropad.remote.model.RemoteDevice?>(null)
+    }
     val discovered by viewModel.discoveredDevices.collectAsState()
     val isScanning by viewModel.isScanning.collectAsState()
 
@@ -111,7 +119,11 @@ fun DevicesScreen(
                     device,
                     connected = (state as? HidConnectionState.Connected)?.device?.address == device.address,
                     saved = device.address in savedHosts,
-                    onToggleSave = { viewModel.toggleSavedHost(device) }
+                    onToggleSave = { viewModel.toggleSavedHost(device) },
+                    boundLayoutName = layouts.firstOrNull {
+                        it.id == hostProfiles.firstOrNull { h -> h.address == device.address }?.layoutId
+                    }?.spec?.name,
+                    onBindLayout = { bindTarget = device }
                 ) {
                     viewModel.connect(device.address)
                 }
@@ -145,6 +157,38 @@ fun DevicesScreen(
             item { Spacer(Modifier.height(24.dp)) }
         }
     }
+
+    // Round 7 — layout ⇄ host binding dialog.
+    val target = bindTarget
+    if (target != null) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { bindTarget = null },
+            title = { Text("Layout for ${target.name}") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        "Remembered next time this host connects.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    layouts.forEach { p ->
+                        androidx.compose.material3.TextButton(
+                            onClick = {
+                                hostLayouts.bind(target.address, p.id)
+                                bindTarget = null
+                            }
+                        ) { Text("• " + p.spec.name) }
+                    }
+                    if (layouts.isEmpty()) Text("No layouts yet — create one in Layouts.")
+                }
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = { bindTarget = null }) {
+                    Text("Done")
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -153,6 +197,8 @@ private fun DeviceRow(
     connected: Boolean,
     saved: Boolean = false,
     onToggleSave: (() -> Unit)? = null,
+    boundLayoutName: String? = null,
+    onBindLayout: (() -> Unit)? = null,
     onClick: () -> Unit
 ) {
     Card(
@@ -183,6 +229,27 @@ private fun DeviceRow(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+            // Round 7 — per-host layout binding (bonded rows only).
+            if (onBindLayout != null) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    IconButton(onClick = onBindLayout) {
+                        Icon(
+                            Icons.Rounded.Dashboard,
+                            contentDescription = "Bind layout",
+                            tint = if (boundLayoutName != null) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    if (boundLayoutName != null) {
+                        Text(
+                            boundLayoutName.take(8),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1
+                        )
+                    }
+                }
             }
             // V2 M4 — quick-switch bookmark (bonded rows only).
             if (onToggleSave != null) {
