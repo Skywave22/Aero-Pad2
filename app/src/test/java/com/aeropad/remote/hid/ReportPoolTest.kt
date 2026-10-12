@@ -2,6 +2,7 @@ package com.aeropad.remote.hid
 
 import com.aeropad.remote.model.GamepadSnapshot
 import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Test
 
