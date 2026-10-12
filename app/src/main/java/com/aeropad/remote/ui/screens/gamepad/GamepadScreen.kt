@@ -475,12 +475,12 @@ private fun TriggerPad(label: String, onValue: (Float) -> Unit) {
 @Composable
 private fun ProDialog(
     settings: com.aeropad.remote.model.GamepadSettings,
-    profiles: List<com.aeropad.remote.data.gamepad.GamepadProfile>,
+    profiles: List<com.aeropad.remote.data.gamepad.TuningProfile>,
     settingsVm: SettingsViewModel,
     onDismiss: () -> Unit,
     onSaveProfile: (String) -> Unit,
-    onApplyProfile: (com.aeropad.remote.data.gamepad.GamepadProfile) -> Unit,
-    onRemoveProfile: (com.aeropad.remote.data.gamepad.GamepadProfile) -> Unit
+    onApplyProfile: (com.aeropad.remote.data.gamepad.TuningProfile) -> Unit,
+    onRemoveProfile: (com.aeropad.remote.data.gamepad.TuningProfile) -> Unit
 ) {
     var profileName by remember { mutableStateOf("") }
     AlertDialog(

@@ -19,7 +19,7 @@ import javax.inject.Singleton
  * name (e.g. "Forza — tilt steer", "COD — gyro aim"). Apply = one tap.
  */
 @Serializable
-data class GamepadProfile(
+data class TuningProfile(
     val id: String,
     val name: String,
     val mode: String = GamepadMappingMode.HID_GAMEPAD.name,
@@ -44,7 +44,7 @@ data class GamepadProfile(
     ).sanitized()
 
     companion object {
-        fun from(name: String, s: GamepadSettings): GamepadProfile = GamepadProfile(
+        fun from(name: String, s: GamepadSettings): TuningProfile = TuningProfile(
             id = java.util.UUID.randomUUID().toString(),
             name = name.trim().ifEmpty { "Profile" },
             mode = s.mappingMode.name,
@@ -66,10 +66,10 @@ class GamepadProfileStore @Inject constructor(
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
     private val _profiles = MutableStateFlow(load())
-    val profiles: StateFlow<List<GamepadProfile>> = _profiles.asStateFlow()
+    val profiles: StateFlow<List<TuningProfile>> = _profiles.asStateFlow()
 
     fun save(name: String, settings: GamepadSettings) {
-        persist(_profiles.value + GamepadProfile.from(name, settings))
+        persist(_profiles.value + TuningProfile.from(name, settings))
     }
 
     fun remove(id: String) {
@@ -78,17 +78,17 @@ class GamepadProfileStore @Inject constructor(
 
     private fun file() = java.io.File(context.filesDir, "gamepad_profiles.json")
 
-    private fun load(): List<GamepadProfile> = runCatching {
+    private fun load(): List<TuningProfile> = runCatching {
         file().takeIf { it.exists() }?.let {
-            json.decodeFromString(ListSerializer(GamepadProfile.serializer()), it.readText())
+            json.decodeFromString(ListSerializer(TuningProfile.serializer()), it.readText())
         }
     }.getOrNull().orEmpty()
 
-    private fun persist(list: List<GamepadProfile>) {
+    private fun persist(list: List<TuningProfile>) {
         _profiles.value = list
         runCatching {
             val tmp = java.io.File(context.filesDir, "gamepad_profiles.tmp")
-            tmp.writeText(json.encodeToString(ListSerializer(GamepadProfile.serializer()), list))
+            tmp.writeText(json.encodeToString(ListSerializer(TuningProfile.serializer()), list))
             tmp.renameTo(file())
         }.onFailure { Timber.e(it, "gamepad profile save failed") }
     }
