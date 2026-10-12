@@ -43,7 +43,12 @@ data class AppSettings(
     val automationApi: Boolean = false,
     /** V2 MATRIX 5 b2 — speak connect/disconnect events through the active
      *  screen reader (announceForAccessibility — a no-op without one). */
-    val spokenAlerts: Boolean = true
+    val spokenAlerts: Boolean = true,
+    // Round 7 — premium personalization.
+    /** UI finish: MATERIAL / GLASS / NEON. */
+    val uiStyle: String = "MATERIAL",
+    /** Home tiles hidden by the user (CSV of tile labels). */
+    val hiddenTiles: String = ""
 )
 
 /** Mouse/trackpad tuning. All percentages 0..100. */

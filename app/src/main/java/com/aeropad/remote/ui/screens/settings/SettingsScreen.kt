@@ -196,7 +196,21 @@ fun SettingsScreen(
             }
 
             // ---------- Visual style ----------
-            if (matches("3d", "quality", "icon", "pack", "preview")) SettingsGroup("Visual style") {
+            if (matches("3d", "quality", "icon", "pack", "preview", "style", "glass", "neon")) SettingsGroup("Visual style") {
+                Text("UI style", style = MaterialTheme.typography.bodyMedium)
+                Row(
+                    modifier = Modifier
+                        .padding(vertical = 4.dp)
+                        .horizontalScroll(rememberScrollState())
+                ) {
+                    listOf("MATERIAL" to "Material", "GLASS" to "Glass", "NEON" to "Neon").forEach { (id, label) ->
+                        ChoiceChip(
+                            label = label,
+                            selected = app.uiStyle == id,
+                            onClick = { viewModel.setUiStyle(id) }
+                        )
+                    }
+                }
                 Text("3D quality", style = MaterialTheme.typography.bodyMedium)
                 Row(
                     modifier = Modifier

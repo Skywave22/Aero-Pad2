@@ -74,6 +74,37 @@ object AeroPadSpecs {
     )
 
     fun byMode(dark: Boolean): AppThemeSpec = if (dark) DARK else LIGHT
+
+    /** Round 7 — premium finishes layered on the Light/Dark base. */
+    fun styled(style: String, dark: Boolean): AppThemeSpec = when (style) {
+        "GLASS" -> byMode(dark).copy(
+            id = "glass", name = "Glass",
+            surfaceAlpha = 0.55f,
+            edgeGlow = true,
+            cornerRadius = 24,
+            elevation = 0,
+            backgroundOrbs = listOf(
+                ThemeOrb(androidx.compose.ui.graphics.Color(0xFF3D8BFF), 0.15f, 0.2f, 0.5f, 0.25f),
+                ThemeOrb(androidx.compose.ui.graphics.Color(0xFF9B59F6), 0.85f, 0.75f, 0.55f, 0.22f)
+            )
+        )
+        "NEON" -> DARK.copy(
+            id = "neon", name = "Neon",
+            primary = androidx.compose.ui.graphics.Color(0xFF00E5FF),
+            onPrimary = androidx.compose.ui.graphics.Color(0xFF00272B),
+            secondary = androidx.compose.ui.graphics.Color(0xFFFF2BD6),
+            background = androidx.compose.ui.graphics.Color(0xFF05070D),
+            surface = androidx.compose.ui.graphics.Color(0xFF0B1220),
+            glowColor = androidx.compose.ui.graphics.Color(0xFF00E5FF),
+            edgeGlow = true,
+            cornerRadius = 18,
+            backgroundOrbs = listOf(
+                ThemeOrb(androidx.compose.ui.graphics.Color(0xFF00E5FF), 0.2f, 0.1f, 0.45f, 0.18f),
+                ThemeOrb(androidx.compose.ui.graphics.Color(0xFFFF2BD6), 0.8f, 0.9f, 0.5f, 0.16f)
+            )
+        )
+        else -> byMode(dark)
+    }
 }
 
 @Composable

@@ -40,6 +40,9 @@ import com.aeropad.remote.ui.screens.fullkeyboard.FullKeyboardScreen
 import com.aeropad.remote.ui.screens.airmouse.AirMouseScreen
 import com.aeropad.remote.ui.screens.androidremote.AndroidControlScreen
 import com.aeropad.remote.ui.screens.androidremote.TouchControlScreen
+import com.aeropad.remote.ui.screens.shortcuts.ShortcutDeckScreen
+import com.aeropad.remote.ui.screens.texttools.TextToolsScreen
+import com.aeropad.remote.ui.screens.mylayout.MyLayoutScreen
 import com.aeropad.remote.ui.screens.pccombo.PcComboScreen
 import com.aeropad.remote.ui.screens.preview3d.Preview3DScreen
 import com.aeropad.remote.ui.screens.gamepadbuilder.GamepadBuilderScreen
@@ -77,6 +80,9 @@ object Routes {
     const val GAMEPAD = "gamepad"
     const val ANDROID = "android_remote"
     const val TOUCH = "touch_screen"
+    const val SHORTCUTS = "shortcut_decks"
+    const val TEXT = "text_clips"
+    const val MY_LAYOUT = "my_layout"
     const val SETTINGS = "settings"
     const val HELP = "help"
     const val LAYOUTS = "layouts"
@@ -201,6 +207,9 @@ fun AeroPadApp(
             )
         }
         composable(Routes.TOUCH) { TouchControlScreen(onBack = { navController.popBackStack() }) }
+        composable(Routes.SHORTCUTS) { ShortcutDeckScreen(onBack = { navController.popBackStack() }) }
+        composable(Routes.TEXT) { TextToolsScreen(onBack = { navController.popBackStack() }) }
+        composable(Routes.MY_LAYOUT) { MyLayoutScreen(onBack = { navController.popBackStack() }) }
         composable(Routes.CONNECTION_HEALTH) {
             ConnectionHealthScreen(onBack = { navController.popBackStack() })
         }

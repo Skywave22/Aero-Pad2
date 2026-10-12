@@ -3,6 +3,7 @@ package com.aeropad.remote.ui.screens.home
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -37,8 +38,12 @@ import androidx.compose.material.icons.rounded.Pin
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Slideshow
 import androidx.compose.material.icons.rounded.SportsEsports
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.TextButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -48,6 +53,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -63,6 +69,7 @@ import com.aeropad.remote.ui.components.GelIcon
 import com.aeropad.remote.ui.components.toComposeColor
 import com.aeropad.remote.ui.navigation.Routes
 import com.aeropad.remote.viewmodel.ConnectionViewModel
+import com.aeropad.remote.viewmodel.SettingsViewModel
 
 /**
  * Home: live Bluetooth status + one-tap connect + the full control grid.
@@ -92,7 +99,10 @@ private val controlTiles = listOf(
     HomeTile("Multimedia", "Media and volume", Icons.Rounded.MusicNote, Routes.MULTIMEDIA, tint = 0xFF17C3CE),
     HomeTile("Presenter", "Slide control", Icons.Rounded.Slideshow, Routes.PRESENTER, tint = 0xFFF5C542),
     HomeTile("Gamepad", "Game controller", Icons.Rounded.Gamepad, Routes.GAMEPAD, tint = 0xFFFF5C8A),
-    HomeTile("Android", "Remote for phones & TVs", Icons.Rounded.Android, Routes.ANDROID, tint = 0xFF3DDC84)
+    HomeTile("Android", "Remote for phones & TVs", Icons.Rounded.Android, Routes.ANDROID, tint = 0xFF3DDC84),
+    HomeTile("Decks", "App shortcut panels", Icons.Rounded.SpaceDashboard, Routes.SHORTCUTS, tint = 0xFFFF7043),
+    HomeTile("Text & Clips", "Snippets & clipboard", Icons.Rounded.ContentPaste, Routes.TEXT, tint = 0xFF26A69A),
+    HomeTile("My Layout", "Your custom surface", Icons.Rounded.TouchApp, Routes.MY_LAYOUT, tint = 0xFF2ED5A5)
 )
 
 private val createTiles = listOf(
@@ -115,6 +125,20 @@ fun HomeScreen(
     val state by viewModel.connectionState.collectAsState()
     val permissionsGranted by viewModel.permissionsGranted.collectAsState()
     val view = LocalView.current
+    // Round 7 — personalized dashboard: hide/show tiles.
+    val settingsVm: SettingsViewModel = hiltViewModel()
+    val app by settingsVm.app.collectAsState()
+    val hidden = remember(app.hiddenTiles) {
+        app.hiddenTiles.split(',').filter { it.isNotBlank() }.toSet()
+    }
+    var showCustomize by androidx.compose.runtime.remember {
+        androidx.compose.runtime.mutableStateOf(false)
+    }
+    fun visible(tiles: List<HomeTile>) = tiles.filterNot { it.title in hidden }
+    fun hideTile(tile: HomeTile) =
+        settingsVm.setHiddenTiles((hidden + tile.title).joinToString(","))
+    fun showTile(title: String) =
+        settingsVm.setHiddenTiles((hidden - title).joinToString(","))
 
     // If permissions are already granted, keep the engine warm so the
     // status card is truthful even before visiting the Connection screen.
@@ -218,8 +242,27 @@ fun HomeScreen(
                 item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
                     SectionHeader("Controls")
                 }
-                items(controlTiles) { tile ->
-                    HomeTileCard(tile = tile) {
+                if (hidden.isNotEmpty()) {
+                    item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "${hidden.size} tile(s) hidden",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(1f)
+                            )
+                            TextButton(onClick = { showCustomize = true }) {
+                                Text("Customize")
+                            }
+                        }
+                    }
+                }
+
+                items(visible(controlTiles)) { tile ->
+                    HomeTileCard(tile = tile, onLongPress = { hideTile(tile) }) {
                         if (tile.needsPermissions && !permissionsGranted) onNavigate(Routes.PERMISSIONS)
                         else onNavigate(tile.route)
                     }
@@ -229,19 +272,39 @@ fun HomeScreen(
                 item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
                     SectionHeader("Create")
                 }
-                items(createTiles) { tile ->
-                    HomeTileCard(tile = tile) { onNavigate(tile.route) }
+                items(visible(createTiles)) { tile ->
+                    HomeTileCard(tile = tile, onLongPress = { hideTile(tile) }) { onNavigate(tile.route) }
                 }
 
                 // ---------- System ----------
                 item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
                     SectionHeader("System")
                 }
-                items(systemTiles) { tile ->
-                    HomeTileCard(tile = tile) { onNavigate(tile.route) }
+                items(visible(systemTiles)) { tile ->
+                    HomeTileCard(tile = tile, onLongPress = { hideTile(tile) }) { onNavigate(tile.route) }
                 }
             }
         }
+    }
+
+    // Round 7 — re-show hidden tiles.
+    if (showCustomize) {
+        AlertDialog(
+            onDismissRequest = { showCustomize = false },
+            title = { Text("Show tiles") },
+            text = {
+                Column {
+                    hidden.sorted().forEach { title ->
+                        TextButton(onClick = { showTile(title) }) {
+                            Text("＋ $title")
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showCustomize = false }) { Text("Done") }
+            }
+        )
     }
 }
 
@@ -260,7 +323,11 @@ private fun SectionHeader(title: String) {
  * Pure solid surface, tinted icon chip — readable in Light and Dark.
  */
 @Composable
-private fun HomeTileCard(tile: HomeTile, onClick: () -> Unit) {
+private fun HomeTileCard(
+    tile: HomeTile,
+    onLongPress: (() -> Unit)? = null,
+    onClick: () -> Unit
+) {
     val reduceMotion = com.aeropad.remote.ui.components.LocalReduceMotion.current
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
@@ -280,10 +347,11 @@ private fun HomeTileCard(tile: HomeTile, onClick: () -> Unit) {
             // Clip BEFORE the clickable so the tap ripple stays inside
             // the rounded card — no square corners on press.
             .clip(MaterialTheme.shapes.medium)
-            .clickable(
+            .combinedClickable(
                 interactionSource = interactionSource,
                 indication = androidx.compose.foundation.LocalIndication.current,
-                onClick = onClick
+                onClick = onClick,
+                onLongClick = onLongPress
             )
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
