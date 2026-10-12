@@ -23,6 +23,7 @@ object ReportPool {
 
     private val mouseBuf = ByteArray(HidDescriptors.SIZE_MOUSE)
     private val gamepadBuf = ByteArray(HidDescriptors.SIZE_GAMEPAD)
+    private val gamepadBufLegacy = ByteArray(HidDescriptors.SIZE_GAMEPAD_LEGACY)
 
     /** Fill + return the reusable mouse report (same bytes as builder). */
     fun mouseInto(buttons: Byte, dx: Int, dy: Int, wheel: Int): ByteArray {
@@ -33,8 +34,12 @@ object ReportPool {
         return mouseBuf
     }
 
-    /** Fill + return the reusable gamepad report (same bytes as builder). */
-    fun gamepadInto(s: GamepadSnapshot): ByteArray {
+    /**
+     * Fill + return the reusable gamepad report. [extended]=true emits the
+     * 9-byte report with analog triggers; false emits the classic 7-byte
+     * v3.3.0 report (hosts that never saw the extended descriptor stay happy).
+     */
+    fun gamepadInto(s: GamepadSnapshot, extended: Boolean = true): ByteArray {
         val buttons = s.buttons and 0xFFFF
         gamepadBuf[0] = (buttons and 0xFF).toByte()
         gamepadBuf[1] = ((buttons shr 8) and 0xFF).toByte()
@@ -43,6 +48,12 @@ object ReportPool {
         gamepadBuf[4] = HidReportBuilder.axisToByte(s.leftY)
         gamepadBuf[5] = HidReportBuilder.axisToByte(s.rightX)
         gamepadBuf[6] = HidReportBuilder.axisToByte(s.rightY)
+        if (!extended) {
+            for (i in 0 until HidDescriptors.SIZE_GAMEPAD_LEGACY) {
+                gamepadBufLegacy[i] = gamepadBuf[i]
+            }
+            return gamepadBufLegacy
+        }
         gamepadBuf[7] = HidReportBuilder.triggerToByte(s.leftTrigger)
         gamepadBuf[8] = HidReportBuilder.triggerToByte(s.rightTrigger)
         return gamepadBuf

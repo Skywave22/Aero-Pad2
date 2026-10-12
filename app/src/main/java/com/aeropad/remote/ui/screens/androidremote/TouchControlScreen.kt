@@ -63,6 +63,7 @@ fun TouchControlScreen(
 ) {
     val isConnected by viewModel.isConnected.collectAsState()
     val vibration by viewModel.vibrationsEnabled.collectAsState()
+    val extended by viewModel.extendedReports.collectAsState()
     val haptic = rememberHaptic(vibration)
 
     var areaSize by remember { mutableStateOf(IntSize.Zero) }
@@ -97,6 +98,15 @@ fun TouchControlScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             NotConnectedBanner(!isConnected)
+
+            if (!extended) {
+                Text(
+                    text = "Extended HID reports are OFF (Settings → Behavior). " +
+                        "Enable them to register the touch digitizer on the host.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
             Box(
                 modifier = Modifier

@@ -48,7 +48,9 @@ class HidEngine @Inject constructor(
     @ApplicationContext private val context: Context,
     private val permissionManager: PermissionManager,
     // AEROPAD v1.0 #41 — real session history log.
-    private val history: com.aeropad.remote.data.history.ConnectionHistoryStore
+    private val history: com.aeropad.remote.data.history.ConnectionHistoryStore,
+    // Round 9 — descriptor mode (legacy = stable 3.3.0 wire format).
+    private val settingsStore: com.aeropad.remote.domain.SettingsStore
 ) : com.aeropad.remote.domain.HidController {
 
     private companion object {
@@ -102,6 +104,22 @@ class HidEngine @Inject constructor(
     private var connectingSinceMs = 0L
     private var connectedAtMs = 0L
     private var flapCount = 0
+    private var extendedReports = false
+
+    init {
+        scope.launch {
+            settingsStore.appSettings.collect { a ->
+                val changed = a.extendedReports != extendedReports
+                extendedReports = a.extendedReports
+                if (changed && appRegistered) {
+                    Timber.i("extendedReports toggled — re-registering HID app")
+                    connectedDevice = null
+                    runCatching { hidDevice?.unregisterApp() }
+                    registerApp()
+                }
+            }
+        }
+    }
 
     private val _state = MutableStateFlow<HidConnectionState>(HidConnectionState.Idle)
     override val state: StateFlow<HidConnectionState> = _state.asStateFlow()
@@ -354,8 +372,12 @@ class HidEngine @Inject constructor(
                 }
                 is HidAction.GamepadUpdate ->
                     // V2 PART A — pooled buffer: zero alloc on the hot path.
-                    report(HidDescriptors.REPORT_ID_GAMEPAD, ReportPool.gamepadInto(action.snapshot))
+                    report(
+                        HidDescriptors.REPORT_ID_GAMEPAD,
+                        ReportPool.gamepadInto(action.snapshot, extendedReports)
+                    )
                 is HidAction.TouchUpdate -> {
+                    if (!extendedReports) return // digitizer not registered (legacy mode)
                     // Normalized 0..1 → absolute 15-bit digitizer space.
                     val tx = (action.x.coerceIn(0f, 1f) * 32767f).toInt()
                     val ty = (action.y.coerceIn(0f, 1f) * 32767f).toInt()
@@ -470,9 +492,12 @@ class HidEngine @Inject constructor(
 
     private fun registerApp() {
         val hd = hidDevice ?: return
+        // Round 9: default = the proven-stable 3.3.0 descriptor; the
+        // extended one (touch digitizer + analog triggers) is opt-in.
+        val descriptor = if (extendedReports) HidDescriptors.COMBINED else HidDescriptors.LEGACY
         val sdp = BluetoothHidDeviceAppSdpSettings(
             SDP_NAME, SDP_DESCRIPTION, SDP_PROVIDER,
-            SUBCLASS_COMBO, HidDescriptors.COMBINED
+            SUBCLASS_COMBO, descriptor
         )
         val ok = runCatching { hd.registerApp(sdp, null, null, hidExecutor, hidCallback) }
             .onFailure { Timber.e(it, "registerApp threw") }

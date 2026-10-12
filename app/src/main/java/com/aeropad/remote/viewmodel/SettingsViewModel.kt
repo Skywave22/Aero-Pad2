@@ -58,6 +58,7 @@ class SettingsViewModel @Inject constructor(
     // Round 7 — personalization.
     fun setUiStyle(style: String) = updateApp { it.copy(uiStyle = style) }
     fun setHiddenTiles(csv: String) = updateApp { it.copy(hiddenTiles = csv) }
+    fun setExtendedReports(value: Boolean) = updateApp { it.copy(extendedReports = value) }
     fun setFullscreen(value: Boolean) = updateApp { it.copy(fullscreenMode = value) }
     fun setKeepScreenOn(value: Boolean) = updateApp { it.copy(keepScreenOn = value) }
     fun setTouchVibrations(value: Boolean) = updateApp { it.copy(touchVibrations = value) }

@@ -60,6 +60,11 @@ class RemoteControlViewModel @Inject constructor(
         .map { it.touchVibrations }
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
+    // Round 9 — is the extended descriptor (touch digitizer) registered?
+    val extendedReports: StateFlow<Boolean> = settingsStore.appSettings
+        .map { it.extendedReports }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     // ------------------------------------------------------------------
     // Mouse
     // ------------------------------------------------------------------

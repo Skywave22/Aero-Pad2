@@ -42,6 +42,20 @@ class ReportPoolTest {
     }
 
     @Test
+    fun `legacy gamepad report is the 7-byte classic prefix`() {
+        val snap = GamepadSnapshot(
+            buttons = 0xFFFF, hat = 3, leftX = 1f, rightY = -1f,
+            leftTrigger = 1f, rightTrigger = 1f
+        )
+        val legacy = ReportPool.gamepadInto(snap, extended = false)
+        assertEquals(HidDescriptors.SIZE_GAMEPAD_LEGACY, legacy.size)
+        val full = HidReportBuilder.gamepad(snap)
+        for (i in 0 until HidDescriptors.SIZE_GAMEPAD_LEGACY) {
+            assertEquals(full[i], legacy[i])
+        }
+    }
+
+    @Test
     fun `pool reuses the same buffer instance - zero allocation`() {
         val a = ReportPool.mouseInto(0, 1, 2, 0)
         val b = ReportPool.mouseInto(0, 9, 9, 0)

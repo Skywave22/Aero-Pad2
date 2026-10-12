@@ -80,6 +80,7 @@ class DataStoreSettings @Inject constructor(
         val G_TILT_SENS = intPreferencesKey("g_tilt_sens")
         val UI_STYLE = stringPreferencesKey("ui_style")
         val HIDDEN_TILES = stringPreferencesKey("hidden_tiles")
+        val EXTENDED_REPORTS = booleanPreferencesKey("extended_reports")
     }
 
     /** Preferences flow that never throws: IO errors → defaults. */
@@ -115,7 +116,8 @@ class DataStoreSettings @Inject constructor(
             automationApi = p[Keys.AUTOMATION_API] ?: false,
             spokenAlerts = p[Keys.SPOKEN_ALERTS] ?: true,
             uiStyle = p[Keys.UI_STYLE] ?: "MATERIAL",
-            hiddenTiles = p[Keys.HIDDEN_TILES] ?: ""
+            hiddenTiles = p[Keys.HIDDEN_TILES] ?: "",
+            extendedReports = p[Keys.EXTENDED_REPORTS] ?: false
         )
     }
 
@@ -170,6 +172,7 @@ class DataStoreSettings @Inject constructor(
             p[Keys.SPOKEN_ALERTS] = settings.spokenAlerts
             p[Keys.UI_STYLE] = settings.uiStyle
             p[Keys.HIDDEN_TILES] = settings.hiddenTiles
+            p[Keys.EXTENDED_REPORTS] = settings.extendedReports
         }
     }
 

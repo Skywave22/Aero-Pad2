@@ -58,6 +58,22 @@ class HidDescriptorsTest {
     }
 
     @Test
+    fun `legacy descriptor declares the five classic report ids`() {
+        val legacy = HidDescriptors.LEGACY
+        val declaredIds = mutableSetOf<Int>()
+        for (i in 0 until legacy.size - 1) {
+            if ((legacy[i].toInt() and 0xFF) == 0x85) {
+                declaredIds += legacy[i + 1].toInt() and 0xFF
+            }
+        }
+        assertEquals(
+            setOf(1, 2, 3, 4, 5),
+            declaredIds
+        )
+        assertTrue("legacy must be smaller than extended", legacy.size < descriptor.size)
+    }
+
+    @Test
     fun `payload size constants match builders`() {
         assertEquals(HidDescriptors.SIZE_KEYBOARD, HidReportBuilder.keyboardRelease().size)
         assertEquals(HidDescriptors.SIZE_MOUSE, HidReportBuilder.mouse().size)

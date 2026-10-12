@@ -140,7 +140,7 @@ fun SettingsScreen(
             }
 
             // ---------- Behavior ----------
-            if (matches("fullscreen", "screen", "keep", "secure", "fps", "automation", "motion")) SettingsGroup("Behavior") {
+            if (matches("fullscreen", "screen", "keep", "secure", "fps", "automation", "motion", "hid", "extended", "compat")) SettingsGroup("Behavior") {
                 ToggleRow("Keep screen on", app.keepScreenOn, viewModel::setKeepScreenOn)
                 ToggleRow("Fullscreen mode", app.fullscreenMode, viewModel::setFullscreen)
                 ToggleRow(
@@ -166,6 +166,13 @@ fun SettingsScreen(
                     app.automationApi,
                     viewModel::setAutomationApi,
                     subtitle = "Let automation apps play macros, media keys and type text via broadcast. Off = all external commands dropped."
+                )
+                ToggleRow(
+                    "Extended HID reports",
+                    app.extendedReports,
+                    viewModel::setExtendedReports,
+                    subtitle = "Adds the touch-screen digitizer + analog triggers to the Bluetooth descriptor. " +
+                        "Off (default) uses the classic, proven-stable descriptor — turn off if your host drops the connection."
                 )
             }
 

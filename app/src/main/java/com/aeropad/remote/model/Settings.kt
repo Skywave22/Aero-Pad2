@@ -48,7 +48,11 @@ data class AppSettings(
     /** UI finish: MATERIAL / GLASS / NEON. */
     val uiStyle: String = "MATERIAL",
     /** Home tiles hidden by the user (CSV of tile labels). */
-    val hiddenTiles: String = ""
+    val hiddenTiles: String = "",
+    /** Round 9 — register the extended HID descriptor (touch digitizer +
+     *  analog triggers). OFF (default) = the classic 3.3.0 descriptor that
+     *  is proven stable on real hosts. */
+    val extendedReports: Boolean = false
 )
 
 /** Mouse/trackpad tuning. All percentages 0..100. */

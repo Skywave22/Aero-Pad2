@@ -70,7 +70,7 @@ object PropertyCatalog {
     /** AppSettings 24 + MouseSettings 6 + KeyboardSettings 1
      *  + GamepadSettings 4 = 35 global toggles/values
      *  (spokenAlerts added in the M5 b2 batch). */
-    const val SETTINGS_PROPS = 32
+    const val SETTINGS_PROPS = 33
 
     /** Keys on the real default board + favorites cap + FN overlay cap. */
     fun keyboardKeyInstances(): Int {

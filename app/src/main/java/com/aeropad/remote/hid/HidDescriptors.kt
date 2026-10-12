@@ -30,6 +30,7 @@ object HidDescriptors {
     const val SIZE_CONSUMER: Int = 2   // [usage LSB][usage MSB]
     const val SIZE_SYSTEM: Int = 1     // [bit0=power bit1=sleep bit2=wake]
     const val SIZE_GAMEPAD: Int = 9    // [btnLo][btnHi][hat][lx][ly][rx][ry][lt][rt]
+    const val SIZE_GAMEPAD_LEGACY: Int = 7  // classic 3.3.0 gamepad (no triggers)
     const val SIZE_TOUCH: Int = 5      // [tipSwitch|inRange bits][xLo][xHi][yLo][yHi] (0..32767)
 
     /**
@@ -229,6 +230,50 @@ object HidDescriptors {
         0xC0.toByte(),                 //   End Collection (Physical)
         0xC0.toByte()                  // End Collection (Application)
     )
+
+    /**
+     * Round 9 — classic 3.3.0 gamepad collection (4 axes, 7-byte report).
+     * This is the byte-exact collection the known-good v3.3.0 build shipped.
+     */
+    private val GAMEPAD_LEGACY = byteArrayOf(
+        0x05, 0x01,                    // Usage Page (Generic Desktop)
+        0x09, 0x05,                    // Usage (Game Pad)
+        0xA1.toByte(), 0x01,           // Collection (Application)
+        0x85.toByte(), REPORT_ID_GAMEPAD.toByte(), //   Report ID 5
+        0x05, 0x09,                    //   Usage Page (Buttons)
+        0x19, 0x01,                    //   Usage Min (Button 1)
+        0x29, 0x10,                    //   Usage Max (Button 16)
+        0x15, 0x00,                    //   Logical Min 0
+        0x25, 0x01,                    //   Logical Max 1
+        0x95.toByte(), 0x10,           //   Report Count 16
+        0x75, 0x01,                    //   Report Size 1
+        0x81.toByte(), 0x02,           //   Input (Data, Var, Abs)
+        0x05, 0x01,                    //   Usage Page (Generic Desktop)
+        0x09, 0x39,                    //   Usage (Hat Switch)
+        0x15, 0x00,                    //   Logical Min 0
+        0x25, 0x08,                    //   Logical Max 8
+        0x95.toByte(), 0x01,           //   Report Count 1
+        0x75, 0x08,                    //   Report Size 8
+        0x81.toByte(), 0x02,           //   Input (Data, Var, Abs)
+        0x05, 0x01,                    //   Usage Page (Generic Desktop)
+        0x09, 0x30,                    //   Usage (X)  - left stick X
+        0x09, 0x31,                    //   Usage (Y)  - left stick Y
+        0x09, 0x32,                    //   Usage (Z)  - right stick X
+        0x09, 0x35,                    //   Usage (Rz) - right stick Y
+        0x15, 0x00,                    //   Logical Min 0
+        0x26, 0xFF.toByte(), 0x00,     //   Logical Max 255
+        0x75, 0x08,                    //   Report Size 8
+        0x95.toByte(), 0x04,           //   Report Count 4
+        0x81.toByte(), 0x02,           //   Input (Data, Var, Abs)
+        0xC0.toByte()                  // End Collection
+    )
+
+    /**
+     * Round 9 — LEGACY descriptor: byte-identical device set to the stable
+     * v3.3.0 build (5 collections, 7-byte gamepad, no digitizer). Registered
+     * by default for maximum host compatibility.
+     */
+    val LEGACY: ByteArray = KEYBOARD + MOUSE + CONSUMER + SYSTEM + GAMEPAD_LEGACY
 
     /** The single descriptor registered with Android — all six devices combined. */
     val COMBINED: ByteArray = KEYBOARD + MOUSE + CONSUMER + SYSTEM + GAMEPAD + TOUCH
