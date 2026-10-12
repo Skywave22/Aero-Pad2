@@ -80,12 +80,19 @@ data class GamepadSettings(
     val mappingMode: GamepadMappingMode = GamepadMappingMode.HID_GAMEPAD,
     val joystickSensitivity: Int = 70,
     val deadZone: Int = 10,
-    val hapticFeedback: Boolean = true
+    val hapticFeedback: Boolean = true,
+    // Round 7 — Pro gamepad mode.
+    val gyroAim: Boolean = false,
+    val tiltSteer: Boolean = false,
+    val gyroSensitivity: Int = 50,
+    val tiltSensitivity: Int = 50
 ) {
     companion object { const val DEAD_ZONE_MAX = 50 }
 
     fun sanitized(): GamepadSettings = copy(
         joystickSensitivity = joystickSensitivity.coerceIn(0, 100),
-        deadZone = deadZone.coerceIn(0, DEAD_ZONE_MAX)
+        deadZone = deadZone.coerceIn(0, DEAD_ZONE_MAX),
+        gyroSensitivity = gyroSensitivity.coerceIn(0, 100),
+        tiltSensitivity = tiltSensitivity.coerceIn(0, 100)
     )
 }

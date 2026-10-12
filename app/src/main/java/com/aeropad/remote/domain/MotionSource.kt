@@ -68,10 +68,10 @@ class MotionSource @Inject constructor(
         if (running) return
         running = true
         runCatching {
-            m.getSensor(Sensor.TYPE_GAME_ROTATION_VECTOR)?.let {
+            m.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR)?.let {
                 m.registerListener(listener, it, SensorManager.SENSOR_DELAY_GAME)
             }
-            m.getSensor(Sensor.TYPE_GYROSCOPE)?.let {
+            m.getDefaultSensor(Sensor.TYPE_GYROSCOPE)?.let {
                 m.registerListener(listener, it, SensorManager.SENSOR_DELAY_GAME)
             }
         }.onFailure { Timber.w(it, "motion sensors unavailable") }

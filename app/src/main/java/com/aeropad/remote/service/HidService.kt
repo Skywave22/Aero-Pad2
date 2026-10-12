@@ -74,7 +74,6 @@ class HidService : Service() {
         // NotificationManager is only touched when the visible text actually
         // changes (state spam like repeated Idle costs zero wakeups).
         hidController.state
-            .distinctUntilChanged()
             .onEach { st ->
                 currentState = st
                 updateNotification(stateLabel(st))
