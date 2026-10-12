@@ -3,6 +3,7 @@ package com.aeropad.remote.ui.screens.home
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -321,7 +322,7 @@ private fun SectionHeader(title: String) {
  * Tile card with tactile press feedback: scales down to 96% while held.
  * Pure solid surface, tinted icon chip — readable in Light and Dark.
  */
-@androidx.compose.OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun HomeTileCard(
     tile: HomeTile,
