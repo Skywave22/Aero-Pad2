@@ -53,6 +53,9 @@ class MyLayoutViewModel @Inject constructor(
     val profiles = repository.observeProfiles()
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+    private val hostProfiles = hosts.profiles
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
     val connectedAddress: StateFlow<String?> = hid.state
         .map { (it as? HidConnectionState.Connected)?.device?.address }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -64,9 +67,9 @@ class MyLayoutViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            combine(profiles, connectedAddress, _overrideId) { ps, addr, override ->
+            combine(hostProfiles, connectedAddress, _overrideId) { hs, addr, override ->
                 val bound = addr?.let { a ->
-                    ps.firstOrNull { it.address == a }?.layoutId?.takeIf { it > 0L }
+                    hs.firstOrNull { it.address == a }?.layoutId?.takeIf { it > 0L }
                 }
                 override ?: bound
             }.collect { id ->

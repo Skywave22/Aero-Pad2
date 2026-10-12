@@ -28,6 +28,7 @@ import androidx.compose.material.icons.rounded.Android
 import androidx.compose.material.icons.rounded.Bluetooth
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Computer
+import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Dashboard
 import androidx.compose.material.icons.rounded.Gamepad
 import androidx.compose.material.icons.rounded.Keyboard
@@ -40,11 +41,9 @@ import androidx.compose.material.icons.rounded.Slideshow
 import androidx.compose.material.icons.rounded.SportsEsports
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.TextButtonDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -100,9 +99,9 @@ private val controlTiles = listOf(
     HomeTile("Presenter", "Slide control", Icons.Rounded.Slideshow, Routes.PRESENTER, tint = 0xFFF5C542),
     HomeTile("Gamepad", "Game controller", Icons.Rounded.Gamepad, Routes.GAMEPAD, tint = 0xFFFF5C8A),
     HomeTile("Android", "Remote for phones & TVs", Icons.Rounded.Android, Routes.ANDROID, tint = 0xFF3DDC84),
-    HomeTile("Decks", "App shortcut panels", Icons.Rounded.SpaceDashboard, Routes.SHORTCUTS, tint = 0xFFFF7043),
-    HomeTile("Text & Clips", "Snippets & clipboard", Icons.Rounded.ContentPaste, Routes.TEXT, tint = 0xFF26A69A),
-    HomeTile("My Layout", "Your custom surface", Icons.Rounded.TouchApp, Routes.MY_LAYOUT, tint = 0xFF2ED5A5)
+    HomeTile("Decks", "App shortcut panels", Icons.Rounded.Keyboard, Routes.SHORTCUTS, tint = 0xFFFF7043),
+    HomeTile("Text & Clips", "Snippets & clipboard", Icons.Rounded.ContentCopy, Routes.TEXT, tint = 0xFF26A69A),
+    HomeTile("My Layout", "Your custom surface", Icons.Rounded.Dashboard, Routes.MY_LAYOUT, tint = 0xFF2ED5A5)
 )
 
 private val createTiles = listOf(
@@ -322,6 +321,7 @@ private fun SectionHeader(title: String) {
  * Tile card with tactile press feedback: scales down to 96% while held.
  * Pure solid surface, tinted icon chip — readable in Light and Dark.
  */
+@androidx.compose.OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun HomeTileCard(
     tile: HomeTile,

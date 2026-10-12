@@ -40,6 +40,7 @@ import com.aeropad.remote.data.text.TextToolsStore
 import com.aeropad.remote.ui.components.NotConnectedBanner
 import com.aeropad.remote.ui.components.rememberHaptic
 import com.aeropad.remote.viewmodel.RemoteControlViewModel
+import com.aeropad.remote.viewmodel.TextToolsViewModel
 
 /**
  * Quick Text & Clipboard Tools — a send-text field, saved snippets
