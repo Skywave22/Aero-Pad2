@@ -16,8 +16,8 @@ android {
         applicationId = "com.aeropad.remote"
         minSdk = 29          // Android 10+ (BluetoothHidDevice API requires 28; 29 confirmed by product decision)
         targetSdk = 34
-        versionCode = 330
-        versionName = "3.3.0"
+        versionCode = 340
+        versionName = "3.4.0"
 
         testInstrumentationRunner = "com.aeropad.remote.HiltTestRunner"
         vectorDrawables { useSupportLibrary = true }

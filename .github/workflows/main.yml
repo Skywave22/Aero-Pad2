@@ -10,6 +10,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # publish the signed APK to GitHub Releases
     # FIX 2: repo gradle.properties uses low-memory JVM args (853MB heap /
     # 320MB metaspace — sandbox-tuned). Lint runs out of Metaspace with
     # those. GitHub runners have 7GB, so override here (env var beats
@@ -57,6 +59,7 @@ jobs:
             export RELEASE_KEY_ALIAS="$KEY_ALIAS"
             export RELEASE_KEY_PASSWORD="$KEY_PASS"
             ./gradlew assembleRelease
+            echo "SIGNED=true" >> "$GITHUB_ENV"
           else
             echo "No keystore secrets - building with fallback (debug) signing"
             ./gradlew assembleRelease
@@ -75,3 +78,19 @@ jobs:
         with:
           name: aeropad-release
           path: app/build/outputs/apk/release/*.apk
+
+      - name: Resolve version
+        run: |
+          VER=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          echo "VERSION=$VER" >> "$GITHUB_ENV"
+
+      # Publish to GitHub Releases — only for properly signed builds, so a
+      # debug-signed fallback never lands on the public release page.
+      - name: Publish GitHub Release
+        if: env.SIGNED == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}
+          name: AeroPad v${{ env.VERSION }}
+          generate_release_notes: true
+          files: app/build/outputs/apk/release/*.apk
