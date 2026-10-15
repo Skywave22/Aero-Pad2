@@ -68,6 +68,9 @@ class HidEngine @Inject constructor(
         const val CONNECT_DEBOUNCE_MS = 3_000L
         const val STABLE_LINK_MS = 5_000L
         const val MAX_FLAPS = 3
+        /** Round 10 — gentle idle keep-alive so power-hungry host stacks
+         *  (notably some Android HID hosts) never see a "silent" link. */
+        const val KEEPALIVE_MS = 4_000L
     }
 
     // Single-thread executor keeps report order deterministic and latency low.
@@ -105,6 +108,7 @@ class HidEngine @Inject constructor(
     private var connectedAtMs = 0L
     private var flapCount = 0
     private var extendedReports = false
+    private var keepAlive: kotlinx.coroutines.Job? = null
 
     init {
         scope.launch {
@@ -184,6 +188,7 @@ class HidEngine @Inject constructor(
         stopped = true
         userInitiatedDisconnect = true
         connectWatchdog?.cancel()
+        keepAlive?.cancel()
         if (btReceiverRegistered) {
             runCatching { context.unregisterReceiver(btStateReceiver) }
                 .onFailure { Timber.w(it, "unregisterReceiver failed") }
@@ -536,6 +541,7 @@ class HidEngine @Inject constructor(
                     connectWatchdog?.cancel()
                     connectedDevice = device
                     connectedAtMs = System.currentTimeMillis()
+                    device?.let { startKeepAlive(it) }
                     lastHostDevice = device
                     reconnectAttempts = 0
                     _reconnectStatus.value = null           // ADV S5
@@ -548,6 +554,7 @@ class HidEngine @Inject constructor(
                 BluetoothProfile.STATE_CONNECTING ->
                     device?.let { _state.value = HidConnectionState.Connecting(it.toRemote()) }
                 BluetoothProfile.STATE_DISCONNECTED -> {
+                    keepAlive?.cancel()
                     val wasConnected = connectedDevice != null
                     connectedDevice = null
                     _state.value = HidConnectionState.Idle
@@ -578,11 +585,61 @@ class HidEngine @Inject constructor(
             }
         }
 
+        /**
+         * Round 10 — answer host control requests. Android's HID host issues
+         * GET_REPORT after connecting; a device that never replies can be
+         * dropped by the host stack, which matches the "connected then
+         * suddenly disconnected" symptom on Android hosts.
+         */
+        override fun onGetReport(device: BluetoothDevice?, type: Byte, id: Byte, bufferSize: Int) {
+            val hd = hidDevice ?: return
+            runCatching {
+                val payload: ByteArray = when (id.toInt()) {
+                    HidDescriptors.REPORT_ID_KEYBOARD -> HidReportBuilder.keyboardRelease()
+                    HidDescriptors.REPORT_ID_MOUSE -> HidReportBuilder.mouse()
+                    HidDescriptors.REPORT_ID_CONSUMER -> HidReportBuilder.consumerRelease()
+                    HidDescriptors.REPORT_ID_SYSTEM -> HidReportBuilder.systemRelease()
+                    HidDescriptors.REPORT_ID_GAMEPAD ->
+                        ReportPool.gamepadInto(GamepadSnapshot(), extendedReports)
+                    else -> ByteArray(0)
+                }
+                hd.replyReport(device, type, id, payload)
+            }.onFailure { Timber.w(it, "replyReport(id=%s) failed", id) }
+        }
+
+        /** Host→device output report (keyboard LEDs etc.) — acknowledged by returning. */
+        override fun onSetReport(device: BluetoothDevice?, type: Byte, id: Byte, data: ByteArray?) {
+            Timber.d("onSetReport id=%s len=%s", id, data?.size ?: 0)
+        }
+
+        override fun onSetProtocol(device: BluetoothDevice?, protocol: Byte) {
+            Timber.d("onSetProtocol protocol=%s", protocol)
+        }
+
         override fun onVirtualCableUnplug(device: BluetoothDevice?) {
             Timber.i("onVirtualCableUnplug %s", device?.address)
             userInitiatedDisconnect = true // host asked us to unplug: do not fight it
             connectedDevice = null
             _state.value = HidConnectionState.Idle
+        }
+    }
+
+    /**
+     * Round 10 — idle keep-alive: a neutral mouse report every few seconds
+     * while connected, so host stacks with idle-link power policies never
+     * consider the link dead. Zero movement = zero side effects.
+     */
+    private fun startKeepAlive(dev: BluetoothDevice) {
+        keepAlive?.cancel()
+        keepAlive = scope.launch {
+            while (true) {
+                delay(KEEPALIVE_MS)
+                if (connectedDevice == dev) {
+                    report(HidDescriptors.REPORT_ID_MOUSE, ReportPool.mouseInto(0, 0, 0, 0))
+                } else {
+                    break
+                }
+            }
         }
     }
 
