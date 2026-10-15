@@ -44,6 +44,11 @@ android {
                 storePassword = keystorePassword
                 keyAlias = keyAliasName
                 keyPassword = keyPasswordValue
+                storeType = if (keystorePath!!.endsWith(".p12") || keystorePath.endsWith(".pfx")) {
+                    "pkcs12"
+                } else {
+                    "jks"
+                }
             }
         }
     }

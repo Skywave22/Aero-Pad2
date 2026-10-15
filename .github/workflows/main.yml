@@ -49,14 +49,16 @@ jobs:
           KEY_PASS: ${{ secrets.KEY_PASS }}
         run: |
           if [ -n "$KEYSTORE_B64" ]; then
-            echo "$KEYSTORE_B64" | base64 -d > keystore.jks
-            ./gradlew assembleRelease \
-              -Pandroid.injected.signing.store.file=${PWD}/keystore.jks \
-              -Pandroid.injected.signing.store.password="$KEYSTORE_PASS" \
-              -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
-              -Pandroid.injected.signing.key.password="$KEY_PASS"
+            # Release key lives ONLY in encrypted secrets — never in git,
+            # never in logs (secret values are masked by Actions).
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/aeropad-release.p12"
+            export RELEASE_KEYSTORE_FILE="$RUNNER_TEMP/aeropad-release.p12"
+            export RELEASE_KEYSTORE_PASSWORD="$KEYSTORE_PASS"
+            export RELEASE_KEY_ALIAS="$KEY_ALIAS"
+            export RELEASE_KEY_PASSWORD="$KEY_PASS"
+            ./gradlew assembleRelease
           else
-            echo "No keystore secrets - building unsigned release"
+            echo "No keystore secrets - building with fallback (debug) signing"
             ./gradlew assembleRelease
           fi
 
