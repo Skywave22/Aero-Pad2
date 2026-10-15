@@ -165,7 +165,12 @@ fun AeroPadApp(
     ) {
         composable(Routes.HOME) {
             HomeScreen(
-                onNavigate = { route -> navController.navigate(route) }
+                // launchSingleTop: a double-tap on a tile must never push the
+                // same destination twice (duplicate back-stack entries made
+                // Back feel broken).
+                onNavigate = { route ->
+                    navController.navigate(route) { launchSingleTop = true }
+                }
             )
         }
         composable(Routes.PERMISSIONS) {
@@ -180,7 +185,9 @@ fun AeroPadApp(
         composable(Routes.CONNECTION) {
             ConnectionScreen(
                 onBack = { navController.popBackStack() },
-                onOpenDevices = { navController.navigate(Routes.DEVICES) }
+                onOpenDevices = {
+                    navController.navigate(Routes.DEVICES) { launchSingleTop = true }
+                }
             )
         }
         composable(Routes.DEVICES) {
@@ -191,7 +198,9 @@ fun AeroPadApp(
         composable(Routes.SETTINGS) {
             SettingsScreen(
                 onBack = { navController.popBackStack() },
-                onOpen3DPreview = { navController.navigate(Routes.PREVIEW_3D) }
+                onOpen3DPreview = {
+                navController.navigate(Routes.PREVIEW_3D) { launchSingleTop = true }
+            }
             )
         }
         composable(Routes.MOUSE) { MouseScreen(onBack = { navController.popBackStack() }) }
@@ -203,7 +212,9 @@ fun AeroPadApp(
         composable(Routes.ANDROID) {
             AndroidControlScreen(
                 onBack = { navController.popBackStack() },
-                onOpenTouch = { navController.navigate(Routes.TOUCH) }
+                onOpenTouch = {
+                navController.navigate(Routes.TOUCH) { launchSingleTop = true }
+            }
             )
         }
         composable(Routes.TOUCH) { TouchControlScreen(onBack = { navController.popBackStack() }) }
@@ -254,7 +265,9 @@ fun AeroPadApp(
     // top-right corner during active use; tap opens the dashboard.
     if (currentRoute != Routes.CONNECTION_HEALTH) {
         MiniHealthIndicator(
-            onOpen = { navController.navigate(Routes.CONNECTION_HEALTH) },
+            onOpen = {
+                navController.navigate(Routes.CONNECTION_HEALTH) { launchSingleTop = true }
+            },
             modifier = Modifier.align(Alignment.TopEnd)
         )
     }
@@ -313,12 +326,21 @@ private fun MiniHealthIndicator(onOpen: () -> Unit, modifier: Modifier = Modifie
         com.aeropad.remote.domain.ConnectionHealthTracker.Health.FAIR -> androidx.compose.ui.graphics.Color(0xFFF1C40F)
         com.aeropad.remote.domain.ConnectionHealthTracker.Health.POOR -> androidx.compose.ui.graphics.Color(0xFFE74C3C)
     }
+    // CLICK FIX: a 12dp dot is untappable and (worse) blocked taps on
+    // whatever sits under it. The dot stays 12dp visually, but its touch
+    // area is a proper 44dp circle centered on it.
     androidx.compose.foundation.layout.Box(
         modifier = modifier
-            .padding(top = 42.dp, end = 10.dp)
-            .size(12.dp)
-            .background(color, androidx.compose.foundation.shape.CircleShape)
-            .border(1.dp, androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f), androidx.compose.foundation.shape.CircleShape)
-            .clickable { onOpen() }
-    )
+            .padding(top = 26.dp, end = 0.dp)
+            .size(44.dp)
+            .clickable { onOpen() },
+        contentAlignment = Alignment.Center
+    ) {
+        androidx.compose.foundation.layout.Box(
+            modifier = Modifier
+                .size(12.dp)
+                .background(color, androidx.compose.foundation.shape.CircleShape)
+                .border(1.dp, androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f), androidx.compose.foundation.shape.CircleShape)
+        )
+    }
 }

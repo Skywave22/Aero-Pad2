@@ -3,12 +3,12 @@ package com.aeropad.remote.ui.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -18,8 +18,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -67,14 +68,27 @@ fun GlassDock(
                     else MaterialTheme.colorScheme.onSurfaceVariant,
                     label = "dockTint"
                 )
+                // CLICK FIX: items used to be only ~36dp wide (below the 48dp
+                // touch-target minimum) with no press feedback — taps between
+                // icons did nothing and felt broken. Each tab now owns an
+                // equal full-height slice of the dock, with ripple + haptic.
+                val view = LocalView.current
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
                     modifier = Modifier
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) { if (!selected) onNavigate(item.route) }
-                        .padding(horizontal = 6.dp)
+                        .weight(1f)
+                        .heightIn(min = 56.dp)
+                        .clip(CircleShape)
+                        .clickable {
+                            if (!selected) {
+                                view.performHapticFeedback(
+                                    android.view.HapticFeedbackConstants.KEYBOARD_TAP
+                                )
+                                onNavigate(item.route)
+                            }
+                        }
+                        .padding(vertical = 6.dp)
                 ) {
                     Box(
                         modifier = Modifier
