@@ -49,7 +49,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -87,12 +90,14 @@ import kotlin.math.roundToInt
 @Composable
 fun GamepadScreen(
     onBack: () -> Unit,
+    onOpenBuilder: (() -> Unit)? = null,
     viewModel: RemoteControlViewModel = hiltViewModel()
 ) {
     val isConnected by viewModel.isConnected.collectAsStateWithLifecycle()
     val gamepadSettings by viewModel.gamepadSettings.collectAsStateWithLifecycle()
     val vibration by viewModel.vibrationsEnabled.collectAsStateWithLifecycle()
     val haptic = rememberHaptic(vibration)
+    val scope = rememberCoroutineScope()
     // Round 7 — Pro gamepad.
     val settingsVm: SettingsViewModel = hiltViewModel()
     val profiles by viewModel.gamepadProfiles.profiles.collectAsStateWithLifecycle()
@@ -124,6 +129,15 @@ fun GamepadScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    if (onOpenBuilder != null) {
+                        AssistChip(
+                            onClick = onOpenBuilder,
+                            label = { Text("🕹️ Builder") },
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
                     }
                 }
             )
@@ -177,7 +191,7 @@ fun GamepadScreen(
                     // ABXY diamond — classic controller colors (Y amber,
                     // X blue, B red, A green) with 3D gel shading.
                     FaceButton("Y", tint = Color(0xFFF5A623)) { pressed -> viewModel.onGamepadButton(GamepadButton.Y, pressed); if (pressed) haptic() }
-                    Row(horizontalArrangement = Arrangement.spacedBy(40.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                         FaceButton("X", tint = Color(0xFF2F6BFF)) { pressed -> viewModel.onGamepadButton(GamepadButton.X, pressed); if (pressed) haptic() }
                         FaceButton("B", tint = Color(0xFFE74C3C)) { pressed -> viewModel.onGamepadButton(GamepadButton.B, pressed); if (pressed) haptic() }
                     }
@@ -205,9 +219,9 @@ fun GamepadScreen(
                     .height(48.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                KeyCard("Select", Modifier.weight(1f)) { haptic(); pressAndRelease(viewModel, GamepadButton.SELECT) }
-                KeyCard("Home", Modifier.weight(1f)) { haptic(); pressAndRelease(viewModel, GamepadButton.HOME) }
-                KeyCard("Start", Modifier.weight(1f)) { haptic(); pressAndRelease(viewModel, GamepadButton.START) }
+                KeyCard("Select", Modifier.weight(1f)) { haptic(); scope.launch { pressAndRelease(viewModel, GamepadButton.SELECT) } }
+                KeyCard("Home", Modifier.weight(1f)) { haptic(); scope.launch { pressAndRelease(viewModel, GamepadButton.HOME) } }
+                KeyCard("Start", Modifier.weight(1f)) { haptic(); scope.launch { pressAndRelease(viewModel, GamepadButton.START) } }
             }
         }
     }
@@ -227,8 +241,9 @@ fun GamepadScreen(
     }
 }
 
-private fun pressAndRelease(viewModel: RemoteControlViewModel, button: GamepadButton) {
+private suspend fun pressAndRelease(viewModel: RemoteControlViewModel, button: GamepadButton) {
     viewModel.onGamepadButton(button, pressed = true)
+    delay(40)
     viewModel.onGamepadButton(button, pressed = false)
 }
 

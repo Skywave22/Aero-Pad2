@@ -2,6 +2,8 @@ package com.aeropad.remote.ui.screens.connection
 
 import android.bluetooth.BluetoothAdapter
 import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -29,6 +31,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
@@ -36,6 +39,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.aeropad.remote.service.HidService
 import com.aeropad.remote.model.HidConnectionState
 import com.aeropad.remote.ui.components.ConnectionStatusCard
@@ -54,18 +60,47 @@ fun ConnectionScreen(
     viewModel: ConnectionViewModel = hiltViewModel()
 ) {
     val state by viewModel.connectionState.collectAsStateWithLifecycle()
+    val permissionsGranted by viewModel.permissionsGranted.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
 
-    // Boot engine + foreground service when entering this flow.
-    LaunchedEffect(Unit) {
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { _ ->
+        viewModel.onPermissionsResult()
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.onPermissionsResult()
+                if (viewModel.permissionsGranted.value) {
+                    HidService.start(context)
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    // Boot engine + foreground service when permissions are granted.
+    LaunchedEffect(permissionsGranted) {
         viewModel.initialize()
-        HidService.start(context)
+        if (permissionsGranted) {
+            HidService.start(context)
+        }
     }
 
     val discoverableLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         Timber.i("discoverable result=%d", result.resultCode)
+    }
+
+    val effectiveState = if (!permissionsGranted && state is HidConnectionState.Idle) {
+        HidConnectionState.PermissionMissing
+    } else {
+        state
     }
 
     Scaffold(
@@ -88,13 +123,44 @@ fun ConnectionScreen(
                 .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            ConnectionStatusCard(state)
+            ConnectionStatusCard(effectiveState)
             Spacer(Modifier.height(16.dp))
+
+            if (!permissionsGranted) {
+                Button(
+                    onClick = {
+                        val missing = viewModel.permissionsToRequest()
+                        if (missing.isEmpty()) viewModel.onPermissionsResult()
+                        else permissionLauncher.launch(missing.toTypedArray())
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Grant Bluetooth permissions") }
+                Spacer(Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = {
+                        runCatching {
+                            val intent = Intent(
+                                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.fromParts("package", context.packageName, null)
+                            )
+                            context.startActivity(intent)
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Open App Settings") }
+                Spacer(Modifier.height(12.dp))
+            }
 
             // Primary actions
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Button(
                     onClick = {
+                        if (!permissionsGranted) {
+                            val missing = viewModel.permissionsToRequest()
+                            if (missing.isEmpty()) viewModel.onPermissionsResult()
+                            else permissionLauncher.launch(missing.toTypedArray())
+                            return@Button
+                        }
                         // Make the phone discoverable so the PC can find it.
                         val intent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE).apply {
                             putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 120)

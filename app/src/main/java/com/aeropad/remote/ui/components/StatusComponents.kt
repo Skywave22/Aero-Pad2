@@ -93,12 +93,22 @@ fun contextualTroubleshooting(state: HidConnectionState): List<String> = when (s
  * A6 — Builds a shareable device + HID diagnostic summary with zero network access.
  */
 fun buildQuickDiagnosticsReport(state: HidConnectionState): String = buildString {
+    val stateName = when (state) {
+        is HidConnectionState.Connected -> "Connected"
+        is HidConnectionState.Connecting -> "Connecting"
+        is HidConnectionState.Initializing -> "Initializing"
+        is HidConnectionState.Idle -> "Idle"
+        is HidConnectionState.BluetoothDisabled -> "BluetoothDisabled"
+        is HidConnectionState.PermissionMissing -> "PermissionMissing"
+        is HidConnectionState.HidUnsupported -> "HidUnsupported"
+        is HidConnectionState.Error -> "Error"
+    }
     appendLine("AeroPad Diagnostics Report")
     appendLine("App: v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
     appendLine("Android: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
     appendLine("Device: ${Build.MANUFACTURER} ${Build.MODEL} (${Build.PRODUCT})")
     appendLine("ROM/Build: ${Build.DISPLAY}")
-    appendLine("HID State: ${state::class.simpleName}")
+    appendLine("HID State: $stateName")
     when (state) {
         is HidConnectionState.HidUnsupported -> appendLine("Reason: ${state.reason}")
         is HidConnectionState.Error -> appendLine("Error: ${state.message}")

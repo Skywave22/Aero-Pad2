@@ -6,13 +6,24 @@
 
 # ----- kotlinx-serialization -----
 # Keep serializers for our @Serializable models (layouts, macros, gamepads, skins).
--keepattributes *Annotation*, InnerClasses
+-keepattributes *Annotation*, InnerClasses, Signature, EnclosingMethod
 -dontnote kotlinx.serialization.AnnotationsKt
 -keepclassmembers class kotlinx.serialization.json.** { *** Companion; }
 -keepclasseswithmembers class kotlinx.serialization.json.** { kotlinx.serialization.KSerializer serializer(...); }
 -keep,includedescriptorclasses class com.aeropad.remote.**$$serializer { *; }
 -keepclassmembers class com.aeropad.remote.** { *** Companion; }
 -keepclasseswithmembers class com.aeropad.remote.** { kotlinx.serialization.KSerializer serializer(...); }
+-keep @kotlinx.serialization.Serializable class com.aeropad.remote.** { *; }
+
+# ----- Models, Data & Enums: preserve names/constants for serialization & valueOf -----
+-keep class com.aeropad.remote.model.** { *; }
+-keep class com.aeropad.remote.data.** { *; }
+-keepclassmembers enum com.aeropad.remote.** {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+    **[] $VALUES;
+    public *;
+}
 
 # ----- Timber -----
 -dontwarn org.jetbrains.annotations.**

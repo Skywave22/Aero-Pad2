@@ -1,6 +1,12 @@
 package com.aeropad.remote.ui.screens.devices
 
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,6 +25,7 @@ import androidx.compose.material.icons.rounded.Computer
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -33,8 +40,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -44,8 +53,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aeropad.remote.model.GamepadMappingMode
 import com.aeropad.remote.model.HidConnectionState
@@ -61,9 +74,13 @@ import com.aeropad.remote.viewmodel.ConnectionViewModel
 @Composable
 fun DevicesScreen(
     onBack: () -> Unit,
+    onOpenConnection: (() -> Unit)? = null,
     viewModel: ConnectionViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val state by viewModel.connectionState.collectAsStateWithLifecycle()
+    val permissionsGranted by viewModel.permissionsGranted.collectAsStateWithLifecycle()
     val bonded by viewModel.bondedDevices.collectAsStateWithLifecycle()
     val hostLayouts: com.aeropad.remote.viewmodel.HostLayoutsViewModel = hiltViewModel()
     val layouts by hostLayouts.layouts.collectAsStateWithLifecycle()
@@ -72,8 +89,30 @@ fun DevicesScreen(
     val discovered by viewModel.discoveredDevices.collectAsStateWithLifecycle()
     val isScanning by viewModel.isScanning.collectAsStateWithLifecycle()
 
-    LaunchedEffect(Unit) {
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { _ ->
+        viewModel.onPermissionsResult()
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.onPermissionsResult()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    LaunchedEffect(permissionsGranted) {
         viewModel.initialize()
+    }
+
+    val effectiveState = if (!permissionsGranted && state is HidConnectionState.Idle) {
+        HidConnectionState.PermissionMissing
+    } else {
+        state
     }
 
     Scaffold(
@@ -87,6 +126,11 @@ fun DevicesScreen(
                     }
                 },
                 actions = {
+                    if (onOpenConnection != null) {
+                        TextButton(onClick = onOpenConnection) {
+                            Text("Pair / Connect")
+                        }
+                    }
                     IconButton(onClick = { viewModel.refreshBondedDevices() }) {
                         Icon(Icons.Rounded.Refresh, contentDescription = "Refresh")
                     }
@@ -102,7 +146,39 @@ fun DevicesScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 96.dp)
         ) {
-            item { ConnectionStatusCard(state) }
+            item {
+                ConnectionStatusCard(
+                    state = effectiveState,
+                    onClick = onOpenConnection
+                )
+            }
+
+            if (!permissionsGranted) {
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = {
+                                val missing = viewModel.permissionsToRequest()
+                                if (missing.isEmpty()) viewModel.onPermissionsResult()
+                                else permissionLauncher.launch(missing.toTypedArray())
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("Grant Bluetooth permissions") }
+                        OutlinedButton(
+                            onClick = {
+                                runCatching {
+                                    val intent = Intent(
+                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                        Uri.fromParts("package", context.packageName, null)
+                                    )
+                                    context.startActivity(intent)
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("Open App Settings") }
+                    }
+                }
+            }
 
             item {
                 Text(
@@ -113,11 +189,18 @@ fun DevicesScreen(
             }
             if (bonded.isEmpty()) {
                 item {
-                    Text(
-                        text = "No paired devices yet. Use “Prepare PC pairing” on the Connection screen.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "No paired devices yet. Use “Prepare PC pairing” on the Connection screen.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (onOpenConnection != null) {
+                            OutlinedButton(onClick = onOpenConnection) {
+                                Text("Open PC Connection")
+                            }
+                        }
+                    }
                 }
             }
             items(bonded, key = { "b-" + it.address }) { device ->
@@ -156,7 +239,15 @@ fun DevicesScreen(
                     if (isScanning) {
                         CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                     } else {
-                        OutlinedButton(onClick = { viewModel.startScan() }) { Text("Scan") }
+                        OutlinedButton(onClick = {
+                            if (!permissionsGranted) {
+                                val missing = viewModel.permissionsToRequest()
+                                if (missing.isEmpty()) viewModel.onPermissionsResult()
+                                else permissionLauncher.launch(missing.toTypedArray())
+                            } else {
+                                viewModel.startScan()
+                            }
+                        }) { Text("Scan") }
                     }
                 }
             }
@@ -238,7 +329,12 @@ fun DevicesScreen(
                     }
 
                     Text("Gamepad mode override", style = MaterialTheme.typography.labelLarge)
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
                         FilterChip(
                             selected = selectedGamepadMode.isBlank(),
                             onClick = { selectedGamepadMode = "" },
@@ -262,7 +358,12 @@ fun DevicesScreen(
                     }
 
                     Text("Theme override", style = MaterialTheme.typography.labelLarge)
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
                         FilterChip(
                             selected = selectedThemeMode.isBlank(),
                             onClick = { selectedThemeMode = "" },

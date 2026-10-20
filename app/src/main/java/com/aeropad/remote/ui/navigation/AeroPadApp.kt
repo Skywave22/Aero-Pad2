@@ -227,7 +227,8 @@ fun AeroPadApp(
                     navController.navigate(Routes.CONNECTION) {
                         popUpTo(Routes.PERMISSIONS) { inclusive = true }
                     }
-                }
+                },
+                onBack = { navController.popBackStack() }
             )
         }
         composable(Routes.CONNECTION) {
@@ -240,12 +241,21 @@ fun AeroPadApp(
         }
         composable(Routes.DEVICES) {
             DevicesScreen(
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onOpenConnection = {
+                    navController.navigate(Routes.CONNECTION) { launchSingleTop = true }
+                }
             )
         }
         composable(Routes.SETTINGS) {
             SettingsScreen(
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onOpenHealth = {
+                    navController.navigate(Routes.CONNECTION_HEALTH) { launchSingleTop = true }
+                },
+                onReplayTutorial = {
+                    settingsViewModel.setOnboardingDone(false)
+                }
             )
         }
         composable(Routes.MOUSE) {
@@ -267,7 +277,14 @@ fun AeroPadApp(
         composable(Routes.NUMPAD) { NumpadScreen(onBack = { navController.popBackStack() }) }
         composable(Routes.MULTIMEDIA) { MultimediaScreen(onBack = { navController.popBackStack() }) }
         composable(Routes.PRESENTER) { PresenterScreen(onBack = { navController.popBackStack() }) }
-        composable(Routes.GAMEPAD) { GamepadScreen(onBack = { navController.popBackStack() }) }
+        composable(Routes.GAMEPAD) {
+            GamepadScreen(
+                onBack = { navController.popBackStack() },
+                onOpenBuilder = {
+                    navController.navigate(Routes.GAMEPAD_BUILDER) { launchSingleTop = true }
+                }
+            )
+        }
         composable(Routes.ANDROID) {
             AndroidControlScreen(
                 onBack = { navController.popBackStack() },
@@ -287,7 +304,16 @@ fun AeroPadApp(
         composable(Routes.LAYOUTS) {
             LayoutsScreen(
                 onBack = { navController.popBackStack() },
-                onEdit = { id -> navController.navigate("${Routes.LAYOUT_EDITOR}/$id") }
+                onEdit = { id -> navController.navigate("${Routes.LAYOUT_EDITOR}/$id") },
+                onOpenGamepadBuilder = {
+                    navController.navigate(Routes.GAMEPAD_BUILDER) { launchSingleTop = true }
+                },
+                onOpenPcCombo = {
+                    navController.navigate(Routes.PC_COMBO) { launchSingleTop = true }
+                },
+                onOpenMyLayout = {
+                    navController.navigate(Routes.MY_LAYOUT) { launchSingleTop = true }
+                }
             )
         }
         composable(Routes.MACROS) { MacrosScreen(onBack = { navController.popBackStack() }) }

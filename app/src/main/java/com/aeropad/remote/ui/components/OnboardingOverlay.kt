@@ -5,6 +5,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,9 +14,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -123,9 +127,11 @@ fun OnboardingOverlay(
                 ) {},
             contentAlignment = Alignment.Center
         ) {
-            GlassCard(modifier = Modifier.padding(28.dp)) {
+            GlassCard(modifier = Modifier.padding(20.dp)) {
                 Column(
-                    modifier = Modifier.padding(24.dp),
+                    modifier = Modifier
+                        .padding(20.dp)
+                        .verticalScroll(rememberScrollState()),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     val s = steps[step.coerceIn(0, steps.size - 1)]
@@ -148,6 +154,9 @@ fun OnboardingOverlay(
                         Spacer(Modifier.height(12.dp))
                         val guide = hostGuides[selectedOs.coerceIn(0, hostGuides.lastIndex)]
                         Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -155,7 +164,7 @@ fun OnboardingOverlay(
                                 androidx.compose.material3.FilterChip(
                                     selected = selectedOs == idx,
                                     onClick = { selectedOs = idx },
-                                    label = { Text("${os.emoji} ${os.label}") }
+                                    label = { Text("${os.emoji} ${os.label}", maxLines = 1) }
                                 )
                             }
                         }
@@ -179,7 +188,7 @@ fun OnboardingOverlay(
                             }
                         }
                     }
-                    Spacer(Modifier.height(18.dp))
+                    Spacer(Modifier.height(16.dp))
                     // Step dots
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         steps.indices.forEach { i ->
@@ -194,7 +203,7 @@ fun OnboardingOverlay(
                             )
                         }
                     }
-                    Spacer(Modifier.height(18.dp))
+                    Spacer(Modifier.height(16.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,

@@ -44,8 +44,23 @@ class HidService : Service() {
         private const val ACTION_RECONNECT = "aeropad.action.RECONNECT"
         private const val ACTION_DISCONNECT = "aeropad.action.DISCONNECT"
 
-        /** Starts the service (safe if already running). */
+        /** Starts the service (safe if already running; skips if Bluetooth runtime permissions are missing). */
         fun start(context: Context) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val hasConnect = androidx.core.content.ContextCompat.checkSelfPermission(
+                    context, android.Manifest.permission.BLUETOOTH_CONNECT
+                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                val hasAdvertise = androidx.core.content.ContextCompat.checkSelfPermission(
+                    context, android.Manifest.permission.BLUETOOTH_ADVERTISE
+                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                val hasScan = androidx.core.content.ContextCompat.checkSelfPermission(
+                    context, android.Manifest.permission.BLUETOOTH_SCAN
+                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                if (!hasConnect && !hasAdvertise && !hasScan) {
+                    Timber.w("Skipping HidService start: Bluetooth runtime permissions not granted yet")
+                    return
+                }
+            }
             runCatching {
                 context.startForegroundService(Intent(context, HidService::class.java))
             }.onFailure { Timber.e(it, "HidService start failed") }
@@ -68,7 +83,9 @@ class HidService : Service() {
         super.onCreate()
         createChannel()
         // Foreground immediately — required within 5s of startForegroundService().
-        startInForeground(buildNotification("Starting…"))
+        if (!startInForeground(buildNotification("Starting…"))) {
+            return
+        }
         // Keep the notification in sync with the connection state machine.
         // Battery: map to label first + distinctUntilChanged — the
         // NotificationManager is only touched when the visible text actually
@@ -82,12 +99,18 @@ class HidService : Service() {
         // SECTION 8 — connection event haptics: double pulse on connect,
         // heavy thud on error (distinctUntilChanged = one buzz per change).
         hidController.state
-            .map { it::class.simpleName ?: "" }
+            .map { st ->
+                when (st) {
+                    is HidConnectionState.Connected -> "Connected"
+                    is HidConnectionState.Error, is HidConnectionState.HidUnsupported -> "Error"
+                    else -> "Other"
+                }
+            }
             .distinctUntilChanged()
-            .onEach { name ->
-                when (name) {
+            .onEach { kind ->
+                when (kind) {
                     "Connected" -> haptics.play(com.aeropad.remote.model.gamepad.HapticPattern.DOUBLE_PULSE)
-                    "Error", "HidUnsupported" -> haptics.play(com.aeropad.remote.model.gamepad.HapticPattern.HEAVY_THUD)
+                    "Error" -> haptics.play(com.aeropad.remote.model.gamepad.HapticPattern.HEAVY_THUD)
                 }
             }
             .launchIn(serviceScope)
@@ -116,8 +139,8 @@ class HidService : Service() {
 
     // ------------------------------------------------------------------
 
-    private fun startInForeground(notification: Notification) {
-        runCatching {
+    private fun startInForeground(notification: Notification): Boolean {
+        return runCatching {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 startForeground(
                     NOTIFICATION_ID, notification,
@@ -126,7 +149,12 @@ class HidService : Service() {
             } else {
                 startForeground(NOTIFICATION_ID, notification)
             }
-        }.onFailure { Timber.e(it, "startForeground failed") }
+            true
+        }.getOrElse { e ->
+            Timber.e(e, "startForeground failed; stopping service gracefully")
+            runCatching { stopSelf() }
+            false
+        }
     }
 
     private fun createChannel() {

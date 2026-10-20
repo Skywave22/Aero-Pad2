@@ -83,6 +83,8 @@ import com.aeropad.remote.viewmodel.SettingsViewModel
 fun SettingsScreen(
     onBack: () -> Unit,
     onOpen3DPreview: () -> Unit = {},
+    onOpenHealth: (() -> Unit)? = null,
+    onReplayTutorial: (() -> Unit)? = null,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val app by viewModel.app.collectAsStateWithLifecycle()
@@ -95,11 +97,11 @@ fun SettingsScreen(
     val gamepad by viewModel.gamepad.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    val activeToken = remember(app.automationToken) {
-        viewModel.ensureAutomationToken()
-    }
-    LaunchedEffect(Unit) {
-        viewModel.ensureAutomationToken()
+    val activeToken = app.automationToken
+    LaunchedEffect(app.automationToken) {
+        if (app.automationToken.isBlank()) {
+            viewModel.ensureAutomationToken()
+        }
     }
 
     Scaffold(
@@ -456,6 +458,24 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Copy diagnostics report")
+                }
+                if (onOpenHealth != null) {
+                    Spacer(Modifier.height(8.dp))
+                    androidx.compose.material3.OutlinedButton(
+                        onClick = onOpenHealth,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Open Connection Health & Diagnostics")
+                    }
+                }
+                if (onReplayTutorial != null) {
+                    Spacer(Modifier.height(8.dp))
+                    androidx.compose.material3.OutlinedButton(
+                        onClick = onReplayTutorial,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Replay Welcome Tutorial")
+                    }
                 }
             }
 

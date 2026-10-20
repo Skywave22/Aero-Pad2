@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
@@ -25,6 +26,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -114,7 +116,11 @@ fun VoiceInputSheet(
     }
 
     ModalBottomSheet(onDismissRequest = { viewModel.stopListening(); onDismiss() }) {
-        Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 20.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
             Text(
                 "Voice to text",
                 style = MaterialTheme.typography.titleMedium,
@@ -131,11 +137,9 @@ fun VoiceInputSheet(
 
             // ---------- Waveform (real RMS dB) + mic button ----------
             val bars = remember { FloatArray(24) }
-            // Shift in the latest REAL rms value (recognizer callback).
-            remember(rms) {
+            LaunchedEffect(rms) {
                 for (i in 0 until bars.size - 1) bars[i] = bars[i + 1]
                 bars[bars.size - 1] = ((rms + 2f) / 12f).coerceIn(0.05f, 1f)
-                0
             }
             val active = state == VoiceInputManager.State.LISTENING
             val barColor = if (active) MaterialTheme.colorScheme.primary

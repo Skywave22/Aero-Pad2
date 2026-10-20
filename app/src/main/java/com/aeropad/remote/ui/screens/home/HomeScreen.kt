@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -22,7 +23,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.HelpOutline
 import androidx.compose.material.icons.rounded.Android
@@ -55,6 +58,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -69,6 +73,9 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aeropad.remote.model.HidConnectionState
 import com.aeropad.remote.ui.components.ConnectionStatusCard
@@ -128,9 +135,26 @@ fun HomeScreen(
 ) {
     val state by viewModel.connectionState.collectAsStateWithLifecycle()
     val permissionsGranted by viewModel.permissionsGranted.collectAsStateWithLifecycle()
+    val lifecycleOwner = LocalLifecycleOwner.current
     val view = LocalView.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.onPermissionsResult()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    val effectiveState = if (!permissionsGranted && state is HidConnectionState.Idle) {
+        HidConnectionState.PermissionMissing
+    } else {
+        state
+    }
 
     // M2 + M3 + P9.7 — personalized dashboard keyed by stable HomeTile.id.
     val settingsVm: SettingsViewModel = hiltViewModel()
@@ -166,7 +190,7 @@ fun HomeScreen(
 
     // If permissions are already granted, keep the engine warm so the
     // status card is truthful even before visiting the Connection screen.
-    LaunchedEffect(Unit) { viewModel.initialize() }
+    LaunchedEffect(permissionsGranted) { viewModel.initialize() }
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -235,7 +259,7 @@ fun HomeScreen(
                 // ---------- Live status (tap → connection flow) ----------
                 item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
                     ConnectionStatusCard(
-                        state = state,
+                        state = effectiveState,
                         modifier = Modifier
                             .clip(RoundedCornerShape(20.dp))
                             .clickable {
@@ -319,6 +343,52 @@ fun HomeScreen(
                 items(visible(systemTiles), key = { it.id }) { tile ->
                     HomeTileCard(tile = tile, onLongPress = { hideTile(tile) }) { onNavigate(tile.route) }
                 }
+
+                // ---------- Quick Tools (1-tap access to secondary & builder screens) ----------
+                item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
+                    Column {
+                        SectionHeader("Quick Tools")
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            AssistChip(
+                                onClick = { onNavigate(Routes.AIR_MOUSE) },
+                                label = { Text("🎯 Air Mouse") }
+                            )
+                            AssistChip(
+                                onClick = { onNavigate(Routes.PC_COMBO) },
+                                label = { Text("⚡ PC Combo") }
+                            )
+                            AssistChip(
+                                onClick = { onNavigate(Routes.GAMEPAD_BUILDER) },
+                                label = { Text("🎮 Pad Builder") }
+                            )
+                            AssistChip(
+                                onClick = { onNavigate(Routes.MY_LAYOUT) },
+                                label = { Text("🧩 My Layout") }
+                            )
+                            AssistChip(
+                                onClick = { onNavigate(Routes.NUMPAD) },
+                                label = { Text("🔢 Numpad") }
+                            )
+                            AssistChip(
+                                onClick = { onNavigate(Routes.SHORTCUTS) },
+                                label = { Text("🎛️ Decks") }
+                            )
+                            AssistChip(
+                                onClick = { onNavigate(Routes.CONNECTION_HEALTH) },
+                                label = { Text("💓 Health") }
+                            )
+                            AssistChip(
+                                onClick = { onNavigate(Routes.DEVICES) },
+                                label = { Text("💻 Devices") }
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -329,7 +399,10 @@ fun HomeScreen(
             onDismissRequest = { showCustomize = false },
             title = { Text("Customize dashboard") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
                     Text(
                         "Toggle which tiles appear on Home (or long-press any tile to hide it):",
                         style = MaterialTheme.typography.bodySmall,

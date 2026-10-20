@@ -70,6 +70,9 @@ import timber.log.Timber
 fun LayoutsScreen(
     onBack: () -> Unit,
     onEdit: (Long) -> Unit,
+    onOpenGamepadBuilder: (() -> Unit)? = null,
+    onOpenPcCombo: (() -> Unit)? = null,
+    onOpenMyLayout: (() -> Unit)? = null,
     viewModel: LayoutsViewModel = hiltViewModel()
 ) {
     val profiles by viewModel.filteredProfiles.collectAsStateWithLifecycle()
@@ -233,7 +236,7 @@ fun LayoutsScreen(
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
-            // R1, R2, R3 — Quick-create template chips (Blank, Gamepad Template, PC Combo)
+            // R1, R2, R3 — Quick-create template chips (Blank, Gamepad Template, PC Combo, Media) + builders
             item {
                 Row(
                     modifier = Modifier
@@ -250,9 +253,31 @@ fun LayoutsScreen(
                         label = { Text("🎮 + Gamepad Template") }
                     )
                     AssistChip(
-                        onClick = { viewModel.createFromTemplate("combo") { newId -> onEdit(newId) } },
+                        onClick = { viewModel.createFromTemplate("pc_combo") { newId -> onEdit(newId) } },
                         label = { Text("⚡ + PC Combo") }
                     )
+                    AssistChip(
+                        onClick = { viewModel.createFromTemplate("media") { newId -> onEdit(newId) } },
+                        label = { Text("🎵 + Media Remote") }
+                    )
+                    if (onOpenGamepadBuilder != null) {
+                        AssistChip(
+                            onClick = onOpenGamepadBuilder,
+                            label = { Text("🕹️ Pad Builder") }
+                        )
+                    }
+                    if (onOpenPcCombo != null) {
+                        AssistChip(
+                            onClick = onOpenPcCombo,
+                            label = { Text("💻 Full PC Control") }
+                        )
+                    }
+                    if (onOpenMyLayout != null) {
+                        AssistChip(
+                            onClick = onOpenMyLayout,
+                            label = { Text("🧩 My Layout") }
+                        )
+                    }
                 }
             }
             // SECTION 2 — search/filter across name, category and notes.

@@ -130,7 +130,7 @@ class LayoutsViewModel @Inject constructor(
         viewModelScope.launch {
             val spec = when (template) {
                 "gamepad" -> repository.starterGamepadLayout().copy(name = "Custom Gamepad")
-                "pc_combo" -> repository.starterTrackpadCombo().copy(name = "PC Combo")
+                "pc_combo", "combo" -> repository.starterTrackpadCombo().copy(name = "PC Combo")
                 "media" -> repository.starterMediaRemote().copy(name = "Media Remote")
                 else -> LayoutSpec(name = "My layout")
             }
