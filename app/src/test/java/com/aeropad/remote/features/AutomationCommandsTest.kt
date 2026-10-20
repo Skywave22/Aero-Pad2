@@ -62,4 +62,14 @@ class AutomationCommandsTest {
         assertNull(AutomationCommands.parse("keycode", null, "0x04", null))
         assertNull(AutomationCommands.parse("💣", null, null, null))
     }
+
+    @Test
+    fun `automation token generation and verification prevents unauthorized broadcasts`() {
+        val token = AutomationCommands.generateToken()
+        assertEquals(24, token.length)
+        assertEquals(true, AutomationCommands.verifyToken(expected = token, provided = token))
+        assertEquals(false, AutomationCommands.verifyToken(expected = token, provided = "wrong"))
+        assertEquals(false, AutomationCommands.verifyToken(expected = token, provided = null))
+        assertEquals(false, AutomationCommands.verifyToken(expected = "", provided = token))
+    }
 }

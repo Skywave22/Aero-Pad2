@@ -23,22 +23,20 @@ class WidgetInteractor(
     private val runMacro: (Long) -> Unit = {}
 ) {
 
+    // A5 — per-widget toggle state for WidgetAction.ToggleNext bindings.
+    private val toggleStates = mutableMapOf<String, Boolean>()
+
     fun primary(widget: WidgetSpec) {
-        val action = widget.action
-        if (action is WidgetAction.RunMacro) {
-            runMacro(action.macroId)
-            return
-        }
-        WidgetActionMapper.toHidAction(action)?.let(send)
+        dispatch("${widget.id}:primary", widget.action)
     }
 
     fun secondary(widget: WidgetSpec) {
-        val action = widget.secondaryAction
-        if (action is WidgetAction.RunMacro) {
-            runMacro(action.macroId)
+        val resolved = WidgetActionMapper.resolveToggle("${widget.id}:secondary", widget.secondaryAction, toggleStates)
+        if (resolved is WidgetAction.RunMacro) {
+            runMacro(resolved.macroId)
             return
         }
-        val bound = WidgetActionMapper.toHidAction(action)
+        val bound = WidgetActionMapper.toHidAction(resolved)
         when {
             bound != null -> send(bound)
             // Sensible default: long-press on a trackpad = right click.
@@ -77,19 +75,20 @@ class WidgetInteractor(
             SwipeDirection.RIGHT -> widget.swipeRight
             SwipeDirection.NONE -> return
         }
-        dispatch(action)
+        dispatch("${widget.id}:swipe:${direction.name}", action)
     }
 
     /** GESTURE_ZONE two-finger tap binding. */
-    fun twoFingerTap(widget: WidgetSpec) = dispatch(widget.twoFingerTap)
+    fun twoFingerTap(widget: WidgetSpec) = dispatch("${widget.id}:twoFinger", widget.twoFingerTap)
 
-    /** Shared dispatch honoring RunMacro bindings. */
-    private fun dispatch(action: com.aeropad.remote.model.widgets.WidgetAction) {
-        if (action is com.aeropad.remote.model.widgets.WidgetAction.RunMacro) {
-            runMacro(action.macroId)
+    /** Shared dispatch honoring ToggleNext and RunMacro bindings. */
+    private fun dispatch(slotKey: String, action: com.aeropad.remote.model.widgets.WidgetAction) {
+        val resolved = WidgetActionMapper.resolveToggle(slotKey, action, toggleStates)
+        if (resolved is com.aeropad.remote.model.widgets.WidgetAction.RunMacro) {
+            runMacro(resolved.macroId)
             return
         }
-        WidgetActionMapper.toHidAction(action)?.let(send)
+        WidgetActionMapper.toHidAction(resolved)?.let(send)
     }
 
     fun dpad(dirX: Int, dirY: Int) {

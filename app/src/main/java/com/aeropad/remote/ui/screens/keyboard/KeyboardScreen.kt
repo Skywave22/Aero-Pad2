@@ -16,16 +16,24 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.Mic
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,40 +42,62 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aeropad.remote.model.HidKeys
 import com.aeropad.remote.model.HidModifiers
+import com.aeropad.remote.model.KeyboardSettings
 import com.aeropad.remote.ui.components.KeyCard
 import com.aeropad.remote.ui.components.NotConnectedBanner
 import com.aeropad.remote.ui.components.rememberHaptic
 import com.aeropad.remote.viewmodel.RemoteControlViewModel
+import com.aeropad.remote.viewmodel.SettingsViewModel
 
 /**
- * PC Keyboard screen:
- *  - text input bar (types whole strings on the PC)
- *  - shortcut row (copy/paste/cut/select-all/save/undo/redo)
- *  - F1..F12, navigation cluster, arrows, modifier combos.
+ * PC Keyboard screen (R1 + P9.2 + L2 + M6):
+ *  - text input bar (types whole strings on the PC, warns if chars are skipped)
+ *  - Numpad tab (merged from NumpadScreen — R1) + Full QWERTY shortcut
+ *  - In-screen Keyboard Tuning gear sheet (P9.2 + L2 keyTapDelayMs)
+ *  - shortcut row, F1..F12, navigation cluster, arrows, modifier combos.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun KeyboardScreen(
     onBack: () -> Unit,
-    viewModel: RemoteControlViewModel = hiltViewModel()
+    onOpenFullBoard: (() -> Unit)? = null,
+    viewModel: RemoteControlViewModel = hiltViewModel(),
+    settingsVm: SettingsViewModel = hiltViewModel()
 ) {
-    val isConnected by viewModel.isConnected.collectAsState()
-    val keyboardSettings by viewModel.keyboardSettings.collectAsState()
-    val vibration by viewModel.vibrationsEnabled.collectAsState()
+    val isConnected by viewModel.isConnected.collectAsStateWithLifecycle()
+    val keyboardSettings by viewModel.keyboardSettings.collectAsStateWithLifecycle()
+    val vibration by viewModel.vibrationsEnabled.collectAsStateWithLifecycle()
+    val uiNotice by viewModel.uiNotice.collectAsStateWithLifecycle()
     val haptic = rememberHaptic(vibration)
+    val snackbarHostState = remember { SnackbarHostState() }
     var text by remember { mutableStateOf("") }
     var showVoiceSheet by remember { mutableStateOf(false) }   // ADV S4
+    var showTuningSheet by remember { mutableStateOf(false) }  // P9.2
+
+    LaunchedEffect(uiNotice) {
+        val msg = uiNotice ?: return@LaunchedEffect
+        haptic()
+        snackbarHostState.showSnackbar(msg)
+        viewModel.consumeNotice()
+    }
 
     Scaffold(
         containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("PC Keyboard") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { showTuningSheet = true }) {
+                        Icon(Icons.Rounded.Settings, contentDescription = "Keyboard tuning")
                     }
                 }
             )
@@ -114,7 +144,7 @@ fun KeyboardScreen(
                 }
                 // AEROPAD v1.0 #12 — sent-text history (tap to resend).
                 run {
-                    val history by viewModel.sentHistory.collectAsState()
+                    val history by viewModel.sentHistory.collectAsStateWithLifecycle()
                     if (history.isNotEmpty()) {
                         Row(
                             modifier = Modifier
@@ -123,7 +153,7 @@ fun KeyboardScreen(
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             history.forEach { item ->
-                                androidx.compose.material3.AssistChip(
+                                AssistChip(
                                     onClick = { haptic(); viewModel.typeText(item) },
                                     label = {
                                         Text(if (item.length > 18) item.take(18) + "…" else item)
@@ -136,21 +166,40 @@ fun KeyboardScreen(
                 Spacer(Modifier.height(12.dp))
             }
 
-            // AEROPAD v1.0 #16 — toggleable numpad overlay.
+            // R1 — Prominent Numpad tab & Full Board shortcut.
             run {
                 var showNumpad by remember { mutableStateOf(false) }
-                androidx.compose.material3.FilterChip(
-                    selected = showNumpad,
-                    onClick = { showNumpad = !showNumpad },
-                    label = { Text(if (showNumpad) "Hide numpad" else "Numpad") }
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = !showNumpad,
+                        onClick = { showNumpad = false },
+                        label = { Text("Shortcuts & Keys") }
+                    )
+                    FilterChip(
+                        selected = showNumpad,
+                        onClick = { showNumpad = !showNumpad },
+                        label = { Text(if (showNumpad) "Hide numpad" else "Numpad") }
+                    )
+                    if (onOpenFullBoard != null) {
+                        AssistChip(
+                            onClick = onOpenFullBoard,
+                            label = { Text("⌨ Full QWERTY") }
+                        )
+                    }
+                }
                 if (showNumpad) {
                     Spacer(Modifier.height(6.dp))
                     listOf(
-                        listOf("7", "8", "9"),
-                        listOf("4", "5", "6"),
-                        listOf("1", "2", "3"),
-                        listOf("0", ".", "⏎")
+                        listOf("7", "8", "9", "/"),
+                        listOf("4", "5", "6", "*"),
+                        listOf("1", "2", "3", "-"),
+                        listOf("0", ".", "⌫", "+"),
+                        listOf("=", "Tab", "⏎")
                     ).forEach { rowKeys ->
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
@@ -159,13 +208,15 @@ fun KeyboardScreen(
                             rowKeys.forEach { k ->
                                 KeyCard(
                                     label = k,
-                                    modifier = Modifier.weight(1f),
-                                    height = 44.dp
+                                    modifier = Modifier.weight(if (k == "⏎") 2f else 1f),
+                                    height = 48.dp,
+                                    emphasized = k == "⏎"
                                 ) {
                                     haptic()
                                     when (k) {
                                         "⏎" -> viewModel.keyTap(HidKeys.ENTER, 0)
-                                        "." -> viewModel.typeText(".")
+                                        "⌫" -> viewModel.keyTap(HidKeys.BACKSPACE, 0)
+                                        "Tab" -> viewModel.keyTap(HidKeys.TAB, 0)
                                         else -> viewModel.typeText(k)
                                     }
                                 }
@@ -277,6 +328,43 @@ fun KeyboardScreen(
     // ADV S4 — voice input sheet.
     if (showVoiceSheet) {
         com.aeropad.remote.ui.components.VoiceInputSheet(onDismiss = { showVoiceSheet = false })
+    }
+
+    // P9.2 + L2 — In-screen Keyboard Tuning bottom sheet.
+    if (showTuningSheet) {
+        ModalBottomSheet(onDismissRequest = { showTuningSheet = false }) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    "Keyboard Tuning",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Show text input bar", modifier = Modifier.weight(1f))
+                    Switch(
+                        checked = keyboardSettings.showTextInputBar,
+                        onCheckedChange = settingsVm::setShowTextInputBar
+                    )
+                }
+                Text("Key tap delay: ${keyboardSettings.keyTapDelayMs} ms")
+                Slider(
+                    value = keyboardSettings.keyTapDelayMs.toFloat(),
+                    onValueChange = { settingsVm.setKeyTapDelayMs(it.toInt()) },
+                    valueRange = KeyboardSettings.DELAY_MIN.toFloat()..KeyboardSettings.DELAY_MAX.toFloat()
+                )
+                Text(
+                    "Default is 12 ms. Raise to 20–30 ms if a Smart TV, Android TV, or BIOS screen drops characters.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(18.dp))
+            }
+        }
     }
 }
 

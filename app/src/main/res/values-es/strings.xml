@@ -1,0 +1,50 @@
+<resources>
+    <string name="app_tagline">Teclado, ratón y mando Bluetooth</string>
+
+    <!-- Foreground service notification -->
+    <string name="notif_channel_name">Conexión de AeroPad</string>
+    <string name="notif_channel_desc">Mantiene activo el controlador Bluetooth HID en segundo plano.</string>
+    <string name="notif_title">AeroPad activo</string>
+    <string name="notif_text_idle">Listo para controlar tu PC</string>
+    <string name="notif_action_stop">Desconectar</string>
+
+    <!-- App shortcuts -->
+    <string name="shortcut_mouse_short">Ratón</string>
+    <string name="shortcut_mouse_long">Abrir panel táctil y ratón</string>
+    <string name="shortcut_keyboard_short">Teclado</string>
+    <string name="shortcut_keyboard_long">Abrir teclado de PC</string>
+    <string name="shortcut_gamepad_short">Mando</string>
+    <string name="shortcut_gamepad_long">Abrir mando de juegos</string>
+
+    <!-- Navigation & Home -->
+    <string name="nav_home">Inicio</string>
+    <string name="nav_layouts">Diseños</string>
+    <string name="nav_devices">Dispositivos</string>
+    <string name="nav_settings">Ajustes</string>
+    <string name="action_connect_device">Conectar a un dispositivo</string>
+    <string name="action_manage_connection">Gestionar conexión</string>
+    <string name="action_customize">Personalizar</string>
+    <string name="action_troubleshoot">Solucionar problemas</string>
+    <string name="action_copy_diagnostics">Copiar diagnóstico</string>
+    <string name="action_undo">Deshacer</string>
+
+    <!-- Core Tiles & Screens -->
+    <string name="tile_mouse">Ratón</string>
+    <string name="tile_keyboard">Teclado</string>
+    <string name="tile_full_keyboard">Teclado completo</string>
+    <string name="tile_gamepad">Mando</string>
+    <string name="tile_multimedia">Multimedia</string>
+    <string name="tile_presenter">Presentador</string>
+    <string name="tile_android">Android</string>
+    <string name="tile_text_clips">Texto y portapapeles</string>
+    <string name="tile_layouts">Diseños</string>
+    <string name="tile_macros">Macros</string>
+    <string name="tile_settings">Ajustes</string>
+    <string name="tile_help">Ayuda</string>
+
+    <!-- Settings Groups -->
+    <string name="settings_appearance">Apariencia</string>
+    <string name="settings_mouse_trackpad">Ratón y panel táctil</string>
+    <string name="settings_connection_power">Conexión y energía</string>
+    <string name="settings_advanced_automation">Avanzado y API de automatización</string>
+</resources>

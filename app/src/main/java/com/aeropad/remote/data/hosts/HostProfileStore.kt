@@ -37,7 +37,12 @@ data class HostProfile(
     @SerialName("p") val obfuscatedPin: String = "",
     val lastUsedAt: Long = 0,
     // Round 7 — multi-device profiles: layout bound to this host (0 = none).
-    val layoutId: Long = 0
+    val layoutId: Long = 0,
+    // A4 — per-host settings binding (-1 or "" = use global setting).
+    val mouseSensitivity: Int = -1,
+    val keyTapDelayMs: Int = -1,
+    val gamepadMode: String = "",
+    val themeMode: String = ""
 ) {
     companion object {
         const val LABEL_MAX = 30
@@ -48,7 +53,11 @@ data class HostProfile(
     fun sanitized(): HostProfile = copy(
         label = label.take(LABEL_MAX).ifBlank { address },
         transport = TRANSPORT_BT,
-        port = port.coerceIn(0, 65535)
+        port = port.coerceIn(0, 65535),
+        mouseSensitivity = if (mouseSensitivity < 0) -1 else mouseSensitivity.coerceIn(0, 100),
+        keyTapDelayMs = if (keyTapDelayMs < 0) -1 else keyTapDelayMs.coerceIn(5, 100),
+        gamepadMode = gamepadMode.take(24),
+        themeMode = themeMode.take(16)
     )
 }
 
@@ -100,6 +109,19 @@ interface HostProfiles {
     /** Bind a custom layout to a host address (creates the profile if new). */
     fun bindLayout(address: String, layoutId: Long)
     fun layoutFor(address: String): Long
+
+    /** A4 — bind per-host tuning (layout + mouse sensitivity + key delay + gamepad mode + theme). */
+    fun bindHostTuning(
+        address: String,
+        layoutId: Long = layoutFor(address),
+        mouseSensitivity: Int = -1,
+        keyTapDelayMs: Int = -1,
+        gamepadMode: String = "",
+        themeMode: String = ""
+    ) {}
+
+    fun profileFor(address: String): HostProfile? =
+        profiles.value.firstOrNull { it.address == address }
 }
 
 @Singleton
@@ -162,4 +184,31 @@ class HostProfileStore @Inject constructor(
 
     override fun layoutFor(address: String): Long =
         _profiles.value.firstOrNull { it.address == address }?.layoutId ?: 0L
+
+    override fun bindHostTuning(
+        address: String,
+        layoutId: Long,
+        mouseSensitivity: Int,
+        keyTapDelayMs: Int,
+        gamepadMode: String,
+        themeMode: String
+    ) {
+        val existing = _profiles.value.firstOrNull { it.address == address }
+        persist(
+            HostProfileCodec.upsert(
+                _profiles.value,
+                (existing ?: HostProfile(
+                    id = java.util.UUID.randomUUID().toString(),
+                    label = address, transport = HostProfile.TRANSPORT_BT,
+                    address = address, lastUsedAt = System.currentTimeMillis()
+                )).copy(
+                    layoutId = layoutId,
+                    mouseSensitivity = mouseSensitivity,
+                    keyTapDelayMs = keyTapDelayMs,
+                    gamepadMode = gamepadMode,
+                    themeMode = themeMode
+                )
+            )
+        )
+    }
 }

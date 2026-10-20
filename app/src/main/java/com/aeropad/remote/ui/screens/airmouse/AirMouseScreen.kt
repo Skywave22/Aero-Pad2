@@ -28,7 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,11 +52,11 @@ fun AirMouseScreen(
     onBack: () -> Unit,
     viewModel: AirMouseViewModel = hiltViewModel()
 ) {
-    val isConnected by viewModel.isConnected.collectAsState()
-    val active by viewModel.active.collectAsState()
-    val sensitivity by viewModel.sensitivity.collectAsState()
-    val smoothing by viewModel.smoothing.collectAsState()
-    val axisLock by viewModel.axisLock.collectAsState()
+    val isConnected by viewModel.isConnected.collectAsStateWithLifecycle()
+    val active by viewModel.active.collectAsStateWithLifecycle()
+    val sensitivity by viewModel.sensitivity.collectAsStateWithLifecycle()
+    val smoothing by viewModel.smoothing.collectAsStateWithLifecycle()
+    val axisLock by viewModel.axisLock.collectAsStateWithLifecycle()
     val haptic = rememberHaptic(true)
 
     DisposableEffect(Unit) {

@@ -40,5 +40,13 @@ class SettingsSanitizeTest {
     fun `defaults are already valid`() {
         assertEquals(MouseSettings(), MouseSettings().sanitized())
         assertEquals(GamepadSettings(), GamepadSettings().sanitized())
+        assertEquals(KeyboardSettings(), KeyboardSettings().sanitized())
+    }
+
+    @Test
+    fun `keyboard keyTapDelayMs is clamped to valid range`() {
+        assertEquals(KeyboardSettings.DELAY_MIN, KeyboardSettings(keyTapDelayMs = 1).sanitized().keyTapDelayMs)
+        assertEquals(KeyboardSettings.DELAY_MAX, KeyboardSettings(keyTapDelayMs = 500).sanitized().keyTapDelayMs)
+        assertEquals(12, KeyboardSettings().sanitized().keyTapDelayMs)
     }
 }

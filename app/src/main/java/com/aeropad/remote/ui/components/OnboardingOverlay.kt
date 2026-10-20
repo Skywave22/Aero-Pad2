@@ -38,15 +38,65 @@ import androidx.compose.ui.unit.dp
  */
 private data class OnboardStep(val emoji: String, val title: String, val body: String)
 
+private data class HostOsGuide(
+    val id: String,
+    val label: String,
+    val emoji: String,
+    val steps: List<String>
+)
+
+private val hostGuides = listOf(
+    HostOsGuide(
+        id = "win",
+        label = "Windows",
+        emoji = "🪟",
+        steps = listOf(
+            "1. Open Connect in AeroPad and tap 'Make phone discoverable'.",
+            "2. On Windows: Settings → Bluetooth & devices → Add device → Bluetooth.",
+            "3. Pick your phone, confirm the 6-digit PIN on both screens, then tap Connect in AeroPad."
+        )
+    ),
+    HostOsGuide(
+        id = "mac",
+        label = "macOS",
+        emoji = "🍎",
+        steps = listOf(
+            "1. Open Connect in AeroPad and tap 'Make phone discoverable'.",
+            "2. On Mac: System Settings → Bluetooth → Nearby Devices.",
+            "3. Click Connect next to your phone and accept the pairing request on both devices."
+        )
+    ),
+    HostOsGuide(
+        id = "tv",
+        label = "Android TV",
+        emoji = "📺",
+        steps = listOf(
+            "1. Open Connect in AeroPad and tap 'Make phone discoverable'.",
+            "2. On TV: Settings → Remotes & Accessories → Pair accessory.",
+            "3. Select your phone. Tip: use the Android tile for D-pad, Home, Back & Media!"
+        )
+    ),
+    HostOsGuide(
+        id = "linux",
+        label = "Linux / Deck",
+        emoji = "🐧",
+        steps = listOf(
+            "1. Open Connect in AeroPad and tap 'Make phone discoverable'.",
+            "2. In Bluetooth settings (or Steam Deck Bluetooth), scan and pair your phone.",
+            "3. Trust the device so it reconnects automatically as a standard HID controller."
+        )
+    )
+)
+
 private val steps = listOf(
     OnboardStep("📡", "Pair once, control everything",
-        "AeroPad makes your phone a real Bluetooth keyboard & mouse. Open Connect, make the phone discoverable, and pair from your PC — no PC software needed."),
+        "AeroPad makes your phone a real Bluetooth keyboard & mouse. Pick your host OS below to see the 3-step pairing flow — no PC software needed."),
     OnboardStep("🖱️", "Mouse, keyboard & more",
-        "Trackpad with gestures, full PC keyboard, numpad, media remote, presenter and gamepad — all ready out of the box."),
+        "Trackpad with edge-scroll & gestures, full PC keyboard, numpad, media remote, presenter and gamepad — all ready out of the box."),
     OnboardStep("🎨", "Make it yours",
         "Build custom layouts and gamepads with the editors, record macros — and pick Light or Dark mode in Settings."),
     OnboardStep("⚡", "Pro tips",
-        "Long-press a trackpad for right-click. Swipe the top bar in a layout to switch profiles. Record macros from ANY screen via Macros → Record.")
+        "Long-press a trackpad for right-click. Use the gear icon inside Mouse or Keyboard for live tuning. Tap the floating ⇄ pill to quick-switch screens.")
 )
 
 @Composable
@@ -55,6 +105,7 @@ fun OnboardingOverlay(
     onFinish: () -> Unit
 ) {
     var step by remember { mutableIntStateOf(0) }
+    var selectedOs by remember { mutableIntStateOf(0) }
 
     AnimatedVisibility(visible = visible, enter = fadeIn(), exit = fadeOut()) {
         Box(
@@ -93,6 +144,41 @@ fun OnboardingOverlay(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
                     )
+                    if (step == 0) {
+                        Spacer(Modifier.height(12.dp))
+                        val guide = hostGuides[selectedOs.coerceIn(0, hostGuides.lastIndex)]
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            hostGuides.forEachIndexed { idx, os ->
+                                androidx.compose.material3.FilterChip(
+                                    selected = selectedOs == idx,
+                                    onClick = { selectedOs = idx },
+                                    label = { Text("${os.emoji} ${os.label}") }
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f),
+                                    MaterialTheme.shapes.medium
+                                )
+                                .padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            guide.steps.forEach { line ->
+                                Text(
+                                    text = line,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
                     Spacer(Modifier.height(18.dp))
                     // Step dots
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {

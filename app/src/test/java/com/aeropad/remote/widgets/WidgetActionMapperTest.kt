@@ -53,4 +53,20 @@ class WidgetActionMapperTest {
     fun `run macro defers to macro engine`() {
         assertNull(WidgetActionMapper.toHidAction(WidgetAction.RunMacro(3L)))
     }
+
+    @Test
+    fun `toggleNext cycles through non-empty actions`() {
+        val toggle = WidgetAction.ToggleNext(
+            listOf(
+                WidgetAction.Media(0x00CD),
+                WidgetAction.MouseClick(0x01)
+            )
+        )
+        val first = WidgetActionMapper.resolveToggle(toggle, 0)
+        val second = WidgetActionMapper.resolveToggle(toggle, 1)
+        val third = WidgetActionMapper.resolveToggle(toggle, 2)
+        assertEquals(HidAction.MediaTap(0x00CD), WidgetActionMapper.toHidAction(first))
+        assertEquals(HidAction.MouseClick(MouseButton.LEFT), WidgetActionMapper.toHidAction(second))
+        assertEquals(HidAction.MediaTap(0x00CD), WidgetActionMapper.toHidAction(third))
+    }
 }

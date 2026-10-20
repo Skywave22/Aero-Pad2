@@ -30,7 +30,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -53,7 +53,7 @@ fun ConnectionScreen(
     onOpenDevices: () -> Unit,
     viewModel: ConnectionViewModel = hiltViewModel()
 ) {
-    val state by viewModel.connectionState.collectAsState()
+    val state by viewModel.connectionState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     // Boot engine + foreground service when entering this flow.

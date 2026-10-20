@@ -125,6 +125,21 @@ class LayoutsViewModel @Inject constructor(
         }
     }
 
+    /** R1 + R3 — Create a new layout pre-populated from a built-in template. */
+    fun createFromTemplate(template: String, onCreated: (Long) -> Unit) {
+        viewModelScope.launch {
+            val spec = when (template) {
+                "gamepad" -> repository.starterGamepadLayout().copy(name = "Custom Gamepad")
+                "pc_combo" -> repository.starterTrackpadCombo().copy(name = "PC Combo")
+                "media" -> repository.starterMediaRemote().copy(name = "Media Remote")
+                else -> LayoutSpec(name = "My layout")
+            }
+            runCatching { repository.save(null, spec) }
+                .onSuccess(onCreated)
+                .onFailure { Timber.e(it, "create template layout failed") }
+        }
+    }
+
     fun duplicate(id: Long) {
         viewModelScope.launch {
             runCatching {

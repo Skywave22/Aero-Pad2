@@ -66,5 +66,7 @@ class CharToHidMapperTest {
         assertEquals(HidKeys.I, strokes[1].key)
         assertEquals(HidKeys.SPACE, strokes[2].key)
         assertEquals(HidKeys.NUM_1, strokes[3].key)
+        assertEquals(1, CharToHidMapper.countUnmappable("Hi é!"))
+        assertEquals(0, CharToHidMapper.countUnmappable("Hello 123!"))
     }
 }

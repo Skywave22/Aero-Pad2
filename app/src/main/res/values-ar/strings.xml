@@ -1,0 +1,50 @@
+<resources>
+    <string name="app_tagline">لوحة مفاتيح وماوس ويد تحكم عبر البلوتوث</string>
+
+    <!-- Foreground service notification -->
+    <string name="notif_channel_name">اتصال AeroPad</string>
+    <string name="notif_channel_desc">يبقي وحدة تحكم البلوتوث نشطة في الخلفية.</string>
+    <string name="notif_title">AeroPad نشط</string>
+    <string name="notif_text_idle">جاهز للتحكم في جهازك</string>
+    <string name="notif_action_stop">قطع الاتصال</string>
+
+    <!-- App shortcuts -->
+    <string name="shortcut_mouse_short">الماوس</string>
+    <string name="shortcut_mouse_long">فتح لوحة اللمس والماوس</string>
+    <string name="shortcut_keyboard_short">لوحة المفاتيح</string>
+    <string name="shortcut_keyboard_long">فتح لوحة مفاتيح الكمبيوتر</string>
+    <string name="shortcut_gamepad_short">يد التحكم</string>
+    <string name="shortcut_gamepad_long">فتح يد التحكم</string>
+
+    <!-- Navigation & Home -->
+    <string name="nav_home">الرئيسية</string>
+    <string name="nav_layouts">التخطيطات</string>
+    <string name="nav_devices">الأجهزة</string>
+    <string name="nav_settings">الإعدادات</string>
+    <string name="action_connect_device">الاتصال بجهاز</string>
+    <string name="action_manage_connection">إدارة الاتصال</string>
+    <string name="action_customize">تخصيص</string>
+    <string name="action_troubleshoot">استكشاف الأخطاء</string>
+    <string name="action_copy_diagnostics">نسخ التشخيص</string>
+    <string name="action_undo">تراجع</string>
+
+    <!-- Core Tiles & Screens -->
+    <string name="tile_mouse">الماوس</string>
+    <string name="tile_keyboard">لوحة المفاتيح</string>
+    <string name="tile_full_keyboard">لوحة كاملة</string>
+    <string name="tile_gamepad">يد التحكم</string>
+    <string name="tile_multimedia">الوسائط</string>
+    <string name="tile_presenter">العرض التقديمي</string>
+    <string name="tile_android">أندرويد</string>
+    <string name="tile_text_clips">النصوص والحافظة</string>
+    <string name="tile_layouts">التخطيطات</string>
+    <string name="tile_macros">وحدات الماكرو</string>
+    <string name="tile_settings">الإعدادات</string>
+    <string name="tile_help">المساعدة</string>
+
+    <!-- Settings Groups -->
+    <string name="settings_appearance">المظهر</string>
+    <string name="settings_mouse_trackpad">الماوس ولوحة اللمس</string>
+    <string name="settings_connection_power">الاتصال والطاقة</string>
+    <string name="settings_advanced_automation">الإعدادات المتقدمة والأتمتة</string>
+</resources>

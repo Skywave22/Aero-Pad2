@@ -24,7 +24,26 @@ object AutomationCommands {
     const val EXTRA_NAME = "name"
     const val EXTRA_KEY = "key"
     const val EXTRA_TEXT = "text"
+    const val EXTRA_TOKEN = "token"
     const val TEXT_MAX = 200
+    private const val TOKEN_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"
+
+    /** H2 — generate a random 16-character secret token for Tasker broadcasts. */
+    fun generateToken(): String = buildString(16) {
+        val rng = java.security.SecureRandom()
+        repeat(16) { append(TOKEN_CHARS[rng.nextInt(TOKEN_CHARS.length)]) }
+    }
+
+    /** H2 — constant-time-style verification of the broadcast secret token. */
+    fun verifyToken(expected: String, actual: String?): Boolean {
+        if (expected.isBlank() || actual.isNullOrBlank()) return false
+        if (expected.length != actual.length) return false
+        var diff = 0
+        for (i in expected.indices) {
+            diff = diff or (expected[i].code xor actual[i].code)
+        }
+        return diff == 0
+    }
 
     sealed class Command {
         data class PlayMacro(val name: String) : Command()

@@ -1,0 +1,50 @@
+<resources>
+    <string name="app_tagline">ब्लूटूथ कीबोर्ड, माउस और गेमपैड</string>
+
+    <!-- Foreground service notification -->
+    <string name="notif_channel_name">AeroPad कनेक्शन</string>
+    <string name="notif_channel_desc">बैकग्राउंड में ब्लूटूथ HID नियंत्रक को सक्रिय रखता है।</string>
+    <string name="notif_title">AeroPad सक्रिय है</string>
+    <string name="notif_text_idle">आपके पीसी को नियंत्रित करने के लिए तैयार</string>
+    <string name="notif_action_stop">डिस्कनेक्ट करें</string>
+
+    <!-- App shortcuts -->
+    <string name="shortcut_mouse_short">माउस</string>
+    <string name="shortcut_mouse_long">ट्रैकपैड और माउस खोलें</string>
+    <string name="shortcut_keyboard_short">कीबोर्ड</string>
+    <string name="shortcut_keyboard_long">पीसी कीबोर्ड खोलें</string>
+    <string name="shortcut_gamepad_short">गेमपैड</string>
+    <string name="shortcut_gamepad_long">गेमपैड खोलें</string>
+
+    <!-- Navigation & Home -->
+    <string name="nav_home">होम</string>
+    <string name="nav_layouts">लेआउट</string>
+    <string name="nav_devices">डिवाइस</string>
+    <string name="nav_settings">सेटिंग्स</string>
+    <string name="action_connect_device">डिवाइस से कनेक्ट करें</string>
+    <string name="action_manage_connection">कनेक्शन प्रबंधित करें</string>
+    <string name="action_customize">कस्टमाइज़ करें</string>
+    <string name="action_troubleshoot">समस्या निवारण</string>
+    <string name="action_copy_diagnostics">डायग्नोस्टिक्स कॉपी करें</string>
+    <string name="action_undo">पूर्ववत करें</string>
+
+    <!-- Core Tiles & Screens -->
+    <string name="tile_mouse">माउस</string>
+    <string name="tile_keyboard">कीबोर्ड</string>
+    <string name="tile_full_keyboard">पूर्ण कीबोर्ड</string>
+    <string name="tile_gamepad">गेमपैड</string>
+    <string name="tile_multimedia">मल्टीमीडिया</string>
+    <string name="tile_presenter">प्रेजेंटर</string>
+    <string name="tile_android">एंड्रॉइड</string>
+    <string name="tile_text_clips">टेक्स्ट और क्लिप</string>
+    <string name="tile_layouts">लेआउट</string>
+    <string name="tile_macros">मैक्रोज़</string>
+    <string name="tile_settings">सेटिंग्स</string>
+    <string name="tile_help">सहायता</string>
+
+    <!-- Settings Groups -->
+    <string name="settings_appearance">दिखावट</string>
+    <string name="settings_mouse_trackpad">माउस और ट्रैकपैड</string>
+    <string name="settings_connection_power">कनेक्शन और पावर</string>
+    <string name="settings_advanced_automation">उन्नत और ऑटोमेशन API</string>
+</resources>

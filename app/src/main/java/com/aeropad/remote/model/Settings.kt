@@ -13,6 +13,9 @@ enum class ThemeMode { LIGHT, DARK, SYSTEM }
 /** Haptic feedback strength (Section 3B polish). */
 enum class HapticIntensity { LIGHT, MEDIUM, STRONG }
 
+/** A12 — Power / battery profile controlling keep-alive, 3D quality, and haptics. */
+enum class PowerProfile { PERFORMANCE, BALANCED, BATTERY_SAVER }
+
 /** General app behavior. */
 data class AppSettings(
     /** Appearance: Light / Dark / Follow system — the only look choice. */
@@ -41,18 +44,22 @@ data class AppSettings(
     /** V2 MATRIX 8 b2 — allow external automation apps (Tasker etc.) to
      *  send commands via broadcast. SECURITY: default OFF. */
     val automationApi: Boolean = false,
+    /** H2 — secret token required in every automation broadcast. */
+    val automationToken: String = "",
     /** V2 MATRIX 5 b2 — speak connect/disconnect events through the active
      *  screen reader (announceForAccessibility — a no-op without one). */
     val spokenAlerts: Boolean = true,
     // Round 7 — premium personalization.
     /** UI finish: MATERIAL / GLASS / NEON. */
     val uiStyle: String = "MATERIAL",
-    /** Home tiles hidden by the user (CSV of tile labels). */
+    /** Home tiles hidden by the user (CSV of stable tile IDs). */
     val hiddenTiles: String = "",
     /** Round 9 — register the extended HID descriptor (touch digitizer +
      *  analog triggers). OFF (default) = the classic 3.3.0 descriptor that
      *  is proven stable on real hosts. */
-    val extendedReports: Boolean = false
+    val extendedReports: Boolean = false,
+    /** A12 — one-tap power profile (Performance / Balanced / Battery saver). */
+    val powerProfile: PowerProfile = PowerProfile.BALANCED
 )
 
 /** Mouse/trackpad tuning. All percentages 0..100. */
@@ -76,8 +83,19 @@ data class MouseSettings(
 
 /** Keyboard screen behavior. */
 data class KeyboardSettings(
-    val showTextInputBar: Boolean = true
-)
+    val showTextInputBar: Boolean = true,
+    /** L2 — key press-to-release delay in ms (default 12ms; raise for Smart TVs/BIOS). */
+    val keyTapDelayMs: Int = 12
+) {
+    companion object {
+        const val DELAY_MIN = 5
+        const val DELAY_MAX = 100
+    }
+
+    fun sanitized(): KeyboardSettings = copy(
+        keyTapDelayMs = keyTapDelayMs.coerceIn(DELAY_MIN, DELAY_MAX)
+    )
+}
 
 /** Gamepad behavior. Percentages 0..100; dead zone capped at 50 (usability). */
 data class GamepadSettings(

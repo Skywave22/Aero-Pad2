@@ -173,4 +173,34 @@ class GamepadRuntimeCoreTest {
         // Directly validate the template shapes ranges via sanitize idempotency:
         // (constructing through repository requires DAO; template functions are internal)
     }
+
+    @Test
+    fun `GamepadProfileCodec JSON export and import round trips`() {
+        val profile = com.aeropad.remote.data.gamepad.TuningProfile(
+            id = "p1",
+            name = "Shooters Pro",
+            mode = "HID_GAMEPAD",
+            joystickSensitivity = 75,
+            deadZone = 8,
+            hapticFeedback = true,
+            gyroAim = true,
+            tiltSteer = false,
+            gyroSensitivity = 68,
+            tiltSensitivity = 50
+        )
+        val raw = com.aeropad.remote.data.gamepad.GamepadProfileCodec.encodeOne(profile)
+        val decoded = com.aeropad.remote.data.gamepad.GamepadProfileCodec.decodeAny(raw)
+        assertEquals(listOf(profile.sanitized()), decoded)
+        assertEquals(emptyList<com.aeropad.remote.data.gamepad.TuningProfile>(), com.aeropad.remote.data.gamepad.GamepadProfileCodec.decodeAny("{broken"))
+    }
+
+    @Test
+    fun `fallbackStickKeyFor resolves dominant WASD and arrow keys`() {
+        assertEquals(null, com.aeropad.remote.viewmodel.RemoteControlViewModel.fallbackStickKeyFor(true, 0.1f, 0.1f))
+        assertEquals(com.aeropad.remote.model.HidKeys.W, com.aeropad.remote.viewmodel.RemoteControlViewModel.fallbackStickKeyFor(true, 0.1f, -0.8f))
+        assertEquals(com.aeropad.remote.model.HidKeys.S, com.aeropad.remote.viewmodel.RemoteControlViewModel.fallbackStickKeyFor(true, 0.1f, 0.8f))
+        assertEquals(com.aeropad.remote.model.HidKeys.A, com.aeropad.remote.viewmodel.RemoteControlViewModel.fallbackStickKeyFor(true, -0.8f, 0.1f))
+        assertEquals(com.aeropad.remote.model.HidKeys.D, com.aeropad.remote.viewmodel.RemoteControlViewModel.fallbackStickKeyFor(true, 0.8f, 0.1f))
+        assertEquals(com.aeropad.remote.model.HidKeys.ARROW_UP, com.aeropad.remote.viewmodel.RemoteControlViewModel.fallbackStickKeyFor(false, 0.1f, -0.8f))
+    }
 }

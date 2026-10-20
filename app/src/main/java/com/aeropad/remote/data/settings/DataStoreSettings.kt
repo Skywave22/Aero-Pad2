@@ -16,6 +16,7 @@ import com.aeropad.remote.model.HapticIntensity
 import com.aeropad.remote.model.GamepadSettings
 import com.aeropad.remote.model.KeyboardSettings
 import com.aeropad.remote.model.MouseSettings
+import com.aeropad.remote.model.PowerProfile
 import com.aeropad.remote.model.ThemeMode
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -59,6 +60,7 @@ class DataStoreSettings @Inject constructor(
         val RECENT_GAMEPADS = stringPreferencesKey("recent_gamepads")
         val FPS_OVERLAY = booleanPreferencesKey("fps_overlay")
         val AUTOMATION_API = booleanPreferencesKey("automation_api")   // V2 M8 b2
+        val AUTOMATION_TOKEN = stringPreferencesKey("automation_token") // H2
         val SPOKEN_ALERTS = booleanPreferencesKey("spoken_alerts")   // V2 M5 b2
         // Mouse
         val M_SENSITIVITY = intPreferencesKey("m_sensitivity")
@@ -69,6 +71,7 @@ class DataStoreSettings @Inject constructor(
         val M_PEN = booleanPreferencesKey("m_pen")
         // Keyboard
         val K_TEXT_BAR = booleanPreferencesKey("k_text_bar")
+        val K_TAP_DELAY_MS = intPreferencesKey("k_tap_delay_ms") // L2
         // Gamepad
         val G_MODE = stringPreferencesKey("g_mode")
         val G_SENSITIVITY = intPreferencesKey("g_sensitivity")
@@ -81,6 +84,7 @@ class DataStoreSettings @Inject constructor(
         val UI_STYLE = stringPreferencesKey("ui_style")
         val HIDDEN_TILES = stringPreferencesKey("hidden_tiles")
         val EXTENDED_REPORTS = booleanPreferencesKey("extended_reports")
+        val POWER_PROFILE = stringPreferencesKey("power_profile") // A12
     }
 
     /** Preferences flow that never throws: IO errors → defaults. */
@@ -114,10 +118,12 @@ class DataStoreSettings @Inject constructor(
             recentGamepads = p[Keys.RECENT_GAMEPADS] ?: "",
             fpsOverlay = p[Keys.FPS_OVERLAY] ?: false,
             automationApi = p[Keys.AUTOMATION_API] ?: false,
+            automationToken = p[Keys.AUTOMATION_TOKEN] ?: "",
             spokenAlerts = p[Keys.SPOKEN_ALERTS] ?: true,
             uiStyle = p[Keys.UI_STYLE] ?: "MATERIAL",
             hiddenTiles = p[Keys.HIDDEN_TILES] ?: "",
-            extendedReports = p[Keys.EXTENDED_REPORTS] ?: false
+            extendedReports = p[Keys.EXTENDED_REPORTS] ?: false,
+            powerProfile = p[Keys.POWER_PROFILE].toEnum(PowerProfile.BALANCED)
         )
     }
 
@@ -133,7 +139,10 @@ class DataStoreSettings @Inject constructor(
     }
 
     override val keyboardSettings: Flow<KeyboardSettings> = safePrefs.map { p ->
-        KeyboardSettings(showTextInputBar = p[Keys.K_TEXT_BAR] ?: true)
+        KeyboardSettings(
+            showTextInputBar = p[Keys.K_TEXT_BAR] ?: true,
+            keyTapDelayMs = p[Keys.K_TAP_DELAY_MS] ?: 12
+        ).sanitized()
     }
 
     override val gamepadSettings: Flow<GamepadSettings> = safePrefs.map { p ->
@@ -169,10 +178,12 @@ class DataStoreSettings @Inject constructor(
             p[Keys.RECENT_GAMEPADS] = settings.recentGamepads
             p[Keys.FPS_OVERLAY] = settings.fpsOverlay
             p[Keys.AUTOMATION_API] = settings.automationApi
+            p[Keys.AUTOMATION_TOKEN] = settings.automationToken
             p[Keys.SPOKEN_ALERTS] = settings.spokenAlerts
             p[Keys.UI_STYLE] = settings.uiStyle
             p[Keys.HIDDEN_TILES] = settings.hiddenTiles
             p[Keys.EXTENDED_REPORTS] = settings.extendedReports
+            p[Keys.POWER_PROFILE] = settings.powerProfile.name
         }
     }
 
@@ -189,7 +200,11 @@ class DataStoreSettings @Inject constructor(
     }
 
     override suspend fun updateKeyboard(settings: KeyboardSettings) {
-        safeEdit { p -> p[Keys.K_TEXT_BAR] = settings.showTextInputBar }
+        val s = settings.sanitized()
+        safeEdit { p ->
+            p[Keys.K_TEXT_BAR] = s.showTextInputBar
+            p[Keys.K_TAP_DELAY_MS] = s.keyTapDelayMs
+        }
     }
 
     override suspend fun updateGamepad(settings: GamepadSettings) {

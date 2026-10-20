@@ -28,11 +28,18 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.onLongClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aeropad.remote.domain.A11y
 import com.aeropad.remote.model.widgets.LayoutSpec
 import com.aeropad.remote.model.widgets.WidgetSpec
 import com.aeropad.remote.model.widgets.WidgetType
@@ -146,9 +153,23 @@ private fun WidgetLabel(icon: String, label: String, fontSize: Int, color: Color
 
 @Composable
 private fun ButtonBody(widget: WidgetSpec, events: WidgetEvents, fg: Color) {
+    val desc = A11y.describeWidget(widget)
     Box(
         modifier = Modifier
             .fillMaxSize()
+            // A7 — Switch Access / TalkBack semantics for canvas button widgets.
+            .semantics(mergeDescendants = true) {
+                contentDescription = desc
+                role = Role.Button
+                onClick(label = widget.style.label.ifBlank { "Activate" }) {
+                    events.onPrimary(widget)
+                    true
+                }
+                onLongClick(label = "Secondary action") {
+                    events.onSecondary(widget)
+                    true
+                }
+            }
             .pointerInput(widget.id) {
                 detectTapGestures(
                     onTap = { events.onPrimary(widget) },
@@ -163,9 +184,21 @@ private fun ButtonBody(widget: WidgetSpec, events: WidgetEvents, fg: Color) {
 
 @Composable
 private fun TrackpadBody(widget: WidgetSpec, events: WidgetEvents, fg: Color) {
+    val desc = A11y.describeWidget(widget)
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .semantics(mergeDescendants = true) {
+                contentDescription = desc
+                onClick(label = "Left click") {
+                    events.onPrimary(widget)
+                    true
+                }
+                onLongClick(label = "Right click") {
+                    events.onSecondary(widget)
+                    true
+                }
+            }
             .pointerInput(widget.id + "-tap") {
                 detectTapGestures(
                     onTap = { events.onPrimary(widget) },
@@ -186,9 +219,21 @@ private fun TrackpadBody(widget: WidgetSpec, events: WidgetEvents, fg: Color) {
 
 @Composable
 private fun ScrollBody(widget: WidgetSpec, events: WidgetEvents, fg: Color) {
+    val desc = A11y.describeWidget(widget)
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .semantics(mergeDescendants = true) {
+                contentDescription = desc
+                onClick(label = "Scroll down") {
+                    events.onScrollDelta(48f)
+                    true
+                }
+                onLongClick(label = "Scroll up") {
+                    events.onScrollDelta(-48f)
+                    true
+                }
+            }
             .pointerInput(widget.id) {
                 detectDragGestures { change, drag ->
                     change.consume()
@@ -283,9 +328,24 @@ private fun DpadBody(events: WidgetEvents, fg: Color) {
 
 @Composable
 private fun DpadArrow(glyph: String, cell: Dp, fg: Color, onTap: () -> Unit) {
+    val dirLabel = when (glyph) {
+        "▲" -> "Up arrow"
+        "▼" -> "Down arrow"
+        "◀" -> "Left arrow"
+        "▶" -> "Right arrow"
+        else -> glyph
+    }
     Box(
         modifier = Modifier
             .size(cell)
+            .semantics(mergeDescendants = true) {
+                contentDescription = dirLabel
+                role = Role.Button
+                onClick(label = dirLabel) {
+                    onTap()
+                    true
+                }
+            }
             .pointerInput(glyph) { detectTapGestures(onTap = { onTap() }) },
         contentAlignment = Alignment.Center
     ) {

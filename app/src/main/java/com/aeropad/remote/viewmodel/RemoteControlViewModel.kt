@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.aeropad.remote.domain.SettingsStore
 import com.aeropad.remote.domain.usecase.ObserveConnectionUseCase
 import com.aeropad.remote.domain.usecase.SendHidActionUseCase
+import com.aeropad.remote.hid.CharToHidMapper
 import com.aeropad.remote.hid.PointerMath
 import com.aeropad.remote.model.DpadDirection
 import com.aeropad.remote.model.GamepadButton
@@ -23,6 +24,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
@@ -47,6 +49,18 @@ class RemoteControlViewModel @Inject constructor(
         .map { it.isConnected }
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
+    init {
+        viewModelScope.launch {
+            isConnected.collect { connected ->
+                if (!connected) {
+                    _dragLock.value = false
+                    _scrollMode.value = false
+                    lastFallbackStickKey = null
+                }
+            }
+        }
+    }
+
     val mouseSettings: StateFlow<MouseSettings> = settingsStore.mouseSettings
         .stateIn(viewModelScope, SharingStarted.Eagerly, MouseSettings())
 
@@ -65,6 +79,26 @@ class RemoteControlViewModel @Inject constructor(
         .map { it.extendedReports }
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
+    // M6 + L3 — user-visible feedback for skipped characters or disconnected taps.
+    private val _uiNotice = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
+    val uiNotice: kotlinx.coroutines.flow.StateFlow<String?> = _uiNotice
+    private var lastDisconnectedWarnAtMs = 0L
+
+    fun consumeNotice() {
+        _uiNotice.value = null
+    }
+
+    private fun dispatch(action: HidAction, isDiscreteTap: Boolean = false) {
+        if (!isConnected.value && isDiscreteTap) {
+            val now = System.currentTimeMillis()
+            if (now - lastDisconnectedWarnAtMs > 2_500L) {
+                lastDisconnectedWarnAtMs = now
+                _uiNotice.value = "Not connected — pair a host on the Connect screen first."
+            }
+        }
+        sendAction(action)
+    }
+
     // ------------------------------------------------------------------
     // Mouse
     // ------------------------------------------------------------------
@@ -72,8 +106,12 @@ class RemoteControlViewModel @Inject constructor(
     // OPTIMIZATION: shared TrackpadEngine (was ~30 duplicated lines).
     private val trackpad = com.aeropad.remote.domain.TrackpadEngine { mouseSettings.value }
 
-    /** Raw trackpad drag delta in px → settings-adjusted HID mouse move. */
+    /** Raw trackpad drag delta in px → settings-adjusted HID mouse move (or wheel in scroll mode). */
     fun onTrackpadDelta(dxPx: Float, dyPx: Float) {
+        if (_scrollMode.value) {
+            onScrollDelta(dyPx)
+            return
+        }
         // AEROPAD v1.0 #19 — Precision Mode: slow-motion cursor (x0.35).
         val scale = if (_precisionMode.value) 0.35f else 1f
         val (ix, iy) = trackpad.move(dxPx * scale, dyPx * scale)
@@ -85,16 +123,22 @@ class RemoteControlViewModel @Inject constructor(
     val precisionMode: kotlinx.coroutines.flow.StateFlow<Boolean> = _precisionMode
     fun setPrecisionMode(on: Boolean) { _precisionMode.value = on }
 
+    // A2 — scroll mode modifier: turns single-finger trackpad movement into wheel scroll
+    // (works even while Drag Lock or a mouse button is held).
+    private val _scrollMode = kotlinx.coroutines.flow.MutableStateFlow(false)
+    val scrollMode: kotlinx.coroutines.flow.StateFlow<Boolean> = _scrollMode
+    fun setScrollMode(on: Boolean) { _scrollMode.value = on }
+
     // AEROPAD v1.0 #22 — click-and-drag lock: LEFT held until unlocked.
     private val _dragLock = kotlinx.coroutines.flow.MutableStateFlow(false)
     val dragLock: kotlinx.coroutines.flow.StateFlow<Boolean> = _dragLock
     fun toggleDragLock() {
         if (_dragLock.value) {
             _dragLock.value = false
-            sendAction(HidAction.MouseUp(MouseButton.LEFT))
+            dispatch(HidAction.MouseUp(MouseButton.LEFT), isDiscreteTap = true)
         } else {
             _dragLock.value = true
-            sendAction(HidAction.MouseDown(MouseButton.LEFT))
+            dispatch(HidAction.MouseDown(MouseButton.LEFT), isDiscreteTap = true)
         }
     }
 
@@ -103,19 +147,20 @@ class RemoteControlViewModel @Inject constructor(
 
     /** Tap on trackpad → left click (honors tap-to-click setting). */
     fun onTrackpadTap() {
-        if (mouseSettings.value.tapToClick) sendAction(HidAction.MouseClick(MouseButton.LEFT))
+        if (mouseSettings.value.tapToClick) dispatch(HidAction.MouseClick(MouseButton.LEFT), isDiscreteTap = true)
     }
 
     fun onTrackpadDoubleTap() {
-        if (mouseSettings.value.tapToClick) sendAction(HidAction.MouseDoubleClick(MouseButton.LEFT))
+        if (mouseSettings.value.tapToClick) dispatch(HidAction.MouseDoubleClick(MouseButton.LEFT), isDiscreteTap = true)
     }
 
     /** Long-press on trackpad → right click. */
-    fun onTrackpadLongPress() = sendAction(HidAction.MouseClick(MouseButton.RIGHT))
+    fun onTrackpadLongPress() = dispatch(HidAction.MouseClick(MouseButton.RIGHT), isDiscreteTap = true)
 
-    fun clickButton(button: MouseButton) = sendAction(HidAction.MouseClick(button))
-    fun buttonDown(button: MouseButton) = sendAction(HidAction.MouseDown(button))
-    fun buttonUp() = sendAction(HidAction.MouseUp(MouseButton.LEFT))
+    fun clickButton(button: MouseButton) = dispatch(HidAction.MouseClick(button), isDiscreteTap = true)
+    fun buttonDown(button: MouseButton) = dispatch(HidAction.MouseDown(button), isDiscreteTap = true)
+    /** M7 + D3 fix: release the specific button that was held, not hard-coded LEFT. */
+    fun buttonUp(button: MouseButton = MouseButton.LEFT) = sendAction(HidAction.MouseUp(button))
 
     /** Scroll strip drag: accumulate px, emit whole wheel steps. */
     fun onScrollDelta(dyPx: Float) {
@@ -126,10 +171,14 @@ class RemoteControlViewModel @Inject constructor(
     // Keyboard / text
     // ------------------------------------------------------------------
 
-    fun keyTap(key: Byte, modifiers: Byte = 0) = sendAction(HidAction.KeyTap(key, modifiers))
+    fun keyTap(key: Byte, modifiers: Byte = 0) = dispatch(HidAction.KeyTap(key, modifiers), isDiscreteTap = true)
     fun typeText(text: String) {
         if (text.isNotEmpty()) {
-            sendAction(HidAction.TypeText(text))
+            val skipped = CharToHidMapper.countUnmappable(text)
+            if (skipped > 0) {
+                _uiNotice.value = "$skipped character(s) could not be sent (unsupported by standard HID layout)."
+            }
+            dispatch(HidAction.TypeText(text), isDiscreteTap = true)
             // AEROPAD v1.0 #12 — clipboard history: last 10 sent texts,
             // newest first, deduped (session-scoped, privacy-friendly).
             _sentHistory.value =
@@ -145,10 +194,10 @@ class RemoteControlViewModel @Inject constructor(
     // Media / system
     // ------------------------------------------------------------------
 
-    fun mediaTap(usage: Int) = sendAction(HidAction.MediaTap(usage))
+    fun mediaTap(usage: Int) = dispatch(HidAction.MediaTap(usage), isDiscreteTap = true)
 
     /** System page tap (power / sleep / wake bits). */
-    fun systemTap(bits: Byte) = sendAction(HidAction.SystemTap(bits))
+    fun systemTap(bits: Byte) = dispatch(HidAction.SystemTap(bits), isDiscreteTap = true)
 
     /**
      * Touch-screen control: streams an absolute HID digitizer contact to the
@@ -158,13 +207,15 @@ class RemoteControlViewModel @Inject constructor(
         sendAction(HidAction.TouchUpdate(contact, x, y))
 
     /** Types arbitrary text on the host as real HID keystrokes. */
-    fun type(text: String) = sendAction(HidAction.TypeText(text))
+    fun type(text: String) = typeText(text)
 
     // ------------------------------------------------------------------
     // Gamepad
     // ------------------------------------------------------------------
 
     private var gamepadState = GamepadSnapshot()
+    // H1 fix — edge-trigger state for KEYBOARD_FALLBACK stick direction.
+    private var lastFallbackStickKey: Byte? = null
 
     /** Left/right stick position (-1..1), already normalized by the UI. */
     fun onStick(left: Boolean, rawX: Float, rawY: Float) {
@@ -192,14 +243,16 @@ class RemoteControlViewModel @Inject constructor(
                 }
             }
             GamepadMappingMode.KEYBOARD_FALLBACK -> {
-                // Stick → WASD-style arrows when pushed past half range.
+                // H1 fix: only emit a key when the stick direction actually changes,
+                // instead of flooding 60-120 key presses per second.
                 if (!left) return
                 val (x, y) = PointerMath.applyDeadZone(rawX, rawY, gs.deadZone)
-                when {
-                    y < -0.5f -> keyTap(HidKeys.ARROW_UP)
-                    y > 0.5f -> keyTap(HidKeys.ARROW_DOWN)
-                    x < -0.5f -> keyTap(HidKeys.ARROW_LEFT)
-                    x > 0.5f -> keyTap(HidKeys.ARROW_RIGHT)
+                val nextKey = fallbackStickKeyFor(x, y)
+                if (nextKey != lastFallbackStickKey) {
+                    lastFallbackStickKey = nextKey
+                    if (nextKey != null) {
+                        keyTap(nextKey)
+                    }
                 }
             }
         }
@@ -269,8 +322,20 @@ class RemoteControlViewModel @Inject constructor(
     /** Center sticks + release everything (call when leaving the screen). */
     fun resetGamepad() {
         gamepadState = GamepadSnapshot()
+        lastFallbackStickKey = null
         if (gamepadSettings.value.mappingMode == GamepadMappingMode.HID_GAMEPAD) {
             sendAction(HidAction.GamepadUpdate(gamepadState))
+        }
+    }
+
+    companion object {
+        /** H1 — pure direction classifier for KEYBOARD_FALLBACK stick mode (unit-tested). */
+        fun fallbackStickKeyFor(x: Float, y: Float): Byte? = when {
+            y < -0.5f -> HidKeys.ARROW_UP
+            y > 0.5f -> HidKeys.ARROW_DOWN
+            x < -0.5f -> HidKeys.ARROW_LEFT
+            x > 0.5f -> HidKeys.ARROW_RIGHT
+            else -> null
         }
     }
 }

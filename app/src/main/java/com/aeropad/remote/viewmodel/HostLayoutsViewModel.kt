@@ -26,5 +26,23 @@ class HostLayoutsViewModel @Inject constructor(
 
     fun bind(address: String, layoutId: Long) = hosts.bindLayout(address, layoutId)
 
+    fun bindTuning(
+        address: String,
+        layoutId: Long,
+        mouseSensitivity: Int,
+        keyTapDelayMs: Int,
+        gamepadMode: String,
+        themeMode: String
+    ) = hosts.bindHostTuning(
+        address = address,
+        layoutId = layoutId,
+        mouseSensitivity = mouseSensitivity,
+        keyTapDelayMs = keyTapDelayMs,
+        gamepadMode = gamepadMode,
+        themeMode = themeMode
+    )
+
+    fun profileFor(address: String): HostProfile? = hosts.profileFor(address)
+
     fun boundLayoutId(address: String): Long = hosts.layoutFor(address)
 }

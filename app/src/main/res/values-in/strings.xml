@@ -1,0 +1,50 @@
+<resources>
+    <string name="app_tagline">Keyboard, mouse &amp; gamepad Bluetooth</string>
+
+    <!-- Foreground service notification -->
+    <string name="notif_channel_name">Koneksi AeroPad</string>
+    <string name="notif_channel_desc">Menjaga pengontrol HID Bluetooth tetap aktif di latar belakang.</string>
+    <string name="notif_title">AeroPad aktif</string>
+    <string name="notif_text_idle">Siap mengontrol PC Anda</string>
+    <string name="notif_action_stop">Putuskan</string>
+
+    <!-- App shortcuts -->
+    <string name="shortcut_mouse_short">Mouse</string>
+    <string name="shortcut_mouse_long">Buka Trackpad &amp; Mouse</string>
+    <string name="shortcut_keyboard_short">Keyboard</string>
+    <string name="shortcut_keyboard_long">Buka Keyboard PC</string>
+    <string name="shortcut_gamepad_short">Gamepad</string>
+    <string name="shortcut_gamepad_long">Buka Gamepad</string>
+
+    <!-- Navigation & Home -->
+    <string name="nav_home">Beranda</string>
+    <string name="nav_layouts">Tata Letak</string>
+    <string name="nav_devices">Perangkat</string>
+    <string name="nav_settings">Pengaturan</string>
+    <string name="action_connect_device">Hubungkan ke perangkat</string>
+    <string name="action_manage_connection">Kelola koneksi</string>
+    <string name="action_customize">Sesuaikan</string>
+    <string name="action_troubleshoot">Pemecahan masalah</string>
+    <string name="action_copy_diagnostics">Salin diagnostik</string>
+    <string name="action_undo">Urungkan</string>
+
+    <!-- Core Tiles & Screens -->
+    <string name="tile_mouse">Mouse</string>
+    <string name="tile_keyboard">Keyboard</string>
+    <string name="tile_full_keyboard">Keyboard Penuh</string>
+    <string name="tile_gamepad">Gamepad</string>
+    <string name="tile_multimedia">Multimedia</string>
+    <string name="tile_presenter">Presenter</string>
+    <string name="tile_android">Android</string>
+    <string name="tile_text_clips">Teks &amp; Klip</string>
+    <string name="tile_layouts">Tata Letak</string>
+    <string name="tile_macros">Makro</string>
+    <string name="tile_settings">Pengaturan</string>
+    <string name="tile_help">Bantuan</string>
+
+    <!-- Settings Groups -->
+    <string name="settings_appearance">Tampilan</string>
+    <string name="settings_mouse_trackpad">Mouse &amp; trackpad</string>
+    <string name="settings_connection_power">Koneksi &amp; Daya</string>
+    <string name="settings_advanced_automation">Lanjutan &amp; API Otomasi</string>
+</resources>

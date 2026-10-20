@@ -22,7 +22,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,8 +46,8 @@ import com.aeropad.remote.viewmodel.LayoutEditorViewModel
  */
 @Composable
 fun WidgetStylePanel(viewModel: LayoutEditorViewModel) {
-    val layout by viewModel.layout.collectAsState()
-    val selectedId by viewModel.selectedId.collectAsState()
+    val layout by viewModel.layout.collectAsStateWithLifecycle()
+    val selectedId by viewModel.selectedId.collectAsStateWithLifecycle()
     val widget = layout.widgets.firstOrNull { it.id == selectedId } ?: return
     val style = widget.style
 
@@ -118,32 +118,60 @@ fun WidgetStylePanel(viewModel: LayoutEditorViewModel) {
         }
 
         // ---------- Action binding ----------
-        val macros by viewModel.macros.collectAsState()
+        val macros by viewModel.macros.collectAsStateWithLifecycle()
         PanelSection("Tap action")
-        ActionPicker(current = widget.action, macros = macros) { viewModel.setSelectedAction(it) }
+        ActionPicker(
+            current = widget.action,
+            macros = macros,
+            onCreateMacro = { name, text, cb -> viewModel.createInlineMacro(name, text, cb) }
+        ) { viewModel.setSelectedAction(it) }
         PanelSection("Long-press action")
-        ActionPicker(current = widget.secondaryAction, macros = macros) { viewModel.setSelectedSecondaryAction(it) }
+        ActionPicker(
+            current = widget.secondaryAction,
+            macros = macros,
+            onCreateMacro = { name, text, cb -> viewModel.createInlineMacro(name, text, cb) }
+        ) { viewModel.setSelectedSecondaryAction(it) }
 
         // GESTURE_ZONE: per-direction swipe + two-finger-tap bindings.
         if (widget.type == com.aeropad.remote.model.widgets.WidgetType.GESTURE_ZONE) {
             PanelSection("Swipe up")
-            ActionPicker(current = widget.swipeUp, macros = macros) {
+            ActionPicker(
+                current = widget.swipeUp,
+                macros = macros,
+                onCreateMacro = { name, text, cb -> viewModel.createInlineMacro(name, text, cb) }
+            ) {
                 viewModel.setSelectedGestureAction(com.aeropad.remote.viewmodel.LayoutEditorViewModel.GestureSlot.UP, it)
             }
             PanelSection("Swipe down")
-            ActionPicker(current = widget.swipeDown, macros = macros) {
+            ActionPicker(
+                current = widget.swipeDown,
+                macros = macros,
+                onCreateMacro = { name, text, cb -> viewModel.createInlineMacro(name, text, cb) }
+            ) {
                 viewModel.setSelectedGestureAction(com.aeropad.remote.viewmodel.LayoutEditorViewModel.GestureSlot.DOWN, it)
             }
             PanelSection("Swipe left")
-            ActionPicker(current = widget.swipeLeft, macros = macros) {
+            ActionPicker(
+                current = widget.swipeLeft,
+                macros = macros,
+                onCreateMacro = { name, text, cb -> viewModel.createInlineMacro(name, text, cb) }
+            ) {
                 viewModel.setSelectedGestureAction(com.aeropad.remote.viewmodel.LayoutEditorViewModel.GestureSlot.LEFT, it)
             }
             PanelSection("Swipe right")
-            ActionPicker(current = widget.swipeRight, macros = macros) {
+            ActionPicker(
+                current = widget.swipeRight,
+                macros = macros,
+                onCreateMacro = { name, text, cb -> viewModel.createInlineMacro(name, text, cb) }
+            ) {
                 viewModel.setSelectedGestureAction(com.aeropad.remote.viewmodel.LayoutEditorViewModel.GestureSlot.RIGHT, it)
             }
             PanelSection("Two-finger tap")
-            ActionPicker(current = widget.twoFingerTap, macros = macros) {
+            ActionPicker(
+                current = widget.twoFingerTap,
+                macros = macros,
+                onCreateMacro = { name, text, cb -> viewModel.createInlineMacro(name, text, cb) }
+            ) {
                 viewModel.setSelectedGestureAction(com.aeropad.remote.viewmodel.LayoutEditorViewModel.GestureSlot.TWO_FINGER, it)
             }
         }
@@ -260,27 +288,79 @@ private val mouseOptions = listOf(
     ActionOption("Middle click", WidgetAction.MouseClick(0x04))
 )
 
+// A5 — ToggleNext presets (alternates between two bindings on successive taps).
+private val toggleOptions = listOf(
+    ActionOption(
+        "⇄ Space / Esc",
+        WidgetAction.ToggleNext(WidgetAction.KeyTap(HidKeys.SPACE), WidgetAction.KeyTap(HidKeys.ESCAPE))
+    ),
+    ActionOption(
+        "⇄ Enter / Esc",
+        WidgetAction.ToggleNext(WidgetAction.KeyTap(HidKeys.ENTER), WidgetAction.KeyTap(HidKeys.ESCAPE))
+    ),
+    ActionOption(
+        "⇄ Mute / Unmute",
+        WidgetAction.ToggleNext(WidgetAction.Media(HidConsumer.MUTE), WidgetAction.Media(HidConsumer.MUTE))
+    ),
+    ActionOption(
+        "⇄ Play / Stop",
+        WidgetAction.ToggleNext(WidgetAction.Media(HidConsumer.PLAY_PAUSE), WidgetAction.Media(HidConsumer.STOP))
+    ),
+    ActionOption(
+        "⇄ Mic Mute (Ctrl+Shift+M)",
+        WidgetAction.ToggleNext(
+            WidgetAction.KeyTap(HidKeys.M, (HidModifiers.LEFT_CTRL.toInt() or HidModifiers.LEFT_SHIFT.toInt()).toByte()),
+            WidgetAction.KeyTap(HidKeys.M, (HidModifiers.LEFT_CTRL.toInt() or HidModifiers.LEFT_SHIFT.toInt()).toByte())
+        )
+    )
+)
+
 @Composable
 private fun ActionPicker(
     current: WidgetAction,
     macros: List<com.aeropad.remote.data.macros.Macro> = emptyList(),
+    onCreateMacro: ((String, String, (WidgetAction.RunMacro) -> Unit) -> Unit)? = null,
     onPick: (WidgetAction) -> Unit
 ) {
     var textValue by remember(current) {
         mutableStateOf((current as? WidgetAction.TypeText)?.text ?: "")
     }
+    var showNewMacroDialog by remember { mutableStateOf(false) }
 
     Column {
         ActionChipRow("Keys", keyOptions, current, onPick)
         ActionChipRow("Media", mediaOptions, current, onPick)
         ActionChipRow("Mouse", mouseOptions, current, onPick)
-        if (macros.isNotEmpty()) {
-            ActionChipRow(
-                "Macros",
-                macros.map { ActionOption("▶ " + it.spec.name, WidgetAction.RunMacro(it.id)) },
-                current,
-                onPick
-            )
+        ActionChipRow("Toggle (Alternate)", toggleOptions, current, onPick)
+
+        // P9.3 — Macros section always visible with inline "+ Record new macro" entry.
+        Text(
+            text = "Macros",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 6.dp)
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)
+        ) {
+            macros.forEach { m ->
+                val act = WidgetAction.RunMacro(m.id)
+                FilterChip(
+                    selected = current == act,
+                    onClick = { onPick(act) },
+                    label = { Text("▶ " + m.spec.name) }
+                )
+            }
+            if (onCreateMacro != null) {
+                FilterChip(
+                    selected = false,
+                    onClick = { showNewMacroDialog = true },
+                    label = { Text("＋ Record new macro") }
+                )
+            }
         }
 
         // Text typing binding
@@ -296,6 +376,46 @@ private fun ActionPicker(
                 modifier = Modifier.weight(1f)
             )
         }
+    }
+
+    if (showNewMacroDialog && onCreateMacro != null) {
+        var macroName by remember { mutableStateOf("") }
+        var macroText by remember { mutableStateOf("") }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showNewMacroDialog = false },
+            title = { Text("New macro") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = macroName,
+                        onValueChange = { macroName = it },
+                        label = { Text("Macro name") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = macroText,
+                        onValueChange = { macroText = it },
+                        label = { Text("Text or command sequence to type") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    onCreateMacro(macroName, macroText) { created ->
+                        onPick(created)
+                    }
+                    showNewMacroDialog = false
+                }) { Text("Save & bind") }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { showNewMacroDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 

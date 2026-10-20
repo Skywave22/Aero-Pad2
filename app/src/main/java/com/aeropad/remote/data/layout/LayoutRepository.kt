@@ -80,6 +80,7 @@ class LayoutRepository @Inject constructor(
             if (dao.count() > 0) return
             save(null, starterMediaRemote(), isBuiltIn = true)
             save(null, starterTrackpadCombo(), isBuiltIn = true)
+            save(null, starterGamepadLayout(), isBuiltIn = true)
             Timber.i("seeded built-in layouts")
         }.onFailure { Timber.e(it, "layout seeding failed") }
     }
@@ -146,6 +147,39 @@ class LayoutRepository @Inject constructor(
             button("t-space", 0.52f, 0.74f, 0.46f, 0.11f, "Space", "", WidgetAction.KeyTap(HidKeys.SPACE)),
             button("t-lclick", 0.02f, 0.87f, 0.47f, 0.11f, "Left click", "", WidgetAction.MouseClick(0x01), bg = 0xFF2F6BFF),
             button("t-rclick", 0.51f, 0.87f, 0.47f, 0.11f, "Right click", "", WidgetAction.MouseClick(0x02))
+        ),
+        category = "PC Combo",
+        notes = "Trackpad + scroll + shortcut keys on one screen"
+    )
+
+    /** R3 — Starter 3: Gamepad template in the unified Layout Editor. */
+    internal fun starterGamepadLayout() = LayoutSpec(
+        name = "Gamepad Template",
+        category = "Gamepad",
+        notes = "Dual-stick + D-pad + action buttons template",
+        widgets = listOf(
+            WidgetSpec(
+                id = "gp-lstick",
+                type = WidgetType.JOYSTICK,
+                frame = WidgetFrame(0.04f, 0.15f, 0.36f, 0.36f),
+                style = WidgetStyle(label = "Left Stick", cornerRadius = 48)
+            ),
+            WidgetSpec(
+                id = "gp-dpad",
+                type = WidgetType.DPAD,
+                frame = WidgetFrame(0.06f, 0.56f, 0.32f, 0.34f),
+                style = WidgetStyle(label = "D-Pad")
+            ),
+            button("gp-y", 0.68f, 0.16f, 0.14f, 0.12f, "Y", "🟡", WidgetAction.KeyTap(HidKeys.SPACE), bg = 0xFFF5A623),
+            button("gp-x", 0.54f, 0.30f, 0.14f, 0.12f, "X", "🔵", WidgetAction.KeyTap(HidKeys.E), bg = 0xFF2F6BFF),
+            button("gp-b", 0.82f, 0.30f, 0.14f, 0.12f, "B", "🔴", WidgetAction.KeyTap(HidKeys.ESCAPE), bg = 0xFFE74C3C),
+            button("gp-a", 0.68f, 0.44f, 0.14f, 0.12f, "A", "🟢", WidgetAction.KeyTap(HidKeys.ENTER), bg = 0xFF2ECC71),
+            WidgetSpec(
+                id = "gp-rpad",
+                type = WidgetType.TRACKPAD,
+                frame = WidgetFrame(0.52f, 0.60f, 0.44f, 0.32f),
+                style = WidgetStyle(label = "Aim / Look Pad")
+            )
         )
     )
 }

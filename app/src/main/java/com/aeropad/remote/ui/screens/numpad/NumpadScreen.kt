@@ -18,7 +18,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -36,8 +36,8 @@ fun NumpadScreen(
     onBack: () -> Unit,
     viewModel: RemoteControlViewModel = hiltViewModel()
 ) {
-    val isConnected by viewModel.isConnected.collectAsState()
-    val vibration by viewModel.vibrationsEnabled.collectAsState()
+    val isConnected by viewModel.isConnected.collectAsStateWithLifecycle()
+    val vibration by viewModel.vibrationsEnabled.collectAsStateWithLifecycle()
     val haptic = rememberHaptic(vibration)
 
     // Rows: NumLock / ÷ × − | 789+ | 456 | 123 Enter | 0 .

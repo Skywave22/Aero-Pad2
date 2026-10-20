@@ -33,7 +33,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -63,15 +63,15 @@ fun ConnectionHealthScreen(
     onBack: () -> Unit,
     viewModel: ConnectionHealthViewModel = hiltViewModel()
 ) {
-    val snapshot by viewModel.snapshot.collectAsState()
-    val connection by viewModel.connection.collectAsState()
-    val reconnect by viewModel.reconnectStatus.collectAsState()
-    val battery by viewModel.battery.collectAsState()
-    val batterySaver by viewModel.batterySaver.collectAsState()
-    val diagnostic by viewModel.diagnostic.collectAsState()
-    val diagRunning by viewModel.diagRunning.collectAsState()
-    val exportPayload by viewModel.exportPayload.collectAsState()
-    val appSettings by viewModel.appSettings.collectAsState()
+    val snapshot by viewModel.snapshot.collectAsStateWithLifecycle()
+    val connection by viewModel.connection.collectAsStateWithLifecycle()
+    val reconnect by viewModel.reconnectStatus.collectAsStateWithLifecycle()
+    val battery by viewModel.battery.collectAsStateWithLifecycle()
+    val batterySaver by viewModel.batterySaver.collectAsStateWithLifecycle()
+    val diagnostic by viewModel.diagnostic.collectAsStateWithLifecycle()
+    val diagRunning by viewModel.diagRunning.collectAsStateWithLifecycle()
+    val exportPayload by viewModel.exportPayload.collectAsStateWithLifecycle()
+    val appSettings by viewModel.appSettings.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     val exportLauncher = rememberLauncherForActivityResult(
@@ -156,7 +156,7 @@ fun ConnectionHealthScreen(
                         // to the next retry (driven by the engine's actual
                         // backoff timestamp, ticked once per second).
                         reconnect?.let { (attempt, max) ->
-                            val nextAt by viewModel.reconnectNextAtMs.collectAsState()
+                            val nextAt by viewModel.reconnectNextAtMs.collectAsStateWithLifecycle()
                             var secondsLeft by remember { mutableStateOf(0L) }
                             LaunchedEffect(nextAt) {
                                 while (nextAt != null) {
@@ -267,7 +267,7 @@ fun ConnectionHealthScreen(
             // ---------- AEROPAD v1.0 #41: connection history (real sessions) ----------
             run {
                 LaunchedEffect(Unit) { viewModel.refreshHistory() }
-                val history by viewModel.history.collectAsState()
+                val history by viewModel.history.collectAsStateWithLifecycle()
                 if (history.isNotEmpty()) {
                     GlassCard(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(16.dp)) {
@@ -289,7 +289,7 @@ fun ConnectionHealthScreen(
 
             // ---------- AEROPAD v1.0 #61: usage statistics (real data) ----------
             run {
-                val history by viewModel.history.collectAsState()
+                val history by viewModel.history.collectAsStateWithLifecycle()
                 if (history.isNotEmpty()) {
                     val closed = history.filter { it.endedAt > 0 }
                     val totalMs = closed.sumOf { it.endedAt - it.startedAt }
@@ -310,7 +310,7 @@ fun ConnectionHealthScreen(
 
             // ---------- V2 PART A: frame-time histogram (real Choreographer data) ----------
             run {
-                val frameStats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
+                val frameStats by com.aeropad.remote.perf.FrameStats.stats.collectAsStateWithLifecycle()
                 if (frameStats.running) {
                     GlassCard(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(16.dp)) {

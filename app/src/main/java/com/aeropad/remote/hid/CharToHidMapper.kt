@@ -56,4 +56,7 @@ object CharToHidMapper {
 
     /** Maps a whole string, silently skipping unmappable characters. */
     fun mapText(text: String): List<KeyStroke> = text.mapNotNull { map(it) }
+
+    /** Counts how many characters in [text] cannot be mapped to US HID keystrokes (M6). */
+    fun countUnmappable(text: String): Int = text.count { map(it) == null }
 }

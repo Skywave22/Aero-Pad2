@@ -33,7 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,11 +62,11 @@ fun PcComboScreen(
     onBack: () -> Unit,
     viewModel: PcComboViewModel = hiltViewModel()
 ) {
-    val board by viewModel.board.collectAsState()
-    val isConnected by viewModel.isConnected.collectAsState()
-    val ratio by viewModel.ratio.collectAsState()
-    val scrollSide by viewModel.scrollBarSide.collectAsState()
-    val message by viewModel.message.collectAsState()
+    val board by viewModel.board.collectAsStateWithLifecycle()
+    val isConnected by viewModel.isConnected.collectAsStateWithLifecycle()
+    val ratio by viewModel.ratio.collectAsStateWithLifecycle()
+    val scrollSide by viewModel.scrollBarSide.collectAsStateWithLifecycle()
+    val message by viewModel.message.collectAsStateWithLifecycle()
     val haptic = rememberHaptic(true)
     val snackbar = remember { SnackbarHostState() }
 

@@ -75,4 +75,17 @@ class HostProfileTest {
         val list = listOf(p("AA:BB:CC:DD:EE:01"), p("AA:BB:CC:DD:EE:02"))
         assertEquals(listOf(p("AA:BB:CC:DD:EE:02").sanitized()), HostProfileCodec.remove(list.map { it.sanitized() }, "AA:BB:CC:DD:EE:01"))
     }
+
+    @Test
+    fun `per host tuning fields round trip and sanitize`() {
+        val item = p("AA:BB:CC:DD:EE:01").copy(
+            layoutId = 4L,
+            mouseSensitivity = 85,
+            keyTapDelayMs = 25,
+            gamepadMode = "KEYBOARD_FALLBACK",
+            themeMode = "DARK"
+        )
+        val back = HostProfileCodec.decode(HostProfileCodec.encode(listOf(item)))
+        assertEquals(listOf(item.sanitized()), back)
+    }
 }

@@ -2,6 +2,7 @@ package com.aeropad.remote.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aeropad.remote.domain.AutomationCommands
 import com.aeropad.remote.domain.SettingsStore
 import com.aeropad.remote.model.AppSettings
 import com.aeropad.remote.model.GamepadMappingMode
@@ -9,6 +10,7 @@ import com.aeropad.remote.model.HapticIntensity
 import com.aeropad.remote.model.GamepadSettings
 import com.aeropad.remote.model.KeyboardSettings
 import com.aeropad.remote.model.MouseSettings
+import com.aeropad.remote.model.PowerProfile
 import com.aeropad.remote.model.ThemeMode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -69,8 +71,41 @@ class SettingsViewModel @Inject constructor(
     fun setIconPack(value: String) = updateApp { it.copy(iconPack = value) }
     fun setQuality3D(value: String) = updateApp { it.copy(quality3D = value) }
     fun setFpsOverlay(value: Boolean) = updateApp { it.copy(fpsOverlay = value) }   // V2 A5
-    fun setAutomationApi(value: Boolean) = updateApp { it.copy(automationApi = value) }   // V2 M8 b2
+    fun setAutomationApi(value: Boolean) = updateApp { current ->
+        val token = if (value && current.automationToken.isBlank()) {
+            AutomationCommands.generateToken()
+        } else {
+            current.automationToken
+        }
+        current.copy(automationApi = value, automationToken = token)
+    }
+    fun regenerateAutomationToken() = updateApp {
+        it.copy(automationToken = AutomationCommands.generateToken())
+    }
     fun setSpokenAlerts(value: Boolean) = updateApp { it.copy(spokenAlerts = value) }   // V2 M5 b2
+    /** A12 — one-tap power profile controlling keep-alive, 3D quality, and haptics. */
+    fun setPowerProfile(profile: PowerProfile) = updateApp { current ->
+        when (profile) {
+            PowerProfile.PERFORMANCE -> current.copy(
+                powerProfile = profile,
+                quality3D = "FULL",
+                reduceMotion = false,
+                touchVibrations = true
+            )
+            PowerProfile.BALANCED -> current.copy(
+                powerProfile = profile,
+                quality3D = "FULL",
+                reduceMotion = false,
+                touchVibrations = true
+            )
+            PowerProfile.BATTERY_SAVER -> current.copy(
+                powerProfile = profile,
+                quality3D = "FLAT",
+                reduceMotion = true,
+                touchVibrations = false
+            )
+        }
+    }
 
     // ----- Mouse -----
     fun setMouseSensitivity(value: Int) = updateMouse { it.copy(sensitivity = value) }
@@ -85,7 +120,30 @@ class SettingsViewModel @Inject constructor(
     // a fresh KeyboardSettings() — the old code silently reset every other
     // keyboard field to defaults (latent data-loss bug as fields grow).
     fun setShowTextInputBar(value: Boolean) =
-        viewModelScope.launch { store.updateKeyboard(keyboard.value.copy(showTextInputBar = value)) }
+        viewModelScope.launch { store.updateKeyboard(keyboard.value.copy(showTextInputBar = value).sanitized()) }
+
+    /** L2 — configurable key press-to-release delay in milliseconds (5..100ms). */
+    fun setKeyTapDelayMs(value: Int) =
+        viewModelScope.launch { store.updateKeyboard(keyboard.value.copy(keyTapDelayMs = value).sanitized()) }
+
+    /** A4 — apply per-host tuning overrides when a host connects. */
+    fun applyHostTuning(
+        mouseSensitivity: Int,
+        keyTapDelayMs: Int,
+        gamepadMode: String,
+        themeMode: String
+    ) {
+        if (mouseSensitivity in 0..100) setMouseSensitivity(mouseSensitivity)
+        if (keyTapDelayMs in KeyboardSettings.DELAY_MIN..KeyboardSettings.DELAY_MAX) {
+            setKeyTapDelayMs(keyTapDelayMs)
+        }
+        if (gamepadMode.isNotBlank()) {
+            runCatching { GamepadMappingMode.valueOf(gamepadMode) }.getOrNull()?.let(::setGamepadMode)
+        }
+        if (themeMode.isNotBlank()) {
+            runCatching { ThemeMode.valueOf(themeMode) }.getOrNull()?.let(::setTheme)
+        }
+    }
 
     // ----- Gamepad -----
     fun setGamepadMode(mode: GamepadMappingMode) = updateGamepad { it.copy(mappingMode = mode) }

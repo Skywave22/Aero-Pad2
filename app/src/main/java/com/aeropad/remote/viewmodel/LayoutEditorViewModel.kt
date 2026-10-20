@@ -40,7 +40,7 @@ class LayoutEditorViewModel @Inject constructor(
     sendAction: SendHidActionUseCase,
     settingsStore: SettingsStore,
     macroEngine: MacroEngine,
-    macroRepository: MacroRepository,
+    private val macroRepository: MacroRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -78,6 +78,9 @@ class LayoutEditorViewModel @Inject constructor(
     private val undoStack = ArrayDeque<LayoutSpec>()
     val canUndo: StateFlow<Boolean> get() = _canUndo
     private val _canUndo = MutableStateFlow(false)
+    // P9.4 — human-readable undo history list (most recent first).
+    private val _undoHistory = MutableStateFlow<List<String>>(emptyList())
+    val undoHistory: StateFlow<List<String>> = _undoHistory.asStateFlow()
 
     // SECTION 2 — redo stack (cleared on any new mutation).
     private val redoStack = ArrayDeque<LayoutSpec>()
@@ -246,9 +249,49 @@ class LayoutEditorViewModel @Inject constructor(
     val macros: StateFlow<List<Macro>> = macroRepository.observeAll()
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+    /** P9.3 — Create a new macro directly from the widget action picker and bind it. */
+    fun createInlineMacro(
+        name: String,
+        textToType: String,
+        onCreated: (WidgetAction.RunMacro) -> Unit
+    ) {
+        viewModelScope.launch {
+            val steps = if (textToType.isNotBlank()) {
+                listOf(com.aeropad.remote.model.macros.MacroStep.TypeText(textToType))
+            } else {
+                listOf(com.aeropad.remote.model.macros.MacroStep.KeyTap(com.aeropad.remote.model.HidKeys.ENTER))
+            }
+            val spec = com.aeropad.remote.model.macros.MacroSpec(
+                name = name.ifBlank { "Quick macro" },
+                steps = steps
+            )
+            runCatching { macroRepository.save(null, spec) }
+                .onSuccess { id -> onCreated(WidgetAction.RunMacro(id)) }
+                .onFailure { Timber.e(it, "inline macro save failed") }
+        }
+    }
+
+    /** R3 — Load a built-in template (Gamepad / PC Combo / Media) into the editor. */
+    fun applyTemplate(template: String) {
+        val currentName = _layout.value.name
+        val next = when (template) {
+            "gamepad" -> repository.starterGamepadLayout().copy(name = currentName)
+            "pc_combo" -> repository.starterTrackpadCombo().copy(name = currentName)
+            "media" -> repository.starterMediaRemote().copy(name = currentName)
+            else -> return
+        }
+        mutate { next }
+    }
+
     // ------------------------------------------------------------------
     // Undo / save
     // ------------------------------------------------------------------
+
+    private fun refreshUndoHistory() {
+        _undoHistory.value = undoStack.reversed().mapIndexed { idx, spec ->
+            "Step -${idx + 1}: ${spec.name} (${spec.widgets.size} widgets)"
+        }
+    }
 
     private fun pushUndo() {
         undoStack.addLast(_layout.value)
@@ -257,6 +300,7 @@ class LayoutEditorViewModel @Inject constructor(
         // New mutation invalidates the redo branch.
         redoStack.clear()
         _canRedo.value = false
+        refreshUndoHistory()
     }
 
     fun undo() {
@@ -268,6 +312,14 @@ class LayoutEditorViewModel @Inject constructor(
         _canUndo.value = undoStack.isNotEmpty()
         _dirty.value = true
         _saved.value = false
+        refreshUndoHistory()
+    }
+
+    /** P9.4 — Revert [stepsBack] steps in one action from the undo history list. */
+    fun revertUndoSteps(stepsBack: Int) {
+        repeat(stepsBack.coerceAtLeast(1)) {
+            if (undoStack.isNotEmpty()) undo()
+        }
     }
 
     /** SECTION 2 — redo (inverse of undo). */
@@ -279,6 +331,7 @@ class LayoutEditorViewModel @Inject constructor(
         _canRedo.value = redoStack.isNotEmpty()
         _dirty.value = true
         _saved.value = false
+        refreshUndoHistory()
     }
 
     // ------------------------------------------------------------------

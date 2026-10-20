@@ -2,7 +2,6 @@ package com.aeropad.remote.ui.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +11,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -24,6 +24,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 
 /**
@@ -68,10 +69,9 @@ fun GlassDock(
                     else MaterialTheme.colorScheme.onSurfaceVariant,
                     label = "dockTint"
                 )
-                // CLICK FIX: items used to be only ~36dp wide (below the 48dp
-                // touch-target minimum) with no press feedback — taps between
-                // icons did nothing and felt broken. Each tab now owns an
-                // equal full-height slice of the dock, with ripple + haptic.
+                // M4 fix: use Modifier.selectable with Role.Tab so TalkBack announces
+                // selected tab state, and set Icon contentDescription = null to prevent
+                // duplicate "Home, Home" announcements alongside the visible Text label.
                 val view = LocalView.current
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -80,14 +80,18 @@ fun GlassDock(
                         .weight(1f)
                         .heightIn(min = 56.dp)
                         .clip(CircleShape)
-                        .clickable {
-                            if (!selected) {
-                                view.performHapticFeedback(
-                                    android.view.HapticFeedbackConstants.KEYBOARD_TAP
-                                )
-                                onNavigate(item.route)
+                        .selectable(
+                            selected = selected,
+                            role = Role.Tab,
+                            onClick = {
+                                if (!selected) {
+                                    view.performHapticFeedback(
+                                        android.view.HapticFeedbackConstants.KEYBOARD_TAP
+                                    )
+                                    onNavigate(item.route)
+                                }
                             }
-                        }
+                        )
                         .padding(vertical = 6.dp)
                 ) {
                     Box(
@@ -100,7 +104,12 @@ fun GlassDock(
                             ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(iconFor(item.icon, LocalIconPack.current), contentDescription = item.label, tint = tint, modifier = Modifier.size(22.dp))
+                        Icon(
+                            iconFor(item.icon, LocalIconPack.current),
+                            contentDescription = null,
+                            tint = tint,
+                            modifier = Modifier.size(22.dp)
+                        )
                     }
                     Text(item.label, style = MaterialTheme.typography.bodyMedium, color = tint)
                 }

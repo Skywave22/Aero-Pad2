@@ -19,7 +19,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -42,9 +42,9 @@ fun MyLayoutScreen(
     onBack: () -> Unit,
     viewModel: MyLayoutViewModel = hiltViewModel()
 ) {
-    val layout by viewModel.layout.collectAsState()
-    val profiles by viewModel.profiles.collectAsState()
-    val connected by viewModel.connectedAddress.collectAsState()
+    val layout by viewModel.layout.collectAsStateWithLifecycle()
+    val profiles by viewModel.profiles.collectAsStateWithLifecycle()
+    val connected by viewModel.connectedAddress.collectAsStateWithLifecycle()
 
     val events = remember {
         object : WidgetEvents {

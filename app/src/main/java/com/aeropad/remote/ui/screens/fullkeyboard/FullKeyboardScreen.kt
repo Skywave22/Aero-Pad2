@@ -37,7 +37,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.input.pointer.pointerInput
@@ -71,11 +71,11 @@ fun FullKeyboardScreen(
     onBack: () -> Unit,
     viewModel: FullKeyboardViewModel = hiltViewModel()
 ) {
-    val layout by viewModel.layout.collectAsState()
-    val fullMode by viewModel.fullMode.collectAsState()
-    val isConnected by viewModel.isConnected.collectAsState()
-    val editMode by viewModel.editMode.collectAsState()
-    val editingKey by viewModel.editingKey.collectAsState()
+    val layout by viewModel.layout.collectAsStateWithLifecycle()
+    val fullMode by viewModel.fullMode.collectAsStateWithLifecycle()
+    val isConnected by viewModel.isConnected.collectAsStateWithLifecycle()
+    val editMode by viewModel.editMode.collectAsStateWithLifecycle()
+    val editingKey by viewModel.editingKey.collectAsStateWithLifecycle()
     val haptic = rememberHaptic(true)
 
     Scaffold(
@@ -92,7 +92,7 @@ fun FullKeyboardScreen(
                     // V2 MATRIX 7 — FN layer (latched). Only shown when the
                     // layout actually defines an overlay.
                     if (layout.fnOverlay.isNotEmpty()) {
-                        val fnOn by viewModel.fnActive.collectAsState()
+                        val fnOn by viewModel.fnActive.collectAsStateWithLifecycle()
                         FilterChip(
                             selected = fnOn,
                             onClick = { viewModel.toggleFn() },
@@ -112,7 +112,7 @@ fun FullKeyboardScreen(
                         label = { Text("Full") }
                     )
                     // V2 M7 b2 — one-handed: OFF → RIGHT → LEFT → OFF.
-                    val oneHand by viewModel.oneHanded.collectAsState()
+                    val oneHand by viewModel.oneHanded.collectAsStateWithLifecycle()
                     Spacer(Modifier.size(6.dp))
                     FilterChip(
                         selected = oneHand != com.aeropad.remote.data.keyboard.OneHandedMode.OFF,
@@ -216,10 +216,10 @@ fun FullKeyboardScreen(
             // ---------- The board ----------
             // V2 MATRIX 7 — FN active: keys with an overlay entry render
             // their FN binding's label (real what-you-see-is-what-you-send).
-            val fnOnBoard by viewModel.fnActive.collectAsState()
+            val fnOnBoard by viewModel.fnActive.collectAsStateWithLifecycle()
             // V2 M7 b2 — one-handed: board occupies 78% width, hugging the
             // chosen thumb side. Pure layout change — bindings untouched.
-            val oneHandMode by viewModel.oneHanded.collectAsState()
+            val oneHandMode by viewModel.oneHanded.collectAsStateWithLifecycle()
             val boardWidthFraction =
                 if (oneHandMode == com.aeropad.remote.data.keyboard.OneHandedMode.OFF) 1f else 0.78f
             val boardAlign = when (oneHandMode) {
@@ -257,8 +257,8 @@ fun FullKeyboardScreen(
             run {
                 val healthVm: com.aeropad.remote.viewmodel.ConnectionHealthViewModel =
                     androidx.hilt.navigation.compose.hiltViewModel()
-                val snap by healthVm.snapshot.collectAsState()
-                val battery by healthVm.battery.collectAsState()
+                val snap by healthVm.snapshot.collectAsStateWithLifecycle()
+                val battery by healthVm.battery.collectAsStateWithLifecycle()
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -405,7 +405,7 @@ private val keyPalette = listOf<Long>(
 
 @Composable
 private fun KeyEditorPanel(viewModel: FullKeyboardViewModel) {
-    val editing by viewModel.editingKey.collectAsState()
+    val editing by viewModel.editingKey.collectAsStateWithLifecycle()
     val key = editing ?: return
 
     Column(

@@ -1,9 +1,51 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">AeroPad</string>
-    <!-- V2 MATRIX 8 — launcher shortcuts -->
-    <string name="shortcut_keyboard">Keyboard</string>
-    <string name="shortcut_mouse">Trackpad</string>
-    <string name="shortcut_gamepad">Gamepad</string>
-    <string name="shortcut_media">Media</string>
+    <string name="app_name" translatable="false">AeroPad</string>
+    <string name="app_tagline">Bluetooth keyboard, mouse &amp; gamepad</string>
+
+    <!-- Foreground service notification -->
+    <string name="notif_channel_name">AeroPad Connection</string>
+    <string name="notif_channel_desc">Keeps the Bluetooth HID controller active in the background.</string>
+    <string name="notif_title">AeroPad active</string>
+    <string name="notif_text_idle">Ready to control your PC</string>
+    <string name="notif_action_stop">Disconnect</string>
+
+    <!-- App shortcuts -->
+    <string name="shortcut_mouse_short">Mouse</string>
+    <string name="shortcut_mouse_long">Open Trackpad &amp; Mouse</string>
+    <string name="shortcut_keyboard_short">Keyboard</string>
+    <string name="shortcut_keyboard_long">Open PC Keyboard</string>
+    <string name="shortcut_gamepad_short">Gamepad</string>
+    <string name="shortcut_gamepad_long">Open Gamepad</string>
+
+    <!-- Navigation & Home -->
+    <string name="nav_home">Home</string>
+    <string name="nav_layouts">Layouts</string>
+    <string name="nav_devices">Devices</string>
+    <string name="nav_settings">Settings</string>
+    <string name="action_connect_device">Connect to a device</string>
+    <string name="action_manage_connection">Manage connection</string>
+    <string name="action_customize">Customize</string>
+    <string name="action_troubleshoot">Troubleshoot</string>
+    <string name="action_copy_diagnostics">Copy diagnostics</string>
+    <string name="action_undo">Undo</string>
+
+    <!-- Core Tiles & Screens -->
+    <string name="tile_mouse">Mouse</string>
+    <string name="tile_keyboard">Keyboard</string>
+    <string name="tile_full_keyboard">Full Board</string>
+    <string name="tile_gamepad">Gamepad</string>
+    <string name="tile_multimedia">Multimedia</string>
+    <string name="tile_presenter">Presenter</string>
+    <string name="tile_android">Android</string>
+    <string name="tile_text_clips">Text &amp; Clips</string>
+    <string name="tile_layouts">Layouts</string>
+    <string name="tile_macros">Macros</string>
+    <string name="tile_settings">Settings</string>
+    <string name="tile_help">Help</string>
+
+    <!-- Settings Groups -->
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_mouse_trackpad">Mouse &amp; trackpad</string>
+    <string name="settings_connection_power">Connection &amp; Power</string>
+    <string name="settings_advanced_automation">Advanced &amp; Automation API</string>
 </resources>

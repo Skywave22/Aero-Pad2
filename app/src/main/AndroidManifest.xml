@@ -28,17 +28,20 @@
 
     <!-- AeroPad is a pure Bluetooth remote: no network permissions at all. -->
     <uses-feature android:name="android.hardware.bluetooth" android:required="true" />
+    <!-- L6: voice dictation is optional; devices without a microphone remain supported. -->
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
 
     <application
         android:name=".AeroPadApplication"
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
+        android:enableOnBackInvokedCallback="true"
         android:fullBackupContent="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.AeroPad"
-        tools:targetApi="34">
+        tools:targetApi="36">
 
         <activity
             android:name=".MainActivity"

@@ -14,18 +14,28 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.aeropad.remote.model.GamepadMappingMode
+import com.aeropad.remote.model.HidConnectionState
+import com.aeropad.remote.model.ThemeMode
 import com.aeropad.remote.ui.components.GlassDock
 import com.aeropad.remote.ui.components.OnboardingOverlay
+import com.aeropad.remote.viewmodel.HostLayoutsViewModel
 import com.aeropad.remote.viewmodel.SettingsViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -44,7 +54,6 @@ import com.aeropad.remote.ui.screens.shortcuts.ShortcutDeckScreen
 import com.aeropad.remote.ui.screens.texttools.TextToolsScreen
 import com.aeropad.remote.ui.screens.mylayout.MyLayoutScreen
 import com.aeropad.remote.ui.screens.pccombo.PcComboScreen
-import com.aeropad.remote.ui.screens.preview3d.Preview3DScreen
 import com.aeropad.remote.ui.screens.gamepadbuilder.GamepadBuilderScreen
 import com.aeropad.remote.ui.screens.health.ConnectionHealthScreen
 import com.aeropad.remote.ui.screens.help.HelpScreen
@@ -61,17 +70,13 @@ import com.aeropad.remote.ui.screens.settings.SettingsScreen
 /**
  * Central navigation graph.
  *
- * Routes are type-safe constants in [Routes]. Each module adds its own
- * destinations here (Module 2: permission/connection/devices/scanner,
- * Module 4: control screens, Module 6: layout editor, Module 7: combo profiles).
+ * Dead routes D1 (SCANNER), D2 (COMBO_PROFILES), and R4 (PREVIEW_3D) removed.
  */
 object Routes {
     const val HOME = "home"
-    // Placeholders — implemented in later modules:
     const val PERMISSIONS = "permissions"
     const val CONNECTION = "connection"
     const val DEVICES = "devices"
-    const val SCANNER = "scanner"
     const val MOUSE = "mouse"
     const val KEYBOARD = "keyboard"
     const val NUMPAD = "numpad"
@@ -87,15 +92,26 @@ object Routes {
     const val HELP = "help"
     const val LAYOUTS = "layouts"
     const val LAYOUT_EDITOR = "layout_editor"
-    const val COMBO_PROFILES = "combo_profiles"
     const val MACROS = "macros"
     const val GAMEPAD_BUILDER = "gamepad_builder"
     const val FULL_KEYBOARD = "full_keyboard"
     const val PC_COMBO = "pc_combo"
     const val AIR_MOUSE = "air_mouse"
-    const val PREVIEW_3D = "preview_3d"
     const val CONNECTION_HEALTH = "connection_health"
 }
+
+private val controlScreenLabels = mapOf(
+    Routes.MOUSE to "Mouse",
+    Routes.AIR_MOUSE to "Air Mouse",
+    Routes.KEYBOARD to "Keyboard",
+    Routes.FULL_KEYBOARD to "Full Board",
+    Routes.GAMEPAD to "Gamepad",
+    Routes.MULTIMEDIA to "Media",
+    Routes.PRESENTER to "Presenter",
+    Routes.ANDROID to "Android",
+    Routes.TOUCH to "Touch",
+    Routes.TEXT to "Text & Clips"
+)
 
 @Composable
 fun AeroPadApp(
@@ -104,35 +120,67 @@ fun AeroPadApp(
 ) {
     val navController = rememberNavController()
     val settingsViewModel: SettingsViewModel = hiltViewModel()
-    val appSettings by settingsViewModel.app.collectAsState()
+    val hostLayoutsVm: HostLayoutsViewModel = hiltViewModel()
+    val healthVm: com.aeropad.remote.viewmodel.ConnectionHealthViewModel = hiltViewModel()
+    val appSettings by settingsViewModel.app.collectAsStateWithLifecycle()
+    val connState by healthVm.connection.collectAsStateWithLifecycle()
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
+
+    // A10 — Track the last two visited control screens for one-tap quick-switching.
+    val recentControlRoutes = remember { mutableStateListOf<String>() }
+    LaunchedEffect(currentRoute) {
+        if (currentRoute != null && currentRoute in controlScreenLabels) {
+            if (recentControlRoutes.lastOrNull() != currentRoute) {
+                recentControlRoutes.remove(currentRoute)
+                recentControlRoutes.add(currentRoute)
+                while (recentControlRoutes.size > 2) {
+                    recentControlRoutes.removeAt(0)
+                }
+            }
+        }
+    }
 
     // UI/UX redesign: dock shows only on the four top-level hubs so control
     // surfaces (mouse/keyboard/gamepad...) keep the full screen.
     val dockRoutes = setOf(Routes.HOME, Routes.LAYOUTS, Routes.DEVICES, Routes.SETTINGS)
 
-    // V2 MATRIX 5 b2 — spoken connection alerts: connect/disconnect events
-    // are announced through the active screen reader. Uses the platform
-    // announceForAccessibility — literally a no-op when TalkBack is off,
-    // so there is zero behavior change for sighted users. Toggleable.
-    if (appSettings.spokenAlerts) {
-        val healthVm: com.aeropad.remote.viewmodel.ConnectionHealthViewModel = hiltViewModel()
-        val connState by healthVm.connection.collectAsState()
-        val view = androidx.compose.ui.platform.LocalView.current
-        var lastAnnounced by androidx.compose.runtime.remember {
-            androidx.compose.runtime.mutableStateOf<String?>(null)
+    // A4 + V2 MATRIX 5 b2 — Auto-apply per-host tuning overrides on connect + spoken alerts.
+    val view = androidx.compose.ui.platform.LocalView.current
+    var lastAnnounced by remember { mutableStateOf<String?>(null) }
+    var lastAppliedHost by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(connState) {
+        if (connState is HidConnectionState.Connected) {
+            val addr = (connState as HidConnectionState.Connected).device.address
+            if (addr != lastAppliedHost) {
+                lastAppliedHost = addr
+                hostLayoutsVm.profileFor(addr)?.let { profile ->
+                    if (profile.mouseSensitivity >= 0) {
+                        settingsViewModel.setMouseSensitivity(profile.mouseSensitivity)
+                    }
+                    if (profile.keyTapDelayMs >= 0) {
+                        settingsViewModel.setKeyTapDelayMs(profile.keyTapDelayMs)
+                    }
+                    if (profile.gamepadMode.isNotBlank()) {
+                        runCatching { GamepadMappingMode.valueOf(profile.gamepadMode) }
+                            .getOrNull()?.let { settingsViewModel.setGamepadMode(it) }
+                    }
+                    if (profile.themeMode.isNotBlank()) {
+                        runCatching { ThemeMode.valueOf(profile.themeMode) }
+                            .getOrNull()?.let { settingsViewModel.setTheme(it) }
+                    }
+                }
+            }
+        } else {
+            lastAppliedHost = null
         }
-        androidx.compose.runtime.LaunchedEffect(connState) {
+
+        if (appSettings.spokenAlerts) {
             val message = when (val s = connState) {
-                is com.aeropad.remote.model.HidConnectionState.Connected ->
-                    "Connected to ${s.device.name}"
-                is com.aeropad.remote.model.HidConnectionState.Error ->
-                    "Connection lost"
+                is HidConnectionState.Connected -> "Connected to ${s.device.name}"
+                is HidConnectionState.Error -> "Connection lost"
                 else -> null
             }
-            // Announce only real transitions (not recompositions/app start
-            // replays of the same state).
             if (message != null && message != lastAnnounced) {
                 lastAnnounced = message
                 view.announceForAccessibility(message)
@@ -197,14 +245,25 @@ fun AeroPadApp(
         }
         composable(Routes.SETTINGS) {
             SettingsScreen(
-                onBack = { navController.popBackStack() },
-                onOpen3DPreview = {
-                navController.navigate(Routes.PREVIEW_3D) { launchSingleTop = true }
-            }
+                onBack = { navController.popBackStack() }
             )
         }
-        composable(Routes.MOUSE) { MouseScreen(onBack = { navController.popBackStack() }) }
-        composable(Routes.KEYBOARD) { KeyboardScreen(onBack = { navController.popBackStack() }) }
+        composable(Routes.MOUSE) {
+            MouseScreen(
+                onBack = { navController.popBackStack() },
+                onOpenAirMouse = {
+                    navController.navigate(Routes.AIR_MOUSE) { launchSingleTop = true }
+                }
+            )
+        }
+        composable(Routes.KEYBOARD) {
+            KeyboardScreen(
+                onBack = { navController.popBackStack() },
+                onOpenFullBoard = {
+                    navController.navigate(Routes.FULL_KEYBOARD) { launchSingleTop = true }
+                }
+            )
+        }
         composable(Routes.NUMPAD) { NumpadScreen(onBack = { navController.popBackStack() }) }
         composable(Routes.MULTIMEDIA) { MultimediaScreen(onBack = { navController.popBackStack() }) }
         composable(Routes.PRESENTER) { PresenterScreen(onBack = { navController.popBackStack() }) }
@@ -213,8 +272,8 @@ fun AeroPadApp(
             AndroidControlScreen(
                 onBack = { navController.popBackStack() },
                 onOpenTouch = {
-                navController.navigate(Routes.TOUCH) { launchSingleTop = true }
-            }
+                    navController.navigate(Routes.TOUCH) { launchSingleTop = true }
+                }
             )
         }
         composable(Routes.TOUCH) { TouchControlScreen(onBack = { navController.popBackStack() }) }
@@ -236,14 +295,12 @@ fun AeroPadApp(
         composable(Routes.FULL_KEYBOARD) { FullKeyboardScreen(onBack = { navController.popBackStack() }) }
         composable(Routes.PC_COMBO) { PcComboScreen(onBack = { navController.popBackStack() }) }
         composable(Routes.AIR_MOUSE) { AirMouseScreen(onBack = { navController.popBackStack() }) }
-        composable(Routes.PREVIEW_3D) { Preview3DScreen(onBack = { navController.popBackStack() }) }
         composable(
             route = "${Routes.LAYOUT_EDITOR}/{profileId}",
             arguments = listOf(navArgument("profileId") { type = NavType.LongType })
         ) {
             LayoutEditorScreen(onBack = { navController.popBackStack() })
         }
-        // Layout editor (Module 6) and combo profiles (Module 7) append here.
     }
 
     // Floating glass dock (top-level hubs only)
@@ -258,6 +315,25 @@ fun AeroPadApp(
                 }
             },
             modifier = Modifier.align(Alignment.BottomCenter)
+        )
+    }
+
+    // A10 — Quick-Switch floating pill between the last two visited control screens.
+    val previousControlRoute = if (
+        currentRoute in controlScreenLabels && recentControlRoutes.size >= 2
+    ) {
+        recentControlRoutes.firstOrNull { it != currentRoute }
+    } else null
+    if (previousControlRoute != null) {
+        val label = controlScreenLabels[previousControlRoute] ?: previousControlRoute
+        AssistChip(
+            onClick = {
+                navController.navigate(previousControlRoute) { launchSingleTop = true }
+            },
+            label = { Text("⇄ $label") },
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 48.dp, end = 52.dp)
         )
     }
 
@@ -281,7 +357,7 @@ fun AeroPadApp(
             com.aeropad.remote.perf.FrameStats.start()
             onDispose { com.aeropad.remote.perf.FrameStats.stop() }
         }
-        val frameStats by com.aeropad.remote.perf.FrameStats.stats.collectAsState()
+        val frameStats by com.aeropad.remote.perf.FrameStats.stats.collectAsStateWithLifecycle()
         androidx.compose.material3.Text(
             text = "${frameStats.fps} fps" +
                 if (frameStats.jankPercent > 0) " • ${frameStats.jankPercent}% jank" else "",
@@ -317,9 +393,9 @@ fun AeroPadApp(
 @Composable
 private fun MiniHealthIndicator(onOpen: () -> Unit, modifier: Modifier = Modifier) {
     val vm: com.aeropad.remote.viewmodel.ConnectionHealthViewModel = hiltViewModel()
-    val connection by vm.connection.collectAsState()
+    val connection by vm.connection.collectAsStateWithLifecycle()
     if (!connection.isConnected) return
-    val snapshot by vm.snapshot.collectAsState()
+    val snapshot by vm.snapshot.collectAsStateWithLifecycle()
     val health = com.aeropad.remote.domain.ConnectionHealthTracker.classify(snapshot)
     val color = when (health) {
         com.aeropad.remote.domain.ConnectionHealthTracker.Health.GOOD -> androidx.compose.ui.graphics.Color(0xFF2ECC71)

@@ -136,6 +136,14 @@ sealed class WidgetAction {
     @SerialName("macro")
     data class RunMacro(val macroId: Long) : WidgetAction()
 
+    /** A5 — Alternates between [first] and [second] on successive taps. */
+    @Serializable
+    @SerialName("toggle")
+    data class ToggleNext(
+        val first: WidgetAction,
+        val second: WidgetAction
+    ) : WidgetAction()
+
     /** No-op (unbound widget). */
     @Serializable
     @SerialName("none")

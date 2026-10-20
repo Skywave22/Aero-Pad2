@@ -5,6 +5,8 @@ import com.aeropad.remote.model.gamepad.GamepadButtonNames
 import com.aeropad.remote.model.gamepad.GamepadControlSpec
 import com.aeropad.remote.model.gamepad.GamepadControlType
 import com.aeropad.remote.model.widgets.WidgetFrame
+import com.aeropad.remote.model.widgets.WidgetSpec
+import com.aeropad.remote.model.widgets.WidgetType
 
 /**
  * V2 MATRIX 5 — accessibility helpers (pure, unit-tested).
@@ -42,6 +44,23 @@ object A11y {
                 (base.ifEmpty { control.arrowDirection.name.lowercase() } + " arrow").trim()
             GamepadControlType.COMBO -> (base.ifEmpty { "bumper and trigger" } + " combo").trim()
         }
+    }
+
+    /**
+     * A7 — TalkBack / Switch Access description for a custom layout [WidgetSpec].
+     */
+    fun describeWidget(widget: WidgetSpec): String {
+        val label = widget.style.label.trim()
+        val typeWord = when (widget.type) {
+            WidgetType.BUTTON -> "button"
+            WidgetType.TRACKPAD -> "trackpad"
+            WidgetType.SCROLL_STRIP -> "scroll strip"
+            WidgetType.JOYSTICK -> "joystick"
+            WidgetType.SLIDER -> "slider"
+            WidgetType.DPAD -> "directional pad"
+            WidgetType.GESTURE_ZONE -> "gesture zone"
+        }
+        return if (label.isNotEmpty()) "$label $typeWord" else typeWord
     }
 
     /**

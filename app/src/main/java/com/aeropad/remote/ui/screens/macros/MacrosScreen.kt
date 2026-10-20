@@ -43,7 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -78,17 +78,17 @@ fun MacrosScreen(
     onBack: () -> Unit,
     viewModel: MacrosViewModel = hiltViewModel()
 ) {
-    val draft by viewModel.draft.collectAsState()
+    val draft by viewModel.draft.collectAsStateWithLifecycle()
 
     if (draft != null) {
         MacroEditor(viewModel)
         return
     }
 
-    val macros by viewModel.macros.collectAsState()
-    val isConnected by viewModel.isConnected.collectAsState()
-    val isRecording by viewModel.isRecording.collectAsState()
-    val recordedSteps by viewModel.recordedSteps.collectAsState()
+    val macros by viewModel.macros.collectAsStateWithLifecycle()
+    val isConnected by viewModel.isConnected.collectAsStateWithLifecycle()
+    val isRecording by viewModel.isRecording.collectAsStateWithLifecycle()
+    val recordedSteps by viewModel.recordedSteps.collectAsStateWithLifecycle()
     val spec = LocalAppTheme.current
 
     // Red glow color for recording state
@@ -113,7 +113,7 @@ fun MacrosScreen(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
                 actions = {
                     // AEROPAD v1.0 #28 — panic button: instant macro cancel.
-                    val isRunning by viewModel.isRunning.collectAsState()
+                    val isRunning by viewModel.isRunning.collectAsStateWithLifecycle()
                     if (isRunning) {
                         androidx.compose.material3.Button(
                             onClick = { viewModel.panicStop() },
@@ -320,7 +320,7 @@ fun MacrosScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MacroEditor(viewModel: MacrosViewModel) {
-    val draft by viewModel.draft.collectAsState()
+    val draft by viewModel.draft.collectAsStateWithLifecycle()
     val (rowId, spec) = draft ?: return
     val themeSpec = LocalAppTheme.current
     var textInput by remember { mutableStateOf("") }
@@ -440,7 +440,7 @@ private fun MacroEditor(viewModel: MacrosViewModel) {
             // Sub-macro palette: every OTHER saved macro is one chip. The
             // macro being edited is excluded (self-call = infinite intent;
             // engine guards anyway, but don't even offer it).
-            val allMacros by viewModel.macros.collectAsState()
+            val allMacros by viewModel.macros.collectAsStateWithLifecycle()
             val subEntries = allMacros
                 .filter { it.id != rowId }
                 .take(8)

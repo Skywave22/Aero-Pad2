@@ -46,7 +46,7 @@ class SettingsViewModelTest {
 
         override suspend fun updateApp(settings: AppSettings) { app.value = settings }
         override suspend fun updateMouse(settings: MouseSettings) { mouse.value = settings.sanitized() }
-        override suspend fun updateKeyboard(settings: KeyboardSettings) { keyboard.value = settings }
+        override suspend fun updateKeyboard(settings: KeyboardSettings) { keyboard.value = settings.sanitized() }
         override suspend fun updateGamepad(settings: GamepadSettings) { gamepad.value = settings.sanitized() }
     }
 
@@ -122,5 +122,19 @@ class SettingsViewModelTest {
         vm.setShowTextInputBar(false)
         advanceUntilIdle()
         assertEquals(false, store.keyboard.value.showTextInputBar)
+    }
+
+    @Test
+    fun `keyTapDelayMs powerProfile and automationToken persist`() = runTest(dispatcher) {
+        val vm = SettingsViewModel(store, fakeHaptics)
+        advanceUntilIdle()
+        vm.setKeyTapDelayMs(28)
+        vm.setPowerProfile(com.aeropad.remote.model.PowerProfile.BATTERY_SAVER)
+        val tok = vm.ensureAutomationToken()
+        advanceUntilIdle()
+        assertEquals(28, store.keyboard.value.keyTapDelayMs)
+        assertEquals("BATTERY_SAVER", store.app.value.powerProfile)
+        assertEquals(24, tok.length)
+        assertEquals(tok, store.app.value.automationToken)
     }
 }

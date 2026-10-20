@@ -1,11 +1,16 @@
 package com.aeropad.remote.ui.screens.gamepad
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -40,7 +45,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,7 +58,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -78,13 +89,13 @@ fun GamepadScreen(
     onBack: () -> Unit,
     viewModel: RemoteControlViewModel = hiltViewModel()
 ) {
-    val isConnected by viewModel.isConnected.collectAsState()
-    val gamepadSettings by viewModel.gamepadSettings.collectAsState()
-    val vibration by viewModel.vibrationsEnabled.collectAsState()
+    val isConnected by viewModel.isConnected.collectAsStateWithLifecycle()
+    val gamepadSettings by viewModel.gamepadSettings.collectAsStateWithLifecycle()
+    val vibration by viewModel.vibrationsEnabled.collectAsStateWithLifecycle()
     val haptic = rememberHaptic(vibration)
     // Round 7 — Pro gamepad.
     val settingsVm: SettingsViewModel = hiltViewModel()
-    val profiles by viewModel.gamepadProfiles.profiles.collectAsState()
+    val profiles by viewModel.gamepadProfiles.profiles.collectAsStateWithLifecycle()
     var showPro by remember { mutableStateOf(false) }
 
     // Gyro aim / tilt steering: sensors live only while enabled.
@@ -209,7 +220,9 @@ fun GamepadScreen(
             settingsVm = settingsVm,
             onSaveProfile = { name -> viewModel.gamepadProfiles.save(name, gamepadSettings) },
             onApplyProfile = { p -> settingsVm.applyGamepad(p.toSettings()) },
-            onRemoveProfile = { p -> viewModel.gamepadProfiles.remove(p.id) }
+            onRemoveProfile = { p -> viewModel.gamepadProfiles.remove(p.id) },
+            onExportAllJson = { viewModel.gamepadProfiles.exportAllJson() },
+            onImportJson = { raw -> viewModel.gamepadProfiles.importJson(raw) }
         )
     }
 }
@@ -321,6 +334,15 @@ private fun FaceButton(
     Box(
         modifier = Modifier
             .size(56.dp)
+            .semantics(mergeDescendants = true) {
+                contentDescription = "$label button"
+                role = Role.Button
+                onClick(label = "Press $label") {
+                    onPress(true)
+                    onPress(false)
+                    true
+                }
+            }
             .graphicsLayer {
                 val s = 1f - 0.06f * sink
                 scaleX = s; scaleY = s
@@ -389,9 +411,25 @@ private fun DpadKey(label: String, onPressChange: (Boolean) -> Unit) {
         label = "dpadSink"
     )
     val base = MaterialTheme.colorScheme.surfaceVariant
+    val dirDesc = when (label) {
+        "▲" -> "D-pad Up"
+        "▼" -> "D-pad Down"
+        "◀" -> "D-pad Left"
+        "▶" -> "D-pad Right"
+        else -> "D-pad $label"
+    }
     Box(
         modifier = Modifier
             .size(44.dp)
+            .semantics(mergeDescendants = true) {
+                contentDescription = dirDesc
+                role = Role.Button
+                onClick(label = dirDesc) {
+                    onPressChange(true)
+                    onPressChange(false)
+                    true
+                }
+            }
             .graphicsLayer {
                 val s = 1f - 0.07f * sink
                 scaleX = s; scaleY = s
@@ -432,7 +470,10 @@ private fun DpadKey(label: String, onPressChange: (Boolean) -> Unit) {
     }
 }
 
-/** Round 7 — pressure-style trigger: pull down to press, release to zero. */
+/**
+ * Round 7 + H3 fix — pressure-style trigger: responds immediately on touch-down
+ * (no 8dp drag touch-slop delay!) while tracking vertical position for analog pressure.
+ */
 @Composable
 private fun TriggerPad(label: String, onValue: (Float) -> Unit) {
     var value by remember { mutableStateOf(0f) }
@@ -441,18 +482,37 @@ private fun TriggerPad(label: String, onValue: (Float) -> Unit) {
             .size(width = 64.dp, height = 92.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .semantics(mergeDescendants = true) {
+                contentDescription = "$label analog trigger"
+                role = Role.Button
+                onClick(label = "Press $label") {
+                    onValue(1f)
+                    onValue(0f)
+                    true
+                }
+            }
             .pointerInput(Unit) {
-                detectDragGestures(
-                    onDragStart = { off ->
-                        value = (off.y / size.height).coerceIn(0f, 1f)
-                        onValue(value)
-                    },
-                    onDragEnd = { value = 0f; onValue(0f) },
-                    onDragCancel = { value = 0f; onValue(0f) }
-                ) { change, _ ->
-                    change.consume()
-                    value = (change.position.y / size.height).coerceIn(0f, 1f)
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    down.consume()
+                    val h = size.height.toFloat().coerceAtLeast(1f)
+                    // Immediate press response: touching anywhere engages at least 0.35f pressure
+                    // (or proportional to vertical position, with bottom = 1.0f).
+                    fun pressureAt(y: Float): Float = (y / h).coerceIn(0.25f, 1f)
+                    value = pressureAt(down.position.y)
                     onValue(value)
+                    do {
+                        val event = awaitPointerEvent()
+                        val active = event.changes.firstOrNull { it.id == down.id }
+                            ?: event.changes.firstOrNull { it.pressed }
+                        if (active != null && active.pressed) {
+                            active.consume()
+                            value = pressureAt(active.position.y)
+                            onValue(value)
+                        }
+                    } while (event.changes.any { it.pressed })
+                    value = 0f
+                    onValue(0f)
                 }
             }
     ) {
@@ -472,7 +532,7 @@ private fun TriggerPad(label: String, onValue: (Float) -> Unit) {
     }
 }
 
-/** Round 7 — Pro panel: motion options, stick tuning, per-game profiles. */
+/** Round 7 + A11 — Pro panel: motion options, stick tuning, per-game profiles + JSON share/import. */
 @Composable
 private fun ProDialog(
     settings: com.aeropad.remote.model.GamepadSettings,
@@ -481,9 +541,14 @@ private fun ProDialog(
     onDismiss: () -> Unit,
     onSaveProfile: (String) -> Unit,
     onApplyProfile: (com.aeropad.remote.data.gamepad.TuningProfile) -> Unit,
-    onRemoveProfile: (com.aeropad.remote.data.gamepad.TuningProfile) -> Unit
+    onRemoveProfile: (com.aeropad.remote.data.gamepad.TuningProfile) -> Unit,
+    onExportAllJson: () -> String = { "[]" },
+    onImportJson: (String) -> Int = { 0 }
 ) {
     var profileName by remember { mutableStateOf("") }
+    var importJsonText by remember { mutableStateOf("") }
+    var shareStatus by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Pro gamepad") },
@@ -530,7 +595,7 @@ private fun ProDialog(
                     valueRange = 0f..50f
                 )
 
-                Text("Per-game profiles", style = MaterialTheme.typography.titleSmall)
+                Text("Per-game & community profiles", style = MaterialTheme.typography.titleSmall)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         profileName, { profileName = it },
@@ -549,6 +614,46 @@ private fun ProDialog(
                         }
                         TextButton(onClick = { onRemoveProfile(p) }) { Text("✕") }
                     }
+                }
+                // A11 — Gamepad profile JSON import / export (shareable without a server)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    AssistChip(
+                        onClick = {
+                            val json = onExportAllJson()
+                            val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                            cm?.setPrimaryClip(ClipData.newPlainText("AeroPad Gamepad Profiles", json))
+                            shareStatus = "Copied ${profiles.size} profile(s) as JSON to clipboard ✓"
+                        },
+                        label = { Text("Copy profiles JSON") }
+                    )
+                    AssistChip(
+                        onClick = {
+                            val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                            val clip = cm?.primaryClip?.getItemAt(0)?.coerceToText(context)?.toString()
+                                ?: importJsonText
+                            val count = onImportJson(clip)
+                            shareStatus = if (count > 0) "Imported $count profile(s) ✓"
+                            else "Paste valid profile JSON below or copy it to clipboard first."
+                        },
+                        label = { Text("Import from clipboard") }
+                    )
+                }
+                OutlinedTextField(
+                    value = importJsonText,
+                    onValueChange = { importJsonText = it },
+                    label = { Text("Or paste profile JSON here") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (importJsonText.isNotBlank()) {
+                    TextButton(onClick = {
+                        val count = onImportJson(importJsonText)
+                        shareStatus = if (count > 0) "Imported $count profile(s) ✓" else "Invalid profile JSON"
+                        if (count > 0) importJsonText = ""
+                    }) { Text("Import JSON") }
+                }
+                shareStatus?.let {
+                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                 }
                 Text(
                     "Gyro aim moves the right stick from phone rotation; tilt steer " +

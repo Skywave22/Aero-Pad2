@@ -120,3 +120,36 @@ object HidReportBuilder {
         return scaled.toByte()
     }
 }
+
+/**
+ * Tracks which mouse buttons are currently held down across HID reports (C1 / C2 / M7 / A1).
+ *
+ * A HID mouse report is a complete snapshot of currently held buttons, not a delta.
+ * Keeping the active button bitmask here ensures that MouseMove, MouseScroll,
+ * and idle keep-alives never zero out a held button (such as Drag Lock or
+ * holding L/M/R while moving).
+ */
+class MouseButtonTracker {
+    var mask: Int = 0
+        private set
+
+    val currentByte: Byte get() = (mask and 0xFF).toByte()
+    val hasHeldButtons: Boolean get() = mask != 0
+
+    fun onDown(button: MouseButton): Byte {
+        mask = mask or (button.mask.toInt() and 0xFF)
+        return currentByte
+    }
+
+    fun onUp(button: MouseButton): Byte {
+        mask = mask and (button.mask.toInt() and 0xFF).inv()
+        return currentByte
+    }
+
+    fun withTransientPress(button: MouseButton): Byte =
+        ((mask or (button.mask.toInt() and 0xFF)) and 0xFF).toByte()
+
+    fun clear() {
+        mask = 0
+    }
+}

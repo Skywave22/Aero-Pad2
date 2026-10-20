@@ -83,4 +83,15 @@ class A11yTest {
         assertFalse(A11y.isBelowMinTarget(f, 0f, 400f))
         assertFalse(A11y.isBelowMinTarget(f, -5f, 400f))
     }
+
+    @Test
+    fun `describeWidget produces screen reader friendly label`() {
+        val btn = com.aeropad.remote.model.widgets.WidgetSpec(
+            id = "w1",
+            type = com.aeropad.remote.model.widgets.WidgetType.BUTTON,
+            label = "Mute Mic",
+            frame = WidgetFrame(0.1f, 0.1f, 0.2f, 0.2f)
+        )
+        assertEquals("Mute Mic button", A11y.describeWidget(btn))
+    }
 }

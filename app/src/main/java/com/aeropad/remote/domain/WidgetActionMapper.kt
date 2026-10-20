@@ -17,8 +17,27 @@ object WidgetActionMapper {
         is WidgetAction.MouseClick -> maskToButton(action.buttonMask)?.let { HidAction.MouseClick(it) }
         is WidgetAction.TypeText ->
             if (action.text.isNotEmpty()) HidAction.TypeText(action.text.take(500)) else null
+        is WidgetAction.ToggleNext -> toHidAction(action.first)
         is WidgetAction.RunMacro -> null   // handled by the macro engine (Module 7)
         is WidgetAction.None -> null
+    }
+
+    /**
+     * A5 — Stateful resolution for [WidgetAction.ToggleNext]: alternates
+     * between [WidgetAction.ToggleNext.first] and [WidgetAction.ToggleNext.second]
+     * per [slotKey] inside [toggleStates]. Non-toggle actions return unchanged.
+     */
+    fun resolveToggle(
+        slotKey: String,
+        action: WidgetAction,
+        toggleStates: MutableMap<String, Boolean>
+    ): WidgetAction = when (action) {
+        is WidgetAction.ToggleNext -> {
+            val useSecond = toggleStates[slotKey] == true
+            toggleStates[slotKey] = !useSecond
+            if (useSecond) action.second else action.first
+        }
+        else -> action
     }
 
     /** HID mask → MouseButton; unknown masks are rejected (defensive). */

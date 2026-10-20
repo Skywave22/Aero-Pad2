@@ -61,7 +61,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -103,8 +103,8 @@ fun GamepadBuilderScreen(
     onBack: () -> Unit,
     viewModel: GamepadBuilderViewModel = hiltViewModel()
 ) {
-    val playing by viewModel.playing.collectAsState()
-    val draft by viewModel.draft.collectAsState()
+    val playing by viewModel.playing.collectAsStateWithLifecycle()
+    val draft by viewModel.draft.collectAsStateWithLifecycle()
 
     when {
         playing != null -> GamepadPlayer(viewModel)
@@ -120,14 +120,14 @@ fun GamepadBuilderScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ProfileList(onBack: () -> Unit, viewModel: GamepadBuilderViewModel) {
-    val profiles by viewModel.filteredProfiles.collectAsState()
-    val recents by viewModel.recentProfiles.collectAsState()
-    val query by viewModel.profileQuery.collectAsState()
-    val tagFilter by viewModel.tagFilter.collectAsState()
-    val suggested by viewModel.suggestedTags.collectAsState()
-    val appSettings by viewModel.appSettings.collectAsState()
-    val message by viewModel.message.collectAsState()
-    val exportPayload by viewModel.exportPayload.collectAsState()
+    val profiles by viewModel.filteredProfiles.collectAsStateWithLifecycle()
+    val recents by viewModel.recentProfiles.collectAsStateWithLifecycle()
+    val query by viewModel.profileQuery.collectAsStateWithLifecycle()
+    val tagFilter by viewModel.tagFilter.collectAsStateWithLifecycle()
+    val suggested by viewModel.suggestedTags.collectAsStateWithLifecycle()
+    val appSettings by viewModel.appSettings.collectAsStateWithLifecycle()
+    val message by viewModel.message.collectAsStateWithLifecycle()
+    val exportPayload by viewModel.exportPayload.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val snackbar = remember { SnackbarHostState() }
 
@@ -317,12 +317,12 @@ private fun ProfileList(onBack: () -> Unit, viewModel: GamepadBuilderViewModel) 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GamepadPlayer(viewModel: GamepadBuilderViewModel) {
-    val playing by viewModel.playing.collectAsState()
-    val isConnected by viewModel.isConnected.collectAsState()
-    val motionEnabled by viewModel.motionEnabled.collectAsState()
-    val motionSensitivity by viewModel.motionSensitivity.collectAsState()
-    val motionDeadZone by viewModel.motionDeadZone.collectAsState()
-    val lastPressed by viewModel.lastPressed.collectAsState()
+    val playing by viewModel.playing.collectAsStateWithLifecycle()
+    val isConnected by viewModel.isConnected.collectAsStateWithLifecycle()
+    val motionEnabled by viewModel.motionEnabled.collectAsStateWithLifecycle()
+    val motionSensitivity by viewModel.motionSensitivity.collectAsStateWithLifecycle()
+    val motionDeadZone by viewModel.motionDeadZone.collectAsStateWithLifecycle()
+    val lastPressed by viewModel.lastPressed.collectAsStateWithLifecycle()
     val profile = playing ?: return
 
     // BUG FIX: if the user leaves via system back (route pop), the composable
@@ -387,7 +387,7 @@ private fun GamepadPlayer(viewModel: GamepadBuilderViewModel) {
                             )
                         }
                         // V2 MATRIX 3 — flick-up = jump (real accelerometer).
-                        val flickOn by viewModel.flickEnabled.collectAsState()
+                        val flickOn by viewModel.flickEnabled.collectAsStateWithLifecycle()
                         FilterChip(
                             selected = flickOn,
                             onClick = { viewModel.setFlickEnabled(!flickOn) },
@@ -396,7 +396,7 @@ private fun GamepadPlayer(viewModel: GamepadBuilderViewModel) {
                     }
                     // V2 MATRIX 3 — gravity steering wheel (own sensor gate).
                     if (viewModel.hasGravity) {
-                        val steerOn by viewModel.steerEnabled.collectAsState()
+                        val steerOn by viewModel.steerEnabled.collectAsStateWithLifecycle()
                         FilterChip(
                             selected = steerOn,
                             onClick = { viewModel.setSteerEnabled(!steerOn) },
@@ -405,7 +405,7 @@ private fun GamepadPlayer(viewModel: GamepadBuilderViewModel) {
                     }
                     // V2 MATRIX 3 — proximity wave = tap (own sensor gate).
                     if (viewModel.hasProximity) {
-                        val waveOn by viewModel.proximityEnabled.collectAsState()
+                        val waveOn by viewModel.proximityEnabled.collectAsStateWithLifecycle()
                         FilterChip(
                             selected = waveOn,
                             onClick = { viewModel.setProximityEnabled(!waveOn) },
@@ -413,7 +413,7 @@ private fun GamepadPlayer(viewModel: GamepadBuilderViewModel) {
                         )
                     }
                     // V2 MATRIX 2 — auto-strafe (no sensor needed).
-                    val strafeOn by viewModel.strafeEnabled.collectAsState()
+                    val strafeOn by viewModel.strafeEnabled.collectAsStateWithLifecycle()
                     FilterChip(
                         selected = strafeOn,
                         onClick = { viewModel.setStrafeEnabled(!strafeOn) },
@@ -455,9 +455,9 @@ private fun GamepadPlayer(viewModel: GamepadBuilderViewModel) {
                 }
             }
             // V2 MATRIX 3 — steering full-lock angle (only while Wheel ON).
-            val steerOnRow by viewModel.steerEnabled.collectAsState()
+            val steerOnRow by viewModel.steerEnabled.collectAsStateWithLifecycle()
             if (steerOnRow) {
-                val steerMax by viewModel.steerMaxAngle.collectAsState()
+                val steerMax by viewModel.steerMaxAngle.collectAsStateWithLifecycle()
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -474,9 +474,9 @@ private fun GamepadPlayer(viewModel: GamepadBuilderViewModel) {
             }
             // V2 M3 finale — flick direction mapping (only while Flick ON).
             // Tap a direction chip to cycle its button: × → A → B → X → Y → ×.
-            val flickOnRow by viewModel.flickEnabled.collectAsState()
+            val flickOnRow by viewModel.flickEnabled.collectAsStateWithLifecycle()
             if (flickOnRow) {
-                val fmap by viewModel.flickMap.collectAsState()
+                val fmap by viewModel.flickMap.collectAsStateWithLifecycle()
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -504,9 +504,9 @@ private fun GamepadPlayer(viewModel: GamepadBuilderViewModel) {
                 }
             }
             // V2 MATRIX 2 — auto-strafe period (only while Strafe ON).
-            val strafeOnRow by viewModel.strafeEnabled.collectAsState()
+            val strafeOnRow by viewModel.strafeEnabled.collectAsStateWithLifecycle()
             if (strafeOnRow) {
-                val strafePeriod by viewModel.strafePeriodMs.collectAsState()
+                val strafePeriod by viewModel.strafePeriodMs.collectAsStateWithLifecycle()
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -525,7 +525,7 @@ private fun GamepadPlayer(viewModel: GamepadBuilderViewModel) {
             // shift control, its presses toggle the visible layer instead
             // of ALSO sending shifted-layer controls' HID (base action
             // still fires — a shift key can double as a real button).
-            val activeLayer by viewModel.activeLayer.collectAsState()
+            val activeLayer by viewModel.activeLayer.collectAsStateWithLifecycle()
             val shiftId = profile.spec.shiftControlId
             val layerEvents = remember(shiftId) {
                 if (shiftId.isBlank()) events else object : GamepadEvents by events {
@@ -536,7 +536,7 @@ private fun GamepadPlayer(viewModel: GamepadBuilderViewModel) {
                 }
             }
             // V2 MATRIX 6 — frame-data input history overlay (toggleable).
-            val showHistory by viewModel.showInputHistory.collectAsState()
+            val showHistory by viewModel.showInputHistory.collectAsStateWithLifecycle()
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -547,7 +547,7 @@ private fun GamepadPlayer(viewModel: GamepadBuilderViewModel) {
                     label = { Text(if (showHistory) "History ✓" else "Input history") }
                 )
                 if (showHistory) {
-                    val historyEvents by viewModel.inputHistory.collectAsState()
+                    val historyEvents by viewModel.inputHistory.collectAsStateWithLifecycle()
                     val now = System.currentTimeMillis()
                     Text(
                         text = historyEvents.joinToString("  ") { e ->
@@ -583,10 +583,10 @@ private fun GamepadPlayer(viewModel: GamepadBuilderViewModel) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GamepadEditor(viewModel: GamepadBuilderViewModel) {
-    val draft by viewModel.draft.collectAsState()
-    val selectedId by viewModel.selectedId.collectAsState()
-    val previewMode by viewModel.previewMode.collectAsState()
-    val canUndo by viewModel.canUndo.collectAsState()
+    val draft by viewModel.draft.collectAsStateWithLifecycle()
+    val selectedId by viewModel.selectedId.collectAsStateWithLifecycle()
+    val previewMode by viewModel.previewMode.collectAsStateWithLifecycle()
+    val canUndo by viewModel.canUndo.collectAsStateWithLifecycle()
     val (_, spec) = draft ?: return
     var showProperties by remember { mutableStateOf(false) }
     var showVersions by remember { mutableStateOf(false) }   // ADV S3
@@ -675,12 +675,12 @@ private fun GamepadEditor(viewModel: GamepadBuilderViewModel) {
                             AssistChip(onClick = { viewModel.addControl(GamepadControlType.COMBO) }, label = { Text(if (themeSpec.monoFont) "L1+L2" else "L1+L2") })
                             // ADV S2 — layout intelligence tools.
                             AssistChip(onClick = { viewModel.mirrorWholeLayout() }, label = { Text("⇄ Flip hand") })
-                            val gridOn = (viewModel.draft.collectAsState().value?.second?.gridSize ?: 0f) > 0f
+                            val gridOn = (viewModel.draft.collectAsStateWithLifecycle().value?.second?.gridSize ?: 0f) > 0f
                             AssistChip(
                                 onClick = { viewModel.setGridSize(if (gridOn) 0f else 0.025f) },
                                 label = { Text(if (gridOn) "Grid ✓" else "Grid") }
                             )
-                            val grip = viewModel.heatmapGrip.collectAsState().value
+                            val grip = viewModel.heatmapGrip.collectAsStateWithLifecycle().value
                             AssistChip(
                                 onClick = {
                                     val next = when (grip) {
@@ -700,7 +700,7 @@ private fun GamepadEditor(viewModel: GamepadBuilderViewModel) {
                                     com.aeropad.remote.domain.LayoutIntelligence.GripStyle.PALM -> "Reach: palm"
                                 }) }
                             )
-                            val testOn = viewModel.testMode.collectAsState().value
+                            val testOn = viewModel.testMode.collectAsStateWithLifecycle().value
                             AssistChip(
                                 onClick = { viewModel.setTestMode(!testOn) },
                                 label = { Text(if (testOn) "Test ✓" else "Test mode") }
@@ -710,7 +710,7 @@ private fun GamepadEditor(viewModel: GamepadBuilderViewModel) {
                                 onClick = { viewModel.loadVersions(); showVersions = true },
                                 label = { Text("Versions") }
                             )
-                            val hasB = viewModel.hasAbSlot.collectAsState().value
+                            val hasB = viewModel.hasAbSlot.collectAsStateWithLifecycle().value
                             AssistChip(
                                 onClick = { viewModel.setAbSlot() },
                                 label = { Text(if (hasB) "Set B ✓" else "Set as B") }
@@ -754,7 +754,7 @@ private fun GamepadEditor(viewModel: GamepadBuilderViewModel) {
                                 onClick = { viewModel.setSelectedLayer(if (selLayer == 0) 1 else 0) },
                                 label = { Text(if (selLayer == 0) "→ Shift layer" else "→ Base layer") }
                             )
-                            val isShift = viewModel.draft.collectAsState().value?.second?.shiftControlId == selectedId
+                            val isShift = viewModel.draft.collectAsStateWithLifecycle().value?.second?.shiftControlId == selectedId
                             AssistChip(
                                 onClick = { viewModel.setSelectedAsShift() },
                                 label = { Text(if (isShift) "Shift key ✓" else "Make shift key") }
@@ -779,9 +779,9 @@ private fun GamepadEditor(viewModel: GamepadBuilderViewModel) {
                 }
             }
             // ADV S2 — Test Mode: real wire bytes + measured dispatch time.
-            val testModeOn by viewModel.testMode.collectAsState()
+            val testModeOn by viewModel.testMode.collectAsStateWithLifecycle()
             if (!previewMode && testModeOn) {
-                val testEvents by viewModel.testEvents.collectAsState()
+                val testEvents by viewModel.testEvents.collectAsStateWithLifecycle()
                 GlassCard(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -831,7 +831,7 @@ private fun GamepadEditor(viewModel: GamepadBuilderViewModel) {
 
                 // ADV S2 — magnetic grid dots + thumb-reach heatmap +
                 // alignment guides, all one lightweight Canvas draw.
-                val grip by viewModel.heatmapGrip.collectAsState()
+                val grip by viewModel.heatmapGrip.collectAsStateWithLifecycle()
                 val gridSize = spec.gridSize
                 val dragGuides = if (selectedId != null && !previewMode)
                     viewModel.alignmentGuides(selectedId!!) else null
@@ -1040,7 +1040,7 @@ private fun GamepadEditor(viewModel: GamepadBuilderViewModel) {
 
     // ADV S3 — version history sheet: revert to any archived iteration.
     if (showVersions) {
-        val versions by viewModel.versions.collectAsState()
+        val versions by viewModel.versions.collectAsStateWithLifecycle()
         ModalBottomSheet(onDismissRequest = { showVersions = false }) {
             Column(modifier = Modifier.padding(horizontal = 20.dp)) {
                 Text(
@@ -1099,8 +1099,8 @@ private val controlPalette = listOf(
 
 @Composable
 private fun ControlPropertiesPanel(viewModel: GamepadBuilderViewModel) {
-    val draft by viewModel.draft.collectAsState()
-    val selectedId by viewModel.selectedId.collectAsState()
+    val draft by viewModel.draft.collectAsStateWithLifecycle()
+    val selectedId by viewModel.selectedId.collectAsStateWithLifecycle()
     val control = draft?.second?.controls?.firstOrNull { it.id == selectedId } ?: return
 
     Column(

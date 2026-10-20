@@ -25,6 +25,9 @@ import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.FileUpload
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,7 +42,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -49,6 +51,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aeropad.remote.model.widgets.WidgetSpec
 import com.aeropad.remote.ui.components.NotConnectedBanner
 import com.aeropad.remote.ui.widgets.LayoutCanvas
@@ -69,12 +72,12 @@ fun LayoutsScreen(
     onEdit: (Long) -> Unit,
     viewModel: LayoutsViewModel = hiltViewModel()
 ) {
-    val profiles by viewModel.filteredProfiles.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
-    val active by viewModel.activeProfile.collectAsState()
-    val isConnected by viewModel.isConnected.collectAsState()
-    val message by viewModel.message.collectAsState()
-    val exportPayload by viewModel.exportPayload.collectAsState()
+    val profiles by viewModel.filteredProfiles.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val active by viewModel.activeProfile.collectAsStateWithLifecycle()
+    val isConnected by viewModel.isConnected.collectAsStateWithLifecycle()
+    val message by viewModel.message.collectAsStateWithLifecycle()
+    val exportPayload by viewModel.exportPayload.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
     val snackbar = remember { SnackbarHostState() }
@@ -229,6 +232,28 @@ fun LayoutsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
+            }
+            // R1, R2, R3 — Quick-create template chips (Blank, Gamepad Template, PC Combo)
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    AssistChip(
+                        onClick = { viewModel.createNew { newId -> onEdit(newId) } },
+                        label = { Text("＋ Blank Layout") }
+                    )
+                    AssistChip(
+                        onClick = { viewModel.createFromTemplate("gamepad") { newId -> onEdit(newId) } },
+                        label = { Text("🎮 + Gamepad Template") }
+                    )
+                    AssistChip(
+                        onClick = { viewModel.createFromTemplate("combo") { newId -> onEdit(newId) } },
+                        label = { Text("⚡ + PC Combo") }
+                    )
+                }
             }
             // SECTION 2 — search/filter across name, category and notes.
             item {

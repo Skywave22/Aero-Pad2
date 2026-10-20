@@ -17,7 +17,7 @@ import androidx.room.RoomDatabase
         GamepadProfileEntity::class
     ],
     version = 3,
-    exportSchema = false
+    exportSchema = true
 )
 abstract class AeroPadDatabase : RoomDatabase() {
     abstract fun layoutProfileDao(): LayoutProfileDao

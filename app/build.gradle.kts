@@ -10,14 +10,14 @@ plugins {
 
 android {
     namespace = "com.aeropad.remote"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.aeropad.remote"
         minSdk = 29          // Android 10+ (BluetoothHidDevice API requires 28; 29 confirmed by product decision)
-        targetSdk = 34
-        versionCode = 340
-        versionName = "3.4.0"
+        targetSdk = 35
+        versionCode = 350
+        versionName = "3.5.0"
 
         testInstrumentationRunner = "com.aeropad.remote.HiltTestRunner"
         vectorDrawables { useSupportLibrary = true }
@@ -93,6 +93,11 @@ android {
     packaging {
         resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" }
     }
+}
+
+// L5 — export Room schemas into app/schemas for migration verification.
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 // Keep unit-test JVMs small so builds work on constrained runners too.

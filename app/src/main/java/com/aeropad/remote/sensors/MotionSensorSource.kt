@@ -9,6 +9,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -29,10 +30,22 @@ data class GyroSample(val x: Float, val y: Float, val z: Float, val timestampNs:
 
 @Singleton
 class MotionSensorSource @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val settingsStore: com.aeropad.remote.domain.SettingsStore
 ) {
     private val sensorManager: SensorManager? =
         context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
+
+    @Volatile
+    private var currentSamplingUs: Int = SensorManager.SENSOR_DELAY_GAME
+
+    init {
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default).launch {
+            settingsStore.appSettings.collect { app ->
+                currentSamplingUs = com.aeropad.remote.model.PowerProfile.fromName(app.powerProfile).sensorSamplingUs
+            }
+        }
+    }
 
     /** True when this device has a gyroscope at all. */
     val hasGyroscope: Boolean
@@ -165,7 +178,7 @@ class MotionSensorSource @Inject constructor(
         awaitClose { runCatching { manager.unregisterListener(listener) } }
     }
 
-    /** Gyro stream at game rate (~50Hz). Empty flow when unsupported. */
+    /** Gyro stream at power-profile rate. Empty flow when unsupported. */
     fun gyro(): Flow<GyroSample> = callbackFlow {
         val manager = sensorManager
         val sensor = manager?.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
@@ -181,7 +194,7 @@ class MotionSensorSource @Inject constructor(
             override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
         }
         val ok = runCatching {
-            manager.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_GAME)
+            manager.registerListener(listener, sensor, currentSamplingUs)
         }.getOrDefault(false)
         if (!ok) { close(); return@callbackFlow }
         Timber.i("gyro listener registered")

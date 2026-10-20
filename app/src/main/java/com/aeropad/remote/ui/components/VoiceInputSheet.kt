@@ -25,7 +25,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,19 +55,19 @@ fun VoiceInputSheet(
     viewModel: VoiceInputViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-    val state by viewModel.voice.state.collectAsState()
-    val partial by viewModel.voice.partial.collectAsState()
-    val rms by viewModel.voice.rmsDb.collectAsState()
-    val error by viewModel.voice.error.collectAsState()
-    val pending by viewModel.pendingText.collectAsState()
-    val lastSent by viewModel.lastSent.collectAsState()
-    val isConnected by viewModel.isConnected.collectAsState()
-    val language by viewModel.language.collectAsState()
-    val continuous by viewModel.continuous.collectAsState()
-    val preferOffline by viewModel.preferOffline.collectAsState()
-    val confirm by viewModel.confirmBeforeSend.collectAsState()
-    val commands by viewModel.commandsEnabled.collectAsState()
-    val punctuation by viewModel.manualPunctuation.collectAsState()
+    val state by viewModel.voice.state.collectAsStateWithLifecycle()
+    val partial by viewModel.voice.partial.collectAsStateWithLifecycle()
+    val rms by viewModel.voice.rmsDb.collectAsStateWithLifecycle()
+    val error by viewModel.voice.error.collectAsStateWithLifecycle()
+    val pending by viewModel.pendingText.collectAsStateWithLifecycle()
+    val lastSent by viewModel.lastSent.collectAsStateWithLifecycle()
+    val isConnected by viewModel.isConnected.collectAsStateWithLifecycle()
+    val language by viewModel.language.collectAsStateWithLifecycle()
+    val continuous by viewModel.continuous.collectAsStateWithLifecycle()
+    val preferOffline by viewModel.preferOffline.collectAsStateWithLifecycle()
+    val confirm by viewModel.confirmBeforeSend.collectAsStateWithLifecycle()
+    val commands by viewModel.commandsEnabled.collectAsStateWithLifecycle()
+    val punctuation by viewModel.manualPunctuation.collectAsStateWithLifecycle()
 
     var showRationale by remember { mutableStateOf(false) }
     var permissionDenied by remember { mutableStateOf(false) }

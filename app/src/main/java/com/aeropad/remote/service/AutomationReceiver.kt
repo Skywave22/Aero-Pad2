@@ -38,15 +38,20 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class AutomationReceiver : BroadcastReceiver() {
 
+    companion object {
+        // L4 fix: single shared scope across receiver invocations instead of
+        // leaking a new SupervisorJob on every broadcast.
+        private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    }
+
     @Inject lateinit var settings: SettingsStore
     @Inject lateinit var macros: MacroRepository
     @Inject lateinit var engine: MacroEngine
     @Inject lateinit var hid: HidController
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != AutomationCommands.ACTION) return
+        val token = intent.getStringExtra(AutomationCommands.EXTRA_TOKEN)
         val command = AutomationCommands.parse(
             cmd = intent.getStringExtra(AutomationCommands.EXTRA_CMD),
             name = intent.getStringExtra(AutomationCommands.EXTRA_NAME),
@@ -62,11 +67,14 @@ class AutomationReceiver : BroadcastReceiver() {
         val pending = goAsync()
         scope.launch {
             try {
-                val enabled = runCatching {
-                    settings.appSettings.first().automationApi
-                }.getOrDefault(false)
-                if (!enabled) {
+                val app = runCatching { settings.appSettings.first() }.getOrNull()
+                if (app == null || !app.automationApi) {
                     Timber.w("automation: API disabled in Settings — dropped")
+                    return@launch
+                }
+                // H2 fix: require matching non-blank secret token in broadcast extras.
+                if (!AutomationCommands.verifyToken(app.automationToken, token)) {
+                    Timber.w("automation: invalid or missing secret token — dropped")
                     return@launch
                 }
                 when (command) {

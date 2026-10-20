@@ -1,7 +1,9 @@
 package com.aeropad.remote.ui.screens.editor
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -42,7 +44,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -71,26 +73,29 @@ import com.aeropad.remote.viewmodel.LayoutEditorViewModel
  *  - palette row adds new widgets; style sheet edits selected widget
  * Preview mode: identical rendering, live HID behavior via WidgetInteractor.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun LayoutEditorScreen(
     onBack: () -> Unit,
     viewModel: LayoutEditorViewModel = hiltViewModel()
 ) {
-    val layout by viewModel.layout.collectAsState()
-    val selectedId by viewModel.selectedId.collectAsState()
-    val previewMode by viewModel.previewMode.collectAsState()
-    val dirty by viewModel.dirty.collectAsState()
-    val canUndo by viewModel.canUndo.collectAsState()
-    val canRedo by viewModel.canRedo.collectAsState()
-    val hasClipboard by viewModel.hasClipboard.collectAsState()
-    val multiSelection by viewModel.multiSelection.collectAsState()
-    val showGrid by viewModel.showGrid.collectAsState()
+    val layout by viewModel.layout.collectAsStateWithLifecycle()
+    val selectedId by viewModel.selectedId.collectAsStateWithLifecycle()
+    val previewMode by viewModel.previewMode.collectAsStateWithLifecycle()
+    val dirty by viewModel.dirty.collectAsStateWithLifecycle()
+    val canUndo by viewModel.canUndo.collectAsStateWithLifecycle()
+    val canRedo by viewModel.canRedo.collectAsStateWithLifecycle()
+    val undoHistory by viewModel.undoHistory.collectAsStateWithLifecycle()
+    val hasClipboard by viewModel.hasClipboard.collectAsStateWithLifecycle()
+    val multiSelection by viewModel.multiSelection.collectAsStateWithLifecycle()
+    val showGrid by viewModel.showGrid.collectAsStateWithLifecycle()
 
     var showStyleSheet by remember { mutableStateOf(false) }
     // SECTION 2 — profile metadata dialog (name / category / notes).
     var showMetaDialog by remember { mutableStateOf(false) }
-    val snapToGrid by viewModel.snapToGrid.collectAsState()
+    // P9.4 — long-press on undo button shows undo history list.
+    var showUndoHistory by remember { mutableStateOf(false) }
+    val snapToGrid by viewModel.snapToGrid.collectAsStateWithLifecycle()
 
     Scaffold(
         containerColor = androidx.compose.ui.graphics.Color.Transparent,
@@ -103,8 +108,23 @@ fun LayoutEditorScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.undo() }, enabled = canUndo && !previewMode) {
-                        Icon(Icons.AutoMirrored.Rounded.Undo, contentDescription = "Undo")
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .combinedClickable(
+                                enabled = canUndo && !previewMode,
+                                onClick = { viewModel.undo() },
+                                onLongClickLabel = "Show undo history",
+                                onLongClick = { if (undoHistory.isNotEmpty()) showUndoHistory = true }
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Rounded.Undo,
+                            contentDescription = "Undo (long-press for history)",
+                            tint = if (canUndo && !previewMode) LocalContentColor.current
+                            else LocalContentColor.current.copy(alpha = 0.38f)
+                        )
                     }
                     // SECTION 2 — redo
                     IconButton(onClick = { viewModel.redo() }, enabled = canRedo && !previewMode) {
@@ -160,6 +180,19 @@ fun LayoutEditorScreen(
                         paletteEntries.forEach { (label, type) ->
                             AssistChip(onClick = { viewModel.addWidget(type) }, label = { Text(label) })
                         }
+                        Text(
+                            "Templates:",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        AssistChip(
+                            onClick = { viewModel.applyTemplate("gamepad") },
+                            label = { Text("🎮 Gamepad") }
+                        )
+                        AssistChip(
+                            onClick = { viewModel.applyTemplate("pc_combo") },
+                            label = { Text("💻 PC Combo") }
+                        )
                         Text(
                             "Zones:",
                             style = MaterialTheme.typography.bodyMedium,
@@ -369,6 +402,42 @@ fun LayoutEditorScreen(
             }
         )
     }
+
+    // P9.4 — Undo history dialog opened on long-press of the Undo button.
+    if (showUndoHistory) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showUndoHistory = false },
+            title = { Text("Undo history") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    if (undoHistory.isEmpty()) {
+                        Text("No undo steps recorded yet.")
+                    } else {
+                        Text(
+                            "Tap a step to revert back to that snapshot:",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        undoHistory.forEachIndexed { idx, entry ->
+                            androidx.compose.material3.TextButton(
+                                onClick = {
+                                    viewModel.revertUndoSteps(idx + 1)
+                                    showUndoHistory = false
+                                }
+                            ) {
+                                Text(entry)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = { showUndoHistory = false }) {
+                    Text("Close")
+                }
+            }
+        )
+    }
 }
 
 private val paletteEntries = listOf(
@@ -394,7 +463,7 @@ private fun EditorCanvas(
     showGrid: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    val layout by viewModel.layout.collectAsState()
+    val layout by viewModel.layout.collectAsStateWithLifecycle()
 
     // Round 6 — smooth editing: drags/resizes track 1:1 from the frame
     // captured at gesture start, so sub-grid movement is never lost and

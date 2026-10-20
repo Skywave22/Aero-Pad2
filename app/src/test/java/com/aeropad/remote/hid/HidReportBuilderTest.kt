@@ -143,4 +143,14 @@ class HidReportBuilderTest {
         assertEquals(0xFF.toByte(), r[3])          // y clamped → 32767 (lo)
         assertEquals(0x7F.toByte(), r[4])          //                    (hi)
     }
+
+    @Test
+    fun `MouseButtonTracker preserves held buttons across moves and selective release`() {
+        val tracker = MouseButtonTracker()
+        assertEquals(0, tracker.currentMask())
+        assertEquals(1, tracker.down(1))
+        assertEquals(3, tracker.down(2))
+        assertEquals(1, tracker.up(2))
+        assertEquals(0, tracker.clear())
+    }
 }

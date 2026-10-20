@@ -1,0 +1,50 @@
+<resources>
+    <string name="app_tagline">بلوٹوتھ کی بورڈ، ماؤس اور گیم پیڈ</string>
+
+    <!-- Foreground service notification -->
+    <string name="notif_channel_name">ایرو پیڈ کنکشن</string>
+    <string name="notif_channel_desc">پس منظر میں بلوٹوتھ HID کنٹرولر کو فعال رکھتا ہے۔</string>
+    <string name="notif_title">ایرو پیڈ فعال ہے</string>
+    <string name="notif_text_idle">آپ کے پی سی کو کنٹرول کرنے کے لیے تیار ہے</string>
+    <string name="notif_action_stop">منقطع کریں</string>
+
+    <!-- App shortcuts -->
+    <string name="shortcut_mouse_short">ماؤس</string>
+    <string name="shortcut_mouse_long">ٹریک پیڈ اور ماؤس کھولیں</string>
+    <string name="shortcut_keyboard_short">کی بورڈ</string>
+    <string name="shortcut_keyboard_long">پی سی کی بورڈ کھولیں</string>
+    <string name="shortcut_gamepad_short">گیم پیڈ</string>
+    <string name="shortcut_gamepad_long">گیم پیڈ کھولیں</string>
+
+    <!-- Navigation & Home -->
+    <string name="nav_home">ہوم</string>
+    <string name="nav_layouts">لے آؤٹس</string>
+    <string name="nav_devices">آلات</string>
+    <string name="nav_settings">ترتیبات</string>
+    <string name="action_connect_device">ڈیوائس سے جڑیں</string>
+    <string name="action_manage_connection">کنکشن کا انتظام کریں</string>
+    <string name="action_customize">حسب ضرورت بنائیں</string>
+    <string name="action_troubleshoot">مسئلہ حل کریں</string>
+    <string name="action_copy_diagnostics">تشخیصی رپورٹ کاپی کریں</string>
+    <string name="action_undo">واپس کریں</string>
+
+    <!-- Core Tiles & Screens -->
+    <string name="tile_mouse">ماؤس</string>
+    <string name="tile_keyboard">کی بورڈ</string>
+    <string name="tile_full_keyboard">مکمل کی بورڈ</string>
+    <string name="tile_gamepad">گیم پیڈ</string>
+    <string name="tile_multimedia">ملٹی میڈیا</string>
+    <string name="tile_presenter">پریزینٹر</string>
+    <string name="tile_android">اینڈرائیڈ</string>
+    <string name="tile_text_clips">متن اور کلپس</string>
+    <string name="tile_layouts">لے آؤٹس</string>
+    <string name="tile_macros">میکروز</string>
+    <string name="tile_settings">ترتیبات</string>
+    <string name="tile_help">مدد</string>
+
+    <!-- Settings Groups -->
+    <string name="settings_appearance">ظاہری شکل</string>
+    <string name="settings_mouse_trackpad">ماؤس اور ٹریک پیڈ</string>
+    <string name="settings_connection_power">کنکشن اور پاور</string>
+    <string name="settings_advanced_automation">ایڈوانسڈ اور آٹومیشن</string>
+</resources>

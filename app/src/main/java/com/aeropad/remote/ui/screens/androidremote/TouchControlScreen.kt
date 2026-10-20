@@ -24,7 +24,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,9 +61,9 @@ fun TouchControlScreen(
     onBack: () -> Unit,
     viewModel: RemoteControlViewModel = hiltViewModel()
 ) {
-    val isConnected by viewModel.isConnected.collectAsState()
-    val vibration by viewModel.vibrationsEnabled.collectAsState()
-    val extended by viewModel.extendedReports.collectAsState()
+    val isConnected by viewModel.isConnected.collectAsStateWithLifecycle()
+    val vibration by viewModel.vibrationsEnabled.collectAsStateWithLifecycle()
+    val extended by viewModel.extendedReports.collectAsStateWithLifecycle()
     val haptic = rememberHaptic(vibration)
 
     var areaSize by remember { mutableStateOf(IntSize.Zero) }
