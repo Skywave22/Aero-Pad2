@@ -9,6 +9,10 @@
     <string name="notif_action_stop">قطع الاتصال</string>
 
     <!-- App shortcuts -->
+    <string name="shortcut_keyboard">لوحة المفاتيح</string>
+    <string name="shortcut_mouse">لوحة اللمس</string>
+    <string name="shortcut_gamepad">يد التحكم</string>
+    <string name="shortcut_media">الوسائط</string>
     <string name="shortcut_mouse_short">الماوس</string>
     <string name="shortcut_mouse_long">فتح لوحة اللمس والماوس</string>
     <string name="shortcut_keyboard_short">لوحة المفاتيح</string>

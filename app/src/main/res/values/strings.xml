@@ -10,6 +10,10 @@
     <string name="notif_action_stop">Disconnect</string>
 
     <!-- App shortcuts -->
+    <string name="shortcut_keyboard">Keyboard</string>
+    <string name="shortcut_mouse">Trackpad</string>
+    <string name="shortcut_gamepad">Gamepad</string>
+    <string name="shortcut_media">Media</string>
     <string name="shortcut_mouse_short">Mouse</string>
     <string name="shortcut_mouse_long">Open Trackpad &amp; Mouse</string>
     <string name="shortcut_keyboard_short">Keyboard</string>

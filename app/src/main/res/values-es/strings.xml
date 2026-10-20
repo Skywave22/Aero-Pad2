@@ -9,6 +9,10 @@
     <string name="notif_action_stop">Desconectar</string>
 
     <!-- App shortcuts -->
+    <string name="shortcut_keyboard">Teclado</string>
+    <string name="shortcut_mouse">Panel táctil</string>
+    <string name="shortcut_gamepad">Mando</string>
+    <string name="shortcut_media">Multimedia</string>
     <string name="shortcut_mouse_short">Ratón</string>
     <string name="shortcut_mouse_long">Abrir panel táctil y ratón</string>
     <string name="shortcut_keyboard_short">Teclado</string>

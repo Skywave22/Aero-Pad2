@@ -9,6 +9,10 @@
     <string name="notif_action_stop">डिस्कनेक्ट करें</string>
 
     <!-- App shortcuts -->
+    <string name="shortcut_keyboard">कीबोर्ड</string>
+    <string name="shortcut_mouse">ट्रैकपैड</string>
+    <string name="shortcut_gamepad">गेमपैड</string>
+    <string name="shortcut_media">मीडिया</string>
     <string name="shortcut_mouse_short">माउस</string>
     <string name="shortcut_mouse_long">ट्रैकपैड और माउस खोलें</string>
     <string name="shortcut_keyboard_short">कीबोर्ड</string>

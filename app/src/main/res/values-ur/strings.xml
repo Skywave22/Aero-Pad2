@@ -9,6 +9,10 @@
     <string name="notif_action_stop">منقطع کریں</string>
 
     <!-- App shortcuts -->
+    <string name="shortcut_keyboard">کی بورڈ</string>
+    <string name="shortcut_mouse">ٹریک پیڈ</string>
+    <string name="shortcut_gamepad">گیم پیڈ</string>
+    <string name="shortcut_media">میڈیا</string>
     <string name="shortcut_mouse_short">ماؤس</string>
     <string name="shortcut_mouse_long">ٹریک پیڈ اور ماؤس کھولیں</string>
     <string name="shortcut_keyboard_short">کی بورڈ</string>
