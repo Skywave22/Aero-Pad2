@@ -144,23 +144,27 @@ jobs:
           disable-animations: true
           script: |
             set -x
-            # Run the screenshot tour on its own: the HomeScreenUiTest cases
-            # need Compose idleness, which this live-HID app never reaches.
             mkdir -p ui-screenshots
-            ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.aeropad.remote.ScreenshotTourTest --stacktrace 2>&1 | tee /tmp/test.log || true
-            echo "---- instrumentation result ----"
-            grep -E "Starting [0-9]+ tests|tests on|FAILED|OK \\(" /tmp/test.log | tail -20 || true
-            echo "---- what did the test write? ----"
+            # Build + install by hand instead of using connectedAndroidTest:
+            # the Gradle task UNINSTALLS the app afterwards, which destroys the
+            # screenshots in app-private storage before they can be pulled.
+            ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace
+            adb install -r -t app/build/outputs/apk/debug/app-debug.apk
+            adb install -r -t app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+            # Only the screenshot tour: HomeScreenUiTest needs Compose idleness,
+            # which this live-HID app never reaches.
+            adb shell am instrument -w \
+              -e class com.aeropad.remote.ScreenshotTourTest \
+              com.aeropad.remote.test/com.aeropad.remote.HiltTestRunner | tee /tmp/inst.log || true
+            grep -E "OK \\(|FAILURES|Tests run" /tmp/inst.log | tail -5 || true
+            echo "---- files written by the test ----"
             adb shell run-as com.aeropad.remote ls -la files/tour || true
-            echo "---- extract via exec-out tar ----"
             adb exec-out run-as com.aeropad.remote tar cf - files/tour > /tmp/tour.tar || true
-            ls -l /tmp/tour.tar || true
             tar xf /tmp/tour.tar -C ui-screenshots && echo "tar extracted"
             find ui-screenshots -name '*.png' -exec mv {} ui-screenshots/ \; || true
-            echo "---- fallback screencap ----"
             adb shell screencap -p /sdcard/fallback-home.png || true
             adb pull /sdcard/fallback-home.png ui-screenshots/ || true
-            ls -la ui-screenshots || true
+            ls -la ui-screenshots
 
       - name: Upload UI screenshots
         if: always()
