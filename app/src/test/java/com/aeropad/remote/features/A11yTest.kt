@@ -89,7 +89,7 @@ class A11yTest {
         val btn = com.aeropad.remote.model.widgets.WidgetSpec(
             id = "w1",
             type = com.aeropad.remote.model.widgets.WidgetType.BUTTON,
-            label = "Mute Mic",
+            style = com.aeropad.remote.model.widgets.WidgetStyle(label = "Mute Mic"),
             frame = WidgetFrame(0.1f, 0.1f, 0.2f, 0.2f)
         )
         assertEquals("Mute Mic button", A11y.describeWidget(btn))

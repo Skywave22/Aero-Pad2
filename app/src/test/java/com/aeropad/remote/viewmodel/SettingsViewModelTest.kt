@@ -134,7 +134,7 @@ class SettingsViewModelTest {
         advanceUntilIdle()
         assertEquals(28, store.keyboard.value.keyTapDelayMs)
         assertEquals(com.aeropad.remote.model.PowerProfile.BATTERY_SAVER, store.app.value.powerProfile)
-        assertEquals(24, tok.length)
+        assertEquals(16, tok.length)
         assertEquals(tok, store.app.value.automationToken)
     }
 }

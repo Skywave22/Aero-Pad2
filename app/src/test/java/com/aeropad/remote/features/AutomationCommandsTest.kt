@@ -66,10 +66,10 @@ class AutomationCommandsTest {
     @Test
     fun `automation token generation and verification prevents unauthorized broadcasts`() {
         val token = AutomationCommands.generateToken()
-        assertEquals(24, token.length)
-        assertEquals(true, AutomationCommands.verifyToken(expected = token, provided = token))
-        assertEquals(false, AutomationCommands.verifyToken(expected = token, provided = "wrong"))
-        assertEquals(false, AutomationCommands.verifyToken(expected = token, provided = null))
-        assertEquals(false, AutomationCommands.verifyToken(expected = "", provided = token))
+        assertEquals(16, token.length)
+        assertEquals(true, AutomationCommands.verifyToken(expected = token, actual = token))
+        assertEquals(false, AutomationCommands.verifyToken(expected = token, actual = "wrong"))
+        assertEquals(false, AutomationCommands.verifyToken(expected = token, actual = null))
+        assertEquals(false, AutomationCommands.verifyToken(expected = "", actual = token))
     }
 }

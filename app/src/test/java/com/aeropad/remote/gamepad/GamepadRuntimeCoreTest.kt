@@ -195,12 +195,11 @@ class GamepadRuntimeCoreTest {
     }
 
     @Test
-    fun `fallbackStickKeyFor resolves dominant WASD and arrow keys`() {
-        assertEquals(null, com.aeropad.remote.viewmodel.RemoteControlViewModel.fallbackStickKeyFor(true, 0.1f, 0.1f))
-        assertEquals(com.aeropad.remote.model.HidKeys.W, com.aeropad.remote.viewmodel.RemoteControlViewModel.fallbackStickKeyFor(true, 0.1f, -0.8f))
-        assertEquals(com.aeropad.remote.model.HidKeys.S, com.aeropad.remote.viewmodel.RemoteControlViewModel.fallbackStickKeyFor(true, 0.1f, 0.8f))
-        assertEquals(com.aeropad.remote.model.HidKeys.A, com.aeropad.remote.viewmodel.RemoteControlViewModel.fallbackStickKeyFor(true, -0.8f, 0.1f))
-        assertEquals(com.aeropad.remote.model.HidKeys.D, com.aeropad.remote.viewmodel.RemoteControlViewModel.fallbackStickKeyFor(true, 0.8f, 0.1f))
-        assertEquals(com.aeropad.remote.model.HidKeys.ARROW_UP, com.aeropad.remote.viewmodel.RemoteControlViewModel.fallbackStickKeyFor(false, 0.1f, -0.8f))
+    fun `fallbackStickKeyFor resolves dominant WASD keys`() {
+        assertEquals(null, com.aeropad.remote.viewmodel.RemoteControlViewModel.fallbackStickKeyFor(0.1f, 0.1f))
+        assertEquals(com.aeropad.remote.model.HidKeys.W, com.aeropad.remote.viewmodel.RemoteControlViewModel.fallbackStickKeyFor(0.1f, -0.8f))
+        assertEquals(com.aeropad.remote.model.HidKeys.S, com.aeropad.remote.viewmodel.RemoteControlViewModel.fallbackStickKeyFor(0.1f, 0.8f))
+        assertEquals(com.aeropad.remote.model.HidKeys.A, com.aeropad.remote.viewmodel.RemoteControlViewModel.fallbackStickKeyFor(-0.8f, 0.1f))
+        assertEquals(com.aeropad.remote.model.HidKeys.D, com.aeropad.remote.viewmodel.RemoteControlViewModel.fallbackStickKeyFor(0.8f, 0.1f))
     }
 }

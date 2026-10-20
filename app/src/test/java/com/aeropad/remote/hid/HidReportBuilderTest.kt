@@ -147,10 +147,11 @@ class HidReportBuilderTest {
     @Test
     fun `MouseButtonTracker preserves held buttons across moves and selective release`() {
         val tracker = MouseButtonTracker()
-        assertEquals(0, tracker.currentMask())
-        assertEquals(1, tracker.down(1))
-        assertEquals(3, tracker.down(2))
-        assertEquals(1, tracker.up(2))
-        assertEquals(0, tracker.clear())
+        assertEquals(0.toByte(), tracker.currentByte)
+        assertEquals(1.toByte(), tracker.onDown(MouseButton.LEFT))
+        assertEquals(3.toByte(), tracker.onDown(MouseButton.RIGHT))
+        assertEquals(1.toByte(), tracker.onUp(MouseButton.RIGHT))
+        tracker.clear()
+        assertEquals(0.toByte(), tracker.currentByte)
     }
 }
