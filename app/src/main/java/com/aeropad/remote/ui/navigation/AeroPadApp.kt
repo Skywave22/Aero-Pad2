@@ -375,8 +375,14 @@ fun AeroPadApp(
     ) {
         recentControlRoutes.firstOrNull { it != currentRoute }
     } else null
-    val showHealth = currentRoute != Routes.CONNECTION_HEALTH
-    if (showHealth || previousControlRoute != null) {
+    // UI fix — both overlays are only useful while actually controlling a
+    // host, and the "Not connected" banner every control screen shows sits in
+    // exactly this corner. Gating on the connection state means the pill can
+    // never cover that banner, which is what the emulator screenshots showed.
+    val isLive = connState is HidConnectionState.Connected
+    val showQuickSwitch = previousControlRoute != null && isLive
+    val showHealth = isLive && currentRoute != Routes.CONNECTION_HEALTH
+    if (showHealth || showQuickSwitch) {
         androidx.compose.foundation.layout.Column(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -385,7 +391,7 @@ fun AeroPadApp(
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)
         ) {
             // A10 — Quick-Switch pill between the last two control screens.
-            if (previousControlRoute != null) {
+            if (showQuickSwitch && previousControlRoute != null) {
                 val label = controlScreenLabels[previousControlRoute] ?: previousControlRoute
                 AssistChip(
                     onClick = {
