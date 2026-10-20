@@ -146,9 +146,17 @@ jobs:
             set -x
             # Run the screenshot tour on its own: the HomeScreenUiTest cases
             # need Compose idleness, which this live-HID app never reaches.
-            ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.aeropad.remote.ScreenshotTourTest --stacktrace || true
-            adb pull /sdcard/Android/data/com.aeropad.remote/files/Pictures/tour ./ui-screenshots || true
-            ls -la ./ui-screenshots || true
+            mkdir -p ui-screenshots
+            ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.aeropad.remote.ScreenshotTourTest --stacktrace 2>&1 | tee /tmp/test.log || true
+            echo "---- instrumentation result ----"
+            grep -E "Starting|tests on|FAILED|OK \(" /tmp/test.log | tail -20 || true
+            echo "---- screencap fallback ----"
+            adb shell screencap -p /sdcard/fallback-home.png || true
+            adb pull /sdcard/fallback-home.png ui-screenshots/ 2>/dev/null || true
+            # Pull the tour images out of app-private storage via run-as + tar.
+            ( cd ui-screenshots && adb exec-out run-as com.aeropad.remote tar cf - files/tour 2>/dev/null | tar xf - 2>/dev/null ) || true
+            find ui-screenshots -name '*.png' -exec mv {} ui-screenshots/ \; 2>/dev/null || true
+            ls -la ui-screenshots || true
 
       - name: Upload UI screenshots
         if: always()
@@ -156,3 +164,12 @@ jobs:
         with:
           name: ui-screenshots
           path: ui-screenshots
+
+      - name: Upload instrumented test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: instrumented-report
+          path: |
+            app/build/reports/androidTests
+            app/build/outputs/androidTest-results

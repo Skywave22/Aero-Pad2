@@ -1,6 +1,5 @@
 package com.aeropad.remote
 
-import android.os.Environment
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -45,9 +44,13 @@ class ScreenshotTourTest {
         hiltRule.inject()
         device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         val ctx = InstrumentationRegistry.getInstrumentation().targetContext
-        outDir = File(ctx.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "tour")
+        // Internal files dir: /sdcard/Android/data is unreadable by `adb pull`
+        // on API 30+, so the CI workflow pulls these with `run-as` + tar.
+        outDir = File(ctx.filesDir, "tour")
+        outDir.mkdirs()
         outDir.mkdirs()
         outDir.listFiles()?.forEach { it.delete() }
+        android.util.Log.i("ScreenshotTour", "output dir = ${outDir.absolutePath}")
         scenario = ActivityScenario.launch(MainActivity::class.java)
         device.waitForIdle()
         Thread.sleep(1200)
