@@ -146,17 +146,15 @@ jobs:
             set -x
             mkdir -p ui-screenshots
             # Build + install by hand instead of using connectedAndroidTest:
-            # the Gradle task UNINSTALLS the app afterwards, which destroys the
+            # that Gradle task uninstalls the app afterwards, which destroys the
             # screenshots in app-private storage before they can be pulled.
             ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace
             adb install -r -t app/build/outputs/apk/debug/app-debug.apk
             adb install -r -t app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
             # Only the screenshot tour: HomeScreenUiTest needs Compose idleness,
             # which this live-HID app never reaches.
-            adb shell am instrument -w \
-              -e class com.aeropad.remote.ScreenshotTourTest \
-              com.aeropad.remote.test/com.aeropad.remote.HiltTestRunner | tee /tmp/inst.log || true
-            grep -E "OK \\(|FAILURES|Tests run" /tmp/inst.log | tail -5 || true
+            adb shell am instrument -w -e class com.aeropad.remote.ScreenshotTourTest com.aeropad.remote.test/com.aeropad.remote.HiltTestRunner | tee /tmp/inst.log || true
+            grep -E "OK|FAILURES|Tests run" /tmp/inst.log | tail -5 || true
             echo "---- files written by the test ----"
             adb shell run-as com.aeropad.remote ls -la files/tour || true
             adb exec-out run-as com.aeropad.remote tar cf - files/tour > /tmp/tour.tar || true
