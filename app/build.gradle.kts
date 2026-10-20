@@ -16,8 +16,8 @@ android {
         applicationId = "com.aeropad.remote"
         minSdk = 29          // Android 10+ (BluetoothHidDevice API requires 28; 29 confirmed by product decision)
         targetSdk = 35
-        versionCode = 350
-        versionName = "3.5.0"
+        versionCode = 360
+        versionName = "3.6.0"
 
         testInstrumentationRunner = "com.aeropad.remote.HiltTestRunner"
         vectorDrawables { useSupportLibrary = true }
@@ -149,6 +149,8 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.arch.core.testing)
+    // Regression test: instantiate ViewModels with an Android Context on the JVM.
+    testImplementation(libs.mockito.core)
     // V2 PART C — reflection-verified property catalog (test-only; the
     // app itself never ships kotlin-reflect).
     testImplementation("org.jetbrains.kotlin:kotlin-reflect:1.9.22")

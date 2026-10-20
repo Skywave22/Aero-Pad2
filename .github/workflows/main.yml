@@ -1,6 +1,11 @@
-# AeroPad CI — V2 PART A: cached, size-tracked, lint-gated.
-# PASTE THIS ENTIRE FILE into .github/workflows/main.yml on GitHub
-# (web UI: open main.yml → pencil icon → select all → paste → commit).
+# AeroPad CI — build, test, lint, and publish a signed APK.
+#
+# Jobs:
+#   build        unit tests -> lint -> release APK -> GitHub Release
+#   instrumented Compose UI test on an emulator (non-blocking: emulator
+#                flakiness must never block a shippable APK)
+#
+# Download the APK from the run summary ("artifacts") or the Releases page.
 name: Build AeroPad
 
 on:
@@ -12,10 +17,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write   # publish the signed APK to GitHub Releases
-    # FIX 2: repo gradle.properties uses low-memory JVM args (853MB heap /
-    # 320MB metaspace — sandbox-tuned). Lint runs out of Metaspace with
-    # those. GitHub runners have 7GB, so override here (env var beats
-    # gradle.properties). Local builds keep the low-memory settings.
+    # gradle.properties is tuned for a 2GB RAM machine (1280MB heap /
+    # 320MB metaspace), which is not enough for Lint. Runners have 7GB, so
+    # override the JVM args here; local builds keep the low-memory settings.
     env:
       GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx3g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
     steps:
@@ -38,6 +42,15 @@ jobs:
 
       - name: Unit tests
         run: ./gradlew testDebugUnitTest --stacktrace
+
+      # Fail fast on the class of bug that shipped in v3.5.0: a ViewModel
+      # that throws from its constructor crashed every control screen.
+      - name: Upload unit-test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-report
+          path: app/build/reports/tests/testDebugUnitTest
 
       # V2 A6 — lint gate: serious issues fail the build.
       - name: Lint (fatal on error)
@@ -94,3 +107,39 @@ jobs:
           name: AeroPad v${{ env.VERSION }}
           generate_release_notes: true
           files: app/build/outputs/apk/release/*.apk
+
+  # M8 — the Compose UI test existed but never ran anywhere. It needs an
+  # emulator, which is slow and occasionally flaky, so this job is allowed
+  # to fail without blocking the APK in the `build` job.
+  instrumented:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Gradle (with caching)
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Compose UI test on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          disable-animations: true
+          script: ./gradlew connectedDebugAndroidTest --stacktrace

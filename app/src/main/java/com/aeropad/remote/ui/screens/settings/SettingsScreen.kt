@@ -82,7 +82,6 @@ import com.aeropad.remote.viewmodel.SettingsViewModel
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
-    onOpen3DPreview: () -> Unit = {},
     onOpenHealth: (() -> Unit)? = null,
     onReplayTutorial: (() -> Unit)? = null,
     viewModel: SettingsViewModel = hiltViewModel()

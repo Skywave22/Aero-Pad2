@@ -49,17 +49,20 @@ class RemoteControlViewModel @Inject constructor(
         .map { it.isConnected }
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
-    init {
-        viewModelScope.launch {
-            isConnected.collect { connected ->
-                if (!connected) {
-                    _dragLock.value = false
-                    _scrollMode.value = false
-                    lastFallbackStickKey = null
-                }
-            }
-        }
-    }
+    // CRASH FIX (v3.6.0): the safety `init` block used to live HERE, above the
+    // `_dragLock` / `_scrollMode` / `lastFallbackStickKey` declarations below.
+    //
+    // Kotlin runs property initializers and `init` blocks strictly in source
+    // order, and `viewModelScope` uses Dispatchers.Main.immediate, so the
+    // `launch { }` executed INLINE during construction. `isConnected` is a
+    // StateFlow whose initial value is `false`, so `collect` emitted
+    // synchronously and the very first line dereferenced `_dragLock` while it
+    // was still null -> NullPointerException in the ViewModel constructor.
+    // Every screen backed by this ViewModel (Mouse, Keyboard, Numpad, Media,
+    // Presenter, Gamepad) therefore hard-crashed the moment it was opened.
+    //
+    // The block now lives at the END of the class (`resetInputStateWhenDisconnected`)
+    // so all state it touches is already initialised.
 
     val mouseSettings: StateFlow<MouseSettings> = settingsStore.mouseSettings
         .stateIn(viewModelScope, SharingStarted.Eagerly, MouseSettings())
@@ -243,15 +246,26 @@ class RemoteControlViewModel @Inject constructor(
                 }
             }
             GamepadMappingMode.KEYBOARD_FALLBACK -> {
-                // H1 fix: only emit a key when the stick direction actually changes,
-                // instead of flooding 60-120 key presses per second.
+                // H1 fix (v3.6.0) — hold the arrow key instead of tapping it.
+                //
+                // v3.4.0 flooded the PC with ~100 key taps per second (one per
+                // stick event). v3.5.0 over-corrected: it emitted ONE tap per
+                // direction change, so holding the stick moved the character a
+                // single step and then stopped.
+                //
+                // Correct behaviour: key DOWN when the direction becomes active,
+                // key RELEASE when it changes or the stick recentres — i.e. real
+                // press-and-hold, which is what a D-pad does.
                 if (!left) return
                 val (x, y) = PointerMath.applyDeadZone(rawX, rawY, gs.deadZone)
                 val nextKey = fallbackStickKeyFor(x, y)
                 if (nextKey != lastFallbackStickKey) {
+                    if (lastFallbackStickKey != null) {
+                        sendAction(HidAction.KeyRelease)
+                    }
                     lastFallbackStickKey = nextKey
                     if (nextKey != null) {
-                        keyTap(nextKey)
+                        sendAction(HidAction.KeyDown(nextKey))
                     }
                 }
             }
@@ -322,9 +336,36 @@ class RemoteControlViewModel @Inject constructor(
     /** Center sticks + release everything (call when leaving the screen). */
     fun resetGamepad() {
         gamepadState = GamepadSnapshot()
-        lastFallbackStickKey = null
+        // H1 — never leave a fallback arrow key stuck down.
+        if (lastFallbackStickKey != null) {
+            sendAction(HidAction.KeyRelease)
+            lastFallbackStickKey = null
+        }
         if (gamepadSettings.value.mappingMode == GamepadMappingMode.HID_GAMEPAD) {
             sendAction(HidAction.GamepadUpdate(gamepadState))
+        }
+    }
+
+    /**
+     * CRASH FIX (v3.6.0) — safety reset, declared LAST on purpose.
+     *
+     * Runs as an `init` block, i.e. in source order during construction, so it
+     * MUST appear after every field it touches (`_dragLock`, `_scrollMode`,
+     * `lastFallbackStickKey`). Putting it above them made the constructor throw
+     * a NullPointerException and crashed every control screen on open.
+     *
+     * `viewModelScope` is Dispatchers.Main.immediate, so this body starts
+     * inline; by now all state exists, so reading it is safe.
+     */
+    init {
+        viewModelScope.launch {
+            isConnected.collect { connected ->
+                if (!connected) {
+                    _dragLock.value = false
+                    _scrollMode.value = false
+                    lastFallbackStickKey = null
+                }
+            }
         }
     }
 
