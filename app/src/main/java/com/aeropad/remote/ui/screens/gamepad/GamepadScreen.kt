@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -60,6 +61,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -214,9 +216,13 @@ fun GamepadScreen(
 
             // ---------- Bottom: menu buttons ----------
             Row(
+                // UI fix: was a fixed .height(48.dp) Row, which CLIPPED the
+                // Select/Home/Start labels once the user raised the system
+                // font size. heightIn(min=) keeps the touch target while
+                // letting the row grow with the text.
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp),
+                    .heightIn(min = 48.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 KeyCard("Select", Modifier.weight(1f)) { haptic(); scope.launch { pressAndRelease(viewModel, GamepadButton.SELECT) } }
@@ -339,7 +345,15 @@ private fun FaceButton(
         label = "faceBtnSink"
     )
     val base = tint ?: MaterialTheme.colorScheme.surfaceVariant
-    val labelColor = if (tint != null) Color.White else MaterialTheme.colorScheme.onSurface
+    // UI fix — the A/B/X/Y buttons are tinted with a FIXED brand colour, so the
+    // label must be chosen from that colour's luminance rather than assuming a
+    // dark theme. Hard-coding Color.White made the labels unreadable whenever
+    // the tint was light in Light mode.
+    val labelColor = if (tint != null) {
+        if (tint.luminance() > 0.5f) Color.Black else Color.White
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
     // Dome shading: light hits top-left.
     fun lighten(c: Color, f: Float) = Color(
         (c.red + (1 - c.red) * f), (c.green + (1 - c.green) * f), (c.blue + (1 - c.blue) * f), c.alpha

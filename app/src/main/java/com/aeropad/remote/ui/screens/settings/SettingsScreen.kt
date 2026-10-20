@@ -122,6 +122,11 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 16.dp)
+                // UI fix — reserve room for the floating dock. This screen is a
+                // top-level hub so the dock is always drawn over it, but there
+                // was no bottom padding, meaning the last settings rows were
+                // permanently unreachable behind it.
+                .padding(bottom = com.aeropad.remote.ui.components.DockMetrics.height + 16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
             OutlinedTextField(

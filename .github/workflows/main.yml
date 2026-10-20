@@ -142,4 +142,20 @@ jobs:
           api-level: 34
           arch: x86_64
           disable-animations: true
-          script: ./gradlew connectedDebugAndroidTest --stacktrace
+          script: |
+            set -x
+            # Run the screenshot tour on its own: the HomeScreenUiTest cases
+            # need Compose idleness, which this live-HID app never reaches.
+            ./gradlew connectedDebugAndroidTest \
+              -Pandroid.testInstrumentationRunnerArguments.class=com.aeropad.remote.ScreenshotTourTest \
+              --stacktrace || true
+            adb pull /sdcard/Android/data/com.aeropad.remote/files/Pictures/tour \
+              ./ui-screenshots || true
+            ls -la ./ui-screenshots || true
+
+      - name: Upload UI screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-screenshots
+          path: ui-screenshots

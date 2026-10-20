@@ -32,6 +32,17 @@ import androidx.compose.ui.unit.dp
  * Settings. One-handed friendly: thumb-reachable tabs, shown only on
  * top-level destinations so control surfaces keep the full screen.
  */
+/**
+ * UI fix — the floating dock is drawn OVER the screen content, so any screen
+ * that shows it must reserve at least this much bottom space. Before this,
+ * SettingsScreen had no bottom padding at all and its last rows could never be
+ * scrolled out from under the dock.
+ */
+object DockMetrics {
+    /** Vertical space the floating dock covers, including its shadow + nav bar. */
+    val height = 96.dp
+}
+
 data class DockItem(val route: String, val label: String, val icon: AppIcon)
 
 val DockItems = listOf(

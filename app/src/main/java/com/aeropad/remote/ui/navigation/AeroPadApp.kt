@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -206,6 +207,14 @@ fun AeroPadApp(
     NavHost(
         navController = navController,
         startDestination = startRoute,
+        // UI fix — keyboard (IME) insets. The activity runs edge-to-edge and no
+        // screen called imePadding(), so opening the on-screen keyboard covered
+        // the text field on all 11 screens that have one (Keyboard, Text & Clips,
+        // Settings search, Full Board, Macros, Layouts, Layout Editor, Gamepad
+        // Pro, Pad Builder, Voice sheet). Handling it once here — instead of in
+        // every screen — fixes them together, and also keeps the dock clear of
+        // the keyboard because the whole host shrinks with the IME.
+        modifier = Modifier.imePadding(),
         enterTransition = { if (reduceMotion) fadeIn(tween(120)) else flipIn },
         exitTransition = { if (reduceMotion) fadeOut(tween(120)) else flipOut },
         popEnterTransition = { if (reduceMotion) fadeIn(tween(120)) else flipPopIn },
@@ -329,6 +338,10 @@ fun AeroPadApp(
         }
     }
 
+    // UI fix — tell the current screen how much bottom space the floating dock
+    // is covering, so it can reserve room instead of hiding content behind it.
+    // SettingsScreen previously had NO bottom padding at all, so its final rows
+    // could never be scrolled clear of the dock.
     // Floating glass dock (top-level hubs only)
     if (currentRoute in dockRoutes) {
         GlassDock(
@@ -344,34 +357,54 @@ fun AeroPadApp(
         )
     }
 
-    // A10 — Quick-Switch floating pill between the last two visited control screens.
+    // ------------------------------------------------------------------
+    // Floating overlay stack (top-right).
+    //
+    // UI fix — the health dot and the Quick-Switch pill used to be two
+    // independent overlays both pinned to Alignment.TopEnd. The health dot
+    // was a 44dp clickable box with NO end padding, so it sat on top of every
+    // screen's TopAppBar action button (the Mouse/Keyboard "tuning" gear) and
+    // swallowed those taps. They also overlapped each other.
+    //
+    // Both now live in ONE Column that starts BELOW the 64dp app bar and is
+    // inset from the right edge, so nothing covers the app-bar actions and the
+    // two overlays can never collide.
+    // ------------------------------------------------------------------
     val previousControlRoute = if (
         currentRoute in controlScreenLabels && recentControlRoutes.size >= 2
     ) {
         recentControlRoutes.firstOrNull { it != currentRoute }
     } else null
-    if (previousControlRoute != null) {
-        val label = controlScreenLabels[previousControlRoute] ?: previousControlRoute
-        AssistChip(
-            onClick = {
-                navController.navigate(previousControlRoute) { launchSingleTop = true }
-            },
-            label = { Text("⇄ $label") },
+    val showHealth = currentRoute != Routes.CONNECTION_HEALTH
+    if (showHealth || previousControlRoute != null) {
+        androidx.compose.foundation.layout.Column(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(top = 48.dp, end = 52.dp)
-        )
-    }
-
-    // ADV S5 — persistent mini health indicator (real classification),
-    // top-right corner during active use; tap opens the dashboard.
-    if (currentRoute != Routes.CONNECTION_HEALTH) {
-        MiniHealthIndicator(
-            onOpen = {
-                navController.navigate(Routes.CONNECTION_HEALTH) { launchSingleTop = true }
-            },
-            modifier = Modifier.align(Alignment.TopEnd)
-        )
+                .padding(top = 68.dp, end = 12.dp),
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)
+        ) {
+            // A10 — Quick-Switch pill between the last two control screens.
+            if (previousControlRoute != null) {
+                val label = controlScreenLabels[previousControlRoute] ?: previousControlRoute
+                AssistChip(
+                    onClick = {
+                        navController.navigate(previousControlRoute) { launchSingleTop = true }
+                    },
+                    label = { Text("⇄ $label") }
+                )
+            }
+            // ADV S5 — mini health indicator; tap opens the dashboard.
+            if (showHealth) {
+                MiniHealthIndicator(
+                    onOpen = {
+                        navController.navigate(Routes.CONNECTION_HEALTH) {
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+        }
     }
 
 
@@ -433,9 +466,10 @@ private fun MiniHealthIndicator(onOpen: () -> Unit, modifier: Modifier = Modifie
     // area is a proper 44dp circle centered on it.
     androidx.compose.foundation.layout.Box(
         modifier = modifier
-            .padding(top = 26.dp, end = 0.dp)
+            // Position is handled by the overlay Column in AeroPadApp; this
+            // only guarantees a 44dp tap target around the 12dp dot.
             .size(44.dp)
-            .clickable { onOpen() },
+            .clickable(onClickLabel = "Connection health") { onOpen() },
         contentAlignment = Alignment.Center
     ) {
         androidx.compose.foundation.layout.Box(

@@ -308,7 +308,15 @@ fun LayoutsScreen(
                         LayoutThumbnail(spec = profile.spec)
                         Spacer(Modifier.size(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(profile.spec.name, style = MaterialTheme.typography.titleMedium)
+                            // UI fix — long user-created layout names used to run
+                            // into the trailing action buttons / wrap unpredictably;
+                            // ellipsize them on one line like the subtitle below.
+                            Text(
+                                profile.spec.name,
+                                style = MaterialTheme.typography.titleMedium,
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                            )
                             Text(
                                 text = "${profile.spec.widgets.size} widgets" +
                                     (if (profile.spec.category.isNotBlank()) "  •  ${profile.spec.category}" else "") +

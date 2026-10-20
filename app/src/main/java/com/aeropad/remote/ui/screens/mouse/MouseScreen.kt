@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.horizontalScroll
@@ -256,9 +257,11 @@ fun MouseScreen(
 
             // ---------- Mouse buttons ----------
             Row(
+                // UI fix: heightIn(min=) instead of a fixed height so the
+                // button labels cannot be clipped at large font scales.
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
+                    .heightIn(min = 56.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // STITCH REDESIGN — LEFT CLICK is the accent (primary) button.
