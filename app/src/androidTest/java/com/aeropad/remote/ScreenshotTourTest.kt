@@ -92,18 +92,28 @@ class ScreenshotTourTest {
         Thread.sleep(700)
     }
 
-    /** Swipe up to scroll content down (moves further into the page). */
+    private val w: Int get() = device.displayWidth
+    private val h: Int get() = device.displayHeight
+
+    /**
+     * Swipe up to scroll further into the page.
+     *
+     * Coordinates are derived from the real display size: the earlier version
+     * hard-coded x=540, which is off-screen on a 320px-wide emulator, so every
+     * swipe silently did nothing and the "scrolled" screenshots were identical
+     * to the top of the page.
+     */
     private fun scrollDown(times: Int = 1) {
         repeat(times) {
-            device.swipe(540, 1500, 540, 500, 40)
-            Thread.sleep(350)
+            device.swipe(w / 2, (h * 0.75f).toInt(), w / 2, (h * 0.30f).toInt(), 30)
+            Thread.sleep(400)
         }
     }
 
     /** Swipe down repeatedly to get back to the top of a page. */
     private fun scrollToTop() {
-        repeat(4) {
-            device.swipe(540, 500, 540, 1500, 40)
+        repeat(5) {
+            device.swipe(w / 2, (h * 0.30f).toInt(), w / 2, (h * 0.78f).toInt(), 30)
             Thread.sleep(250)
         }
     }
