@@ -66,7 +66,7 @@ class SettingsViewModel @Inject constructor(
     fun setTouchVibrations(value: Boolean) = updateApp { it.copy(touchVibrations = value) }
     fun setHapticIntensity(value: HapticIntensity) = updateApp { it.copy(hapticIntensity = value) }
     fun setSecureScreen(value: Boolean) = updateApp { it.copy(secureScreen = value) }
-    fun setOnboardingDone() = updateApp { it.copy(onboardingDone = true) }
+    fun setOnboardingDone(value: Boolean = true) = updateApp { it.copy(onboardingDone = value) }
     fun setReduceMotion(value: Boolean) = updateApp { it.copy(reduceMotion = value) }
     fun setIconPack(value: String) = updateApp { it.copy(iconPack = value) }
     fun setQuality3D(value: String) = updateApp { it.copy(quality3D = value) }

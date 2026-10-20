@@ -54,11 +54,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aeropad.remote.model.GamepadMappingMode
 import com.aeropad.remote.model.HidConnectionState
@@ -149,7 +149,11 @@ fun DevicesScreen(
             item {
                 ConnectionStatusCard(
                     state = effectiveState,
-                    onClick = onOpenConnection
+                    modifier = if (onOpenConnection != null) {
+                        Modifier.clickable(onClick = onOpenConnection)
+                    } else {
+                        Modifier
+                    }
                 )
             }
 
