@@ -149,13 +149,17 @@ jobs:
             mkdir -p ui-screenshots
             ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.aeropad.remote.ScreenshotTourTest --stacktrace 2>&1 | tee /tmp/test.log || true
             echo "---- instrumentation result ----"
-            grep -E "Starting|tests on|FAILED|OK \(" /tmp/test.log | tail -20 || true
-            echo "---- screencap fallback ----"
+            grep -E "Starting [0-9]+ tests|tests on|FAILED|OK \\(" /tmp/test.log | tail -20 || true
+            echo "---- what did the test write? ----"
+            adb shell run-as com.aeropad.remote ls -la files/tour || true
+            echo "---- extract via exec-out tar ----"
+            adb exec-out run-as com.aeropad.remote tar cf - files/tour > /tmp/tour.tar || true
+            ls -l /tmp/tour.tar || true
+            tar xf /tmp/tour.tar -C ui-screenshots && echo "tar extracted"
+            find ui-screenshots -name '*.png' -exec mv {} ui-screenshots/ \; || true
+            echo "---- fallback screencap ----"
             adb shell screencap -p /sdcard/fallback-home.png || true
-            adb pull /sdcard/fallback-home.png ui-screenshots/ 2>/dev/null || true
-            # Pull the tour images out of app-private storage via run-as + tar.
-            ( cd ui-screenshots && adb exec-out run-as com.aeropad.remote tar cf - files/tour 2>/dev/null | tar xf - 2>/dev/null ) || true
-            find ui-screenshots -name '*.png' -exec mv {} ui-screenshots/ \; 2>/dev/null || true
+            adb pull /sdcard/fallback-home.png ui-screenshots/ || true
             ls -la ui-screenshots || true
 
       - name: Upload UI screenshots
