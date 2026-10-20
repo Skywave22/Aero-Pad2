@@ -113,6 +113,32 @@ auto-advance, which needs emulator iterations to validate — a separate task.
 
 ---
 
+## 3b. UI pass (same 3.6.0 build, no version bump)
+
+Every item below was found by **looking at real screenshots** captured from the
+CI emulator (`ui-screenshots` artifact), not by reading source and guessing.
+
+| # | What was wrong (visible in the screenshot) | Fix |
+|---|---|---|
+| U1 | No screen called `imePadding()` while the activity is edge-to-edge, so the on-screen keyboard covered the text field on all 11 screens that have one | Handled once at the `NavHost`, covering every screen and the dock |
+| U2 | Settings had **no bottom padding**, so its last rows were permanently unreachable behind the floating dock | Reserve `DockMetrics.height`, now the single source of truth shared with the dock |
+| U3 | Dock rendered **"ayouts"** — each tab was clipped to a `CircleShape` while only ~65dp wide, cutting the label's corners | Rounded rect + single-line ellipsized label |
+| U4 | Home header crammed title, tagline and chips into one Row → tagline wrapped into a 4-line sliver | Title + chips on line one, tagline full width below |
+| U5 | Layouts list: thumbnail + text + **four 48dp buttons** in one Row left the text column ~50dp wide → names showed as "Gam…", subtitle wrapped one character per line | Thumbnail + text get their own full-width row, actions below |
+| U6 | Mouse scroll strip rendered `S\nC\nR\nO\nL\nL` as six stacked letters | Direction icon + rotated single-line `SCROLL` |
+| U7 | Status card always drew a red **Bluetooth** logo, even for permission/ROM problems | Warning glyph for permission/HID/error states |
+| U8 | Health dot was a 44dp clickable box pinned to `TopEnd` with no end padding — it sat on each screen's app-bar action and swallowed taps on the tuning gear; it also overlapped the Quick-Switch pill | One overlay Column below the app bar, inset from the edge |
+| U9 | Quick-Switch pill covered the "Not connected" banner on control screens | Both overlays gated on a live connection |
+| U10 | Gamepad Select/Home/Start row and Mouse L/M/R row used fixed `.height()` and clipped labels at large font sizes | `heightIn(min=)` |
+| U11 | Gamepad face labels were hard-coded `Color.White` on fixed brand tints — unreadable on light tints in Light mode | Chosen from the tint's luminance |
+| U12 | Home tiles had ragged heights ("Complete QWERTY keyboard" = 3 lines vs 2) | Subtitle pinned to exactly two lines with ellipsis |
+
+To keep this verifiable, `ScreenshotTourTest` drives the real app on the CI
+emulator with UiAutomator and uploads a PNG of every top-level screen as the
+`ui-screenshots` artifact.
+
+---
+
 ## 4. Still open (deliberately not changed in this pass)
 
 - **H4 — Play Store targetSdk.** Still `targetSdk 35`, AGP 8.2.2, Kotlin 1.9.22.
@@ -126,6 +152,10 @@ auto-advance, which needs emulator iterations to validate — a separate task.
 - **Part 8 screen merges** (keyboard ×4 → 2, layout surfaces, gamepad editors)
   were not done; they are UX restructuring, not bug fixes, and would risk the
   now-stable navigation.
+- **Small remaining polish seen in the screenshots:** the Layouts template chip
+  row is horizontally scrollable but gives no affordance that more chips exist
+  off-screen (the third chip is cut), and the same is true of the home "Quick
+  Tools" row.
 
 ---
 

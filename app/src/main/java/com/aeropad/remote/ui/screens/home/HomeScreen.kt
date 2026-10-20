@@ -504,10 +504,18 @@ private fun HomeTileCard(
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
+            // UI fix — subtitles wrap to 1, 2 or 3 lines depending on the
+            // wording ("Trackpad, scroll & air mouse" vs "Complete QWERTY
+            // keyboard"), so tiles in the same grid row had ragged heights.
+            // Pinning the subtitle to exactly two lines makes every card in a
+            // row the same height.
             Text(
                 text = tile.subtitle,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                minLines = 2,
+                maxLines = 2,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
         }
     }
