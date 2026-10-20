@@ -13,8 +13,12 @@ enum class ThemeMode { LIGHT, DARK, SYSTEM }
 /** Haptic feedback strength (Section 3B polish). */
 enum class HapticIntensity { LIGHT, MEDIUM, STRONG }
 
-/** A12 — Power / battery profile controlling keep-alive, 3D quality, and haptics. */
-enum class PowerProfile { PERFORMANCE, BALANCED, BATTERY_SAVER }
+/** A12 — Power / battery profile controlling keep-alive, sensor rate, 3D quality, and haptics. */
+enum class PowerProfile(val label: String, val sensorSamplingUs: Int) {
+    PERFORMANCE("Performance (120 Hz)", 8_333),
+    BALANCED("Balanced (50 Hz)", 20_000),
+    BATTERY_SAVER("Battery Saver (30 Hz)", 33_333)
+}
 
 /** General app behavior. */
 data class AppSettings(

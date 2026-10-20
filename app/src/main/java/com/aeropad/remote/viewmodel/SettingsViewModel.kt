@@ -79,8 +79,18 @@ class SettingsViewModel @Inject constructor(
         }
         current.copy(automationApi = value, automationToken = token)
     }
-    fun regenerateAutomationToken() = updateApp {
-        it.copy(automationToken = AutomationCommands.generateToken())
+    fun ensureAutomationToken(): String {
+        val current = app.value.automationToken
+        if (current.isNotBlank()) return current
+        val generated = AutomationCommands.generateToken()
+        updateApp { it.copy(automationToken = generated) }
+        return generated
+    }
+
+    fun regenerateAutomationToken(): String {
+        val generated = AutomationCommands.generateToken()
+        updateApp { it.copy(automationToken = generated) }
+        return generated
     }
     fun setSpokenAlerts(value: Boolean) = updateApp { it.copy(spokenAlerts = value) }   // V2 M5 b2
     /** A12 — one-tap power profile controlling keep-alive, 3D quality, and haptics. */

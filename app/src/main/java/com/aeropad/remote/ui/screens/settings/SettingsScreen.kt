@@ -359,7 +359,7 @@ fun SettingsScreen(
                     PowerProfile.entries.forEach { profile ->
                         ChoiceChip(
                             label = profile.label,
-                            selected = app.powerProfile == profile.name,
+                            selected = app.powerProfile == profile,
                             onClick = { viewModel.setPowerProfile(profile) }
                         )
                     }

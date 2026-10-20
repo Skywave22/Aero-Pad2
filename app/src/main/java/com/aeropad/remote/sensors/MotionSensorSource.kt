@@ -42,7 +42,7 @@ class MotionSensorSource @Inject constructor(
     init {
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default).launch {
             settingsStore.appSettings.collect { app ->
-                currentSamplingUs = com.aeropad.remote.model.PowerProfile.fromName(app.powerProfile).sensorSamplingUs
+                currentSamplingUs = app.powerProfile.sensorSamplingUs
             }
         }
     }

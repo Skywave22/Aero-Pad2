@@ -133,7 +133,7 @@ class SettingsViewModelTest {
         val tok = vm.ensureAutomationToken()
         advanceUntilIdle()
         assertEquals(28, store.keyboard.value.keyTapDelayMs)
-        assertEquals("BATTERY_SAVER", store.app.value.powerProfile)
+        assertEquals(com.aeropad.remote.model.PowerProfile.BATTERY_SAVER, store.app.value.powerProfile)
         assertEquals(24, tok.length)
         assertEquals(tok, store.app.value.automationToken)
     }
