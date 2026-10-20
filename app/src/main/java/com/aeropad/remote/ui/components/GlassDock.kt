@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -90,7 +91,12 @@ fun GlassDock(
                     modifier = Modifier
                         .weight(1f)
                         .heightIn(min = 56.dp)
-                        .clip(CircleShape)
+                        // UI fix — this was .clip(CircleShape). Each tab is only
+                        // ~65dp wide, so clipping it to a circle cut the bottom
+                        // corners off the label: the dock literally rendered
+                        // "Layouts" as "ayouts". A rounded rect matches the
+                        // dock's own shape and cannot clip the text.
+                        .clip(RoundedCornerShape(16.dp))
                         .selectable(
                             selected = selected,
                             role = Role.Tab,
@@ -122,7 +128,13 @@ fun GlassDock(
                             modifier = Modifier.size(22.dp)
                         )
                     }
-                    Text(item.label, style = MaterialTheme.typography.bodyMedium, color = tint)
+                    Text(
+                        item.label,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = tint,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
                 }
             }
         }

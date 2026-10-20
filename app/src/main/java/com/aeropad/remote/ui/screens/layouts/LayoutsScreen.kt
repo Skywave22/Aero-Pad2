@@ -299,52 +299,65 @@ fun LayoutsScreen(
                         .clickable { viewModel.openProfile(profile.id) },
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    // UI fix — this used to be ONE Row holding the thumbnail,
+                    // the text column and four 48dp IconButtons. On a 360dp
+                    // screen that left the text column about 50dp wide, so the
+                    // layout name rendered as "Gam…" and the subtitle wrapped
+                    // one character per line ("7 / widgets / • / Gamepa / d").
+                    // Thumbnail + text now get a full-width row of their own and
+                    // the actions move below it.
+                    Column(
+                        modifier = Modifier.padding(start = 16.dp, top = 10.dp, bottom = 2.dp, end = 8.dp)
                     ) {
-                        // SECTION 2 — auto thumbnail: real widget frames painted
-                        // at miniature scale (always in sync with the layout).
-                        LayoutThumbnail(spec = profile.spec)
-                        Spacer(Modifier.size(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            // UI fix — long user-created layout names used to run
-                            // into the trailing action buttons / wrap unpredictably;
-                            // ellipsize them on one line like the subtitle below.
-                            Text(
-                                profile.spec.name,
-                                style = MaterialTheme.typography.titleMedium,
-                                maxLines = 1,
-                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = "${profile.spec.widgets.size} widgets" +
-                                    (if (profile.spec.category.isNotBlank()) "  •  ${profile.spec.category}" else "") +
-                                    (if (profile.isBuiltIn) "  •  built-in template" else ""),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            if (profile.spec.notes.isNotBlank()) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            // SECTION 2 — auto thumbnail: real widget frames
+                            // painted at miniature scale (always in sync).
+                            LayoutThumbnail(spec = profile.spec)
+                            Spacer(Modifier.size(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = profile.spec.notes,
+                                    text = profile.spec.name,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = "${profile.spec.widgets.size} widgets" +
+                                        (if (profile.spec.category.isNotBlank()) "  •  ${profile.spec.category}" else "") +
+                                        (if (profile.isBuiltIn) "  •  built-in template" else ""),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1
+                                    maxLines = 2,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                 )
+                                if (profile.spec.notes.isNotBlank()) {
+                                    Text(
+                                        text = profile.spec.notes,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                    )
+                                }
                             }
                         }
-                        IconButton(onClick = { onEdit(profile.id) }) {
-                            Icon(Icons.Rounded.Edit, contentDescription = "Edit", tint = MaterialTheme.colorScheme.primary)
-                        }
-                        IconButton(onClick = { viewModel.duplicate(profile.id) }) {
-                            Icon(Icons.Rounded.ContentCopy, contentDescription = "Duplicate")
-                        }
-                        IconButton(onClick = { viewModel.requestExport(profile.id) }) {
-                            Icon(Icons.Rounded.FileUpload, contentDescription = "Export")
-                        }
-                        if (!profile.isBuiltIn) {
-                            IconButton(onClick = { viewModel.delete(profile.id) }) {
-                                Icon(Icons.Rounded.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            IconButton(onClick = { onEdit(profile.id) }) {
+                                Icon(Icons.Rounded.Edit, contentDescription = "Edit layout ${profile.spec.name}", tint = MaterialTheme.colorScheme.primary)
+                            }
+                            IconButton(onClick = { viewModel.duplicate(profile.id) }) {
+                                Icon(Icons.Rounded.ContentCopy, contentDescription = "Duplicate layout ${profile.spec.name}")
+                            }
+                            IconButton(onClick = { viewModel.requestExport(profile.id) }) {
+                                Icon(Icons.Rounded.FileUpload, contentDescription = "Export layout ${profile.spec.name}")
+                            }
+                            if (!profile.isBuiltIn) {
+                                IconButton(onClick = { viewModel.delete(profile.id) }) {
+                                    Icon(Icons.Rounded.Delete, contentDescription = "Delete layout ${profile.spec.name}", tint = MaterialTheme.colorScheme.error)
+                                }
                             }
                         }
                     }

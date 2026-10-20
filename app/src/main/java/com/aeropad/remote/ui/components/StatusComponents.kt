@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Bluetooth
+import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -159,8 +160,17 @@ fun ConnectionStatusCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+                // UI fix — this always drew a red Bluetooth logo, even for
+                // permission and ROM problems where Bluetooth is not the
+                // issue. Show a warning glyph for actionable/error states so
+                // the icon matches the message.
                 Icon(
-                    imageVector = Icons.Rounded.Bluetooth,
+                    imageVector = when (state) {
+                        is HidConnectionState.PermissionMissing,
+                        is HidConnectionState.HidUnsupported,
+                        is HidConnectionState.Error -> Icons.Rounded.WarningAmber
+                        else -> Icons.Rounded.Bluetooth
+                    },
                     contentDescription = null,
                     tint = visual.color,
                     modifier = Modifier.size(22.dp)

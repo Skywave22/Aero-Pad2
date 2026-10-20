@@ -212,24 +212,25 @@ fun HomeScreen(
             ) {
                 // ---------- Header ----------
                 item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
+                    Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                        // UI fix — the title, tagline and the Customize/version
+                        // chips used to share ONE Row. The chips squeezed the
+                        // text column so hard that the tagline wrapped into a
+                        // narrow 4-line block ("Bluetooth / keyboard, mouse /
+                        // & gamepad"). Title and chips now sit on the first
+                        // line and the tagline gets the full width below it.
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Text(
                                 text = "AeroPad",
                                 style = MaterialTheme.typography.headlineMedium,
-                                color = MaterialTheme.colorScheme.onBackground
+                                color = MaterialTheme.colorScheme.onBackground,
+                                maxLines = 1
                             )
-                            Text(
-                                text = "Bluetooth keyboard, mouse & gamepad",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Row(
+                            Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -251,8 +252,14 @@ fun HomeScreen(
                                     style = MaterialTheme.typography.labelLarge,
                                     color = MaterialTheme.colorScheme.primary
                                 )
+                                }
                             }
                         }
+                        Text(
+                            text = "Bluetooth keyboard, mouse & gamepad",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
 

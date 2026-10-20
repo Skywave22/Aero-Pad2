@@ -92,63 +92,85 @@ class ScreenshotTourTest {
         Thread.sleep(700)
     }
 
+    /** Swipe up to scroll content down (moves further into the page). */
+    private fun scrollDown(times: Int = 1) {
+        repeat(times) {
+            device.swipe(540, 1500, 540, 500, 40)
+            Thread.sleep(350)
+        }
+    }
+
+    /** Swipe down repeatedly to get back to the top of a page. */
+    private fun scrollToTop() {
+        repeat(4) {
+            device.swipe(540, 500, 540, 1500, 40)
+            Thread.sleep(250)
+        }
+    }
+
     @Test
     fun captureEveryTopLevelScreen() {
         shot("01-home-top")
-
-        // Scroll the dashboard so the lower sections are captured too.
-        device.swipe(540, 1400, 540, 500, 20)
+        scrollDown(1)
         shot("02-home-scrolled")
-        device.swipe(540, 1400, 540, 400, 20)
+        scrollDown(2)
         shot("03-home-bottom")
+        scrollToTop()
 
         // Control surfaces — these are the screens that used to crash.
-        if (tap("Mouse")) {
-            shot("04-mouse")
-            back()
-        }
-        if (tap("Keyboard")) {
-            shot("05-keyboard")
-            back()
-        }
-        if (tap("Numpad")) {
-            shot("06-numpad")
-            back()
-        }
-        if (tap("Gamepad")) {
-            shot("07-gamepad")
-            back()
-        }
-        if (tap("Multimedia")) {
-            shot("08-multimedia")
-            back()
-        }
-        if (tap("Text & Clips")) {
-            shot("09-text-clips")
-            back()
+        val controls = listOf(
+            "Mouse" to "04-mouse",
+            "Keyboard" to "05-keyboard",
+            "Gamepad" to "06-gamepad",
+            "Multimedia" to "07-multimedia",
+            "Presenter" to "08-presenter",
+            "Android" to "09-android",
+            "Text & Clips" to "10-text-clips"
+        )
+        for ((label, name) in controls) {
+            scrollToTop()
+            if (tap(label)) {
+                shot(name)
+                back()
+            } else {
+                android.util.Log.w("ScreenshotTour", "tile not found: $label")
+            }
         }
 
-        // Hubs with the floating dock.
+        // Hubs (these show the floating dock).
+        scrollToTop()
         if (tap("Layouts")) {
-            shot("10-layouts")
-            // The dock is visible here; open Settings from it to test that path too.
+            shot("11-layouts")
+            // Open a layout to check the player/canvas chrome.
+            if (tap("Trackpad") || tap("Gamepad") || tap("Media")) shot("12-layout-player")
+            scrollToTop()
             back()
         }
+        scrollToTop()
         if (tap("Devices")) {
-            shot("11-devices")
+            shot("13-devices")
             back()
         }
+        scrollToTop()
         if (tap("Settings")) {
-            shot("12-settings-top")
-            device.swipe(540, 1400, 540, 400, 20)
-            shot("13-settings-mid")
+            shot("14-settings-top")
+            scrollDown(2)
+            shot("15-settings-mid")
             // Scroll ALL the way down: the last rows used to hide behind the dock.
-            repeat(4) { device.swipe(540, 1400, 540, 300, 20) }
-            shot("14-settings-bottom")
+            scrollDown(6)
+            shot("16-settings-bottom")
             back()
         }
+        scrollToTop()
+        if (tap("Macros")) {
+            shot("17-macros")
+            back()
+        }
+        scrollToTop()
         if (tap("Help")) {
-            shot("15-help")
+            shot("18-help")
+            scrollDown(2)
+            shot("19-help-scrolled")
             back()
         }
     }
