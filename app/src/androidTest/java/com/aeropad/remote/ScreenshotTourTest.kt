@@ -173,48 +173,21 @@ class ScreenshotTourTest {
      * graceful scrolls, which is what actually lands the tap.
      */
     /**
-     * Click a home *tile* by its title.
+     * Launch the app straight onto a screen, from a cold start.
      *
-     * A plain By.text lookup proved unreliable here: Compose merges a tile's
-     * title and subtitle into one node (so an exact match can miss) and a
-     * substring match happily hits the tagline "Bluetooth keyboard, mouse &
-     * gamepad" instead. This filters candidate nodes by shape — a title inside
-     * a card is narrow and taller than a line of body text — and skips anything
-     * hidden under the dock.
+     * Deterministic: no scrolling, no tile hunting. Pass null for HOME.
      */
-    private fun clickTile(label: String, maxScrolls: Int = 6): Boolean {
-        repeat(maxScrolls + 1) { attempt ->
-            val dockTop = (h * 0.74f).toInt()
-            val hit = device.findObjects(By.textContains(label))
-                .filter { n ->
-                    val b = n.visibleBounds
-                    b.height() > 15 && b.width() < (w * 0.7f).toInt() && b.centerY() < dockTop
-                }
-                .minByOrNull { it.visibleBounds.centerY() }
-            if (hit != null) {
-                android.util.Log.i("ScreenshotTour", "tile '$label' at ${hit.visibleBounds}")
-                hit.click()
-                device.waitForIdle()
-                Thread.sleep(1000)
-                return true
-            }
-            if (attempt < maxScrolls) scrollDown(1)
-        }
-        // Evidence, not guesses: a missing tile used to fail silently and the
-        // screen was simply never photographed.
-        shot("FAIL-$label")
-        runCatching { device.dumpWindowHierarchy(File(outDir, "FAIL-$label.xml")) }
-        android.util.Log.w("ScreenshotTour", "tile not found: $label")
-        return false
-    }
-
-    private fun openFromHome(text: String): Boolean {
-        repeat(3) {
-            scrollToTop()
-            if (clickTile(text)) return true
-        }
-        android.util.Log.w("ScreenshotTour", "gave up opening $text")
-        return false
+    private fun openByShortcut(action: String?) {
+        val ctx = androidx.test.platform.app.InstrumentationRegistry
+            .getInstrumentation().targetContext
+        val intent = android.content.Intent(ctx, com.aeropad.remote.MainActivity::class.java)
+            .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or
+                android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        if (action != null) intent.action = action
+        ctx.startActivity(intent)
+        Thread.sleep(2500)
+        device.waitForIdle()
+        Thread.sleep(800)
     }
 
     private fun back() {
@@ -374,13 +347,20 @@ class ScreenshotTourTest {
         shot("L02-home-scrolled")
         scrollToTop()
 
-        val visited = listOf("Keyboard", "Mouse", "Gamepad")
-        visited.forEachIndexed { i, name ->
-            if (openFromHome(name)) {
-                shot("L0${3 + i}-${name.lowercase()}")
-                back()
-            }
+        // Tactile/typing screens, opened by deep link rather than by tapping a
+        // home tile. Tile taps depend on scroll position and on Compose's
+        // merged semantics nodes, which is exactly why these three screens were
+        // never captured in landscape. The app already maps shortcut intents to
+        // start routes (ShortcutActions), so the tour uses that instead.
+        listOf(
+            com.aeropad.remote.domain.ShortcutActions.OPEN_KEYBOARD to "L03-keyboard",
+            com.aeropad.remote.domain.ShortcutActions.OPEN_MOUSE to "L04-mouse",
+            com.aeropad.remote.domain.ShortcutActions.OPEN_GAMEPAD to "L05-gamepad"
+        ).forEach { (action: String, name: String) ->
+            openByShortcut(action)
+            shot(name)
         }
+        openByShortcut(null)
 
         // Top-level hubs, reached through the dock (no scrolling needed).
         val hubs = listOf("Layouts" to "L06-layouts", "Devices" to "L07-devices", "Settings" to "L08-settings")
