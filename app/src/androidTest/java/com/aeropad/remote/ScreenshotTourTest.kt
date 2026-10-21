@@ -214,12 +214,14 @@ class ScreenshotTourTest {
         // is what actually makes them reachable (tapping from the top silently
         // found nothing and the screenshots were never taken).
         scrollToTop()
-        if (findAndTap("Macros")) {
+        scrollDown(2)
+        if (tap("Macros")) {
             shot("17-macros")
             back()
         }
         scrollToTop()
-        if (findAndTap("Help")) {
+        scrollDown(2)
+        if (tap("Help")) {
             shot("18-help")
             scrollDown(2)
             shot("19-help-scrolled")
@@ -228,7 +230,16 @@ class ScreenshotTourTest {
 
         // Round 8 — My Layout + the new key pad sheet.
         scrollToTop()
-        if (findAndTap("My Layout")) {
+        scrollDown(3)
+        // Quick Tools is a horizontally scrolling row; "My Layout" sits past the
+        // right edge, so swipe the row left before looking for it.
+        device.findObject(By.textContains("Air Mouse"))?.let { chip ->
+            val b = chip.visibleBounds
+            device.swipe(b.right - 5, b.centerY(), b.left + 30, b.centerY(), 20)
+            device.waitForIdle()
+            Thread.sleep(400)
+        }
+        if (tapContains("My Layout")) {
             shot("20-my-layout")
             if (tap("Keys")) {
                 shot("21-key-pad")
