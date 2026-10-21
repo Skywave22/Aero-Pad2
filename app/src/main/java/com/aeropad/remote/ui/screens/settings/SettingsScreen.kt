@@ -1,5 +1,11 @@
 package com.aeropad.remote.ui.screens.settings
 
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.foundation.shape.CircleShape
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -168,6 +174,41 @@ fun SettingsScreen(
                         modifier = Modifier.weight(1f)
                     )
                 }
+
+                Spacer(Modifier.height(14.dp))
+                Text(
+                    "Accent colour",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(8.dp))
+                com.aeropad.remote.ui.components.ScrollableChipRow {
+                    val isDark = app.theme == ThemeMode.DARK ||
+                        (app.theme == ThemeMode.SYSTEM && com.aeropad.remote.ui.theme.LocalAppTheme.current.isDark)
+                    com.aeropad.remote.ui.theme.AccentPalette.entries.forEach { palette ->
+                        val selected = app.accentColor == palette.id
+                        val dot = palette.accent(isDark)
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(CircleShape)
+                                .background(dot)
+                                .then(
+                                    if (selected) Modifier.border(
+                                        width = 2.5.dp,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        shape = CircleShape
+                                    ) else Modifier
+                                )
+                                .clickable { viewModel.setAccentColor(palette.id) }
+                                .semantics {
+                                    contentDescription = palette.label + " accent"
+                                    this.role = Role.RadioButton
+                                    this.selected = selected
+                                }
+                        )
+                    }
+                }
             }
 
             // ---------- GROUP 2: Controls — Mouse & trackpad (kept near top for quick access & UI tests) ----------
@@ -178,6 +219,12 @@ fun SettingsScreen(
                 ToggleRow("Invert scroll", mouse.invertScroll, viewModel::setInvertScroll)
                 ToggleRow("Tap to click", mouse.tapToClick, viewModel::setTapToClick)
                 ToggleRow("Pen mode", mouse.penMode, viewModel::setPenMode, subtitle = "Slower, precise pointer")
+                ToggleRow(
+                    "Left-handed mode",
+                    mouse.leftHanded,
+                    viewModel::setLeftHanded,
+                    subtitle = "Swaps tap and click sides, mirrors the buttons"
+                )
             }
 
             // ---------- Visual style (with R4 inline 3D preview) ----------

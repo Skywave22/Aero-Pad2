@@ -298,6 +298,26 @@ full grid ⇒ null).
 
 ---
 
+## 3e. Round 9 — pointer feel, laptop gestures, accent colours
+
+Version still **3.6.0 / 360**. Full reasoning lives in `docs/WORLD-CLASS-AUDIT.md`;
+this is the change list.
+
+| Change | Why |
+|---|---|
+| `domain/PointerCoalescer.kt` + `TrackpadEngine` wiring | Cursor stutter is the #1 complaint in every rival's reviews. 240 Hz touch input is merged into ~80 Hz reports with the **total delta preserved**, first move sent immediately, big flicks never held, tail flushed at drag end. Fewer radio wake-ups ⇒ less battery too. |
+| `ui/gestures/TwoFingerTap.kt` | Two-finger tap = secondary click, the trackpad convention users reach for first. Non-consuming, so drags/long-press/single tap are untouched. |
+| Left-handed mode (`MouseSettings.leftHanded`) | Mirrors tap/long-press semantics and the on-screen click buttons. Settings toggle included. |
+| `ui/theme/AccentPalette.kt` + `AppSettings.accentColor` | Six accents with separate light/dark variants, layered over Material/Glass/Neon. Default stays blue. Swatches are TalkBack radio buttons. |
+| `docs/WORLD-CLASS-AUDIT.md` | Competitive analysis, what AeroPad already wins on, honest remaining gap list. |
+
+`PropertyCatalog.SETTINGS_PROPS` 36 → 38 (a guard test enforces this when
+settings fields are added — it caught the omission immediately).
+
+**404 tests, 0 failures** (20 new).
+
+---
+
 ## 4. Still open (deliberately not changed in this pass)
 
 - **H4 — Play Store targetSdk.** Still `targetSdk 35`, AGP 8.2.2, Kotlin 1.9.22.

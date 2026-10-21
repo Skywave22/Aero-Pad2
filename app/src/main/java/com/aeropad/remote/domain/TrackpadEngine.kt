@@ -12,7 +12,15 @@ import com.aeropad.remote.model.MouseSettings
  * AirMouseCore keeps its own variant intentionally: its input domain is
  * angular velocity, not pixel deltas.
  */
-class TrackpadEngine(private val settings: () -> MouseSettings) {
+class TrackpadEngine(
+    private val settings: () -> MouseSettings
+) {
+    /**
+     * Rate-limits how often a report is actually sent. Nullable so tests that
+     * want raw output can switch it off; production always has one.
+     */
+    internal var coalescer: PointerCoalescer? = PointerCoalescer()
+
 
     private var smoothX = 0f
     private var smoothY = 0f
@@ -23,7 +31,15 @@ class TrackpadEngine(private val settings: () -> MouseSettings) {
     /** Reset smoothing state at gesture start (prevents cross-gesture bleed). */
     fun startGesture() {
         smoothX = 0f; smoothY = 0f; fracX = 0f; fracY = 0f
+        coalescer?.reset()
     }
+
+    /**
+     * Emit the tail of the movement that the coalescer is still holding.
+     * Called at drag end so the cursor lands exactly under the finger instead
+     * of stopping one window short.
+     */
+    fun endGesture(): Pair<Int, Int> = coalescer?.flush() ?: (0 to 0)
 
     /** Raw px delta → settings-adjusted int mouse delta (0,0 = don't send). */
     fun move(dxPx: Float, dyPx: Float): Pair<Int, Int> {
@@ -41,7 +57,8 @@ class TrackpadEngine(private val settings: () -> MouseSettings) {
         val iy = fy.toInt()
         fracX = fx - ix
         fracY = fy - iy
-        return ix to iy
+        // Coalesce so a 240 Hz digitizer does not flood a Bluetooth link.
+        return coalescer?.accumulate(ix, iy) ?: (ix to iy)
     }
 
     /** Accumulated scroll px → wheel steps (0 = don't send). */

@@ -59,6 +59,8 @@ interface WidgetEvents {
     fun onSecondary(widget: WidgetSpec)                  // long-press etc.
     fun onTrackpadStart()
     fun onTrackpadDelta(dx: Float, dy: Float)
+    /** Drag ended — flush the pointer tail so the cursor lands under the finger. */
+    fun onTrackpadEnd() {}
     fun onScrollDelta(dy: Float)
     fun onJoystick(x: Float, y: Float)                   // -1..1
     fun onDpad(dirX: Int, dirY: Int)                     // -1/0/1 each axis
@@ -206,7 +208,11 @@ private fun TrackpadBody(widget: WidgetSpec, events: WidgetEvents, fg: Color) {
                 )
             }
             .pointerInput(widget.id + "-drag") {
-                detectDragGestures(onDragStart = { events.onTrackpadStart() }) { change, drag ->
+                detectDragGestures(
+                    onDragStart = { events.onTrackpadStart() },
+                    onDragEnd = { events.onTrackpadEnd() },
+                    onDragCancel = { events.onTrackpadEnd() }
+                ) { change, drag ->
                     change.consume()
                     events.onTrackpadDelta(drag.x, drag.y)
                 }

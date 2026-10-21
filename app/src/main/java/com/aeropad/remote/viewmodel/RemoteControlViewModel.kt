@@ -107,7 +107,7 @@ class RemoteControlViewModel @Inject constructor(
     // ------------------------------------------------------------------
 
     // OPTIMIZATION: shared TrackpadEngine (was ~30 duplicated lines).
-    private val trackpad = com.aeropad.remote.domain.TrackpadEngine { mouseSettings.value }
+    private val trackpad = com.aeropad.remote.domain.TrackpadEngine({ mouseSettings.value })
 
     /** Raw trackpad drag delta in px → settings-adjusted HID mouse move (or wheel in scroll mode). */
     fun onTrackpadDelta(dxPx: Float, dyPx: Float) {
@@ -149,16 +149,37 @@ class RemoteControlViewModel @Inject constructor(
     fun onTrackpadGestureStart() = trackpad.startGesture()
 
     /** Tap on trackpad → left click (honors tap-to-click setting). */
+    /** Drag ended — flush the coalesced tail so the cursor lands exactly. */
+    fun onTrackpadGestureEnd() {
+        val (ix, iy) = trackpad.endGesture()
+        if (ix != 0 || iy != 0) sendAction(HidAction.MouseMove(ix, iy))
+    }
+
     fun onTrackpadTap() {
-        if (mouseSettings.value.tapToClick) dispatch(HidAction.MouseClick(MouseButton.LEFT), isDiscreteTap = true)
+        if (!mouseSettings.value.tapToClick) return
+        dispatch(HidAction.MouseClick(primaryButton), isDiscreteTap = true)
     }
 
     fun onTrackpadDoubleTap() {
-        if (mouseSettings.value.tapToClick) dispatch(HidAction.MouseDoubleClick(MouseButton.LEFT), isDiscreteTap = true)
+        if (!mouseSettings.value.tapToClick) return
+        dispatch(HidAction.MouseDoubleClick(primaryButton), isDiscreteTap = true)
     }
 
-    /** Long-press on trackpad → right click. */
-    fun onTrackpadLongPress() = dispatch(HidAction.MouseClick(MouseButton.RIGHT), isDiscreteTap = true)
+    /** Long-press on trackpad → secondary click. */
+    fun onTrackpadLongPress() = dispatch(HidAction.MouseClick(secondaryButton), isDiscreteTap = true)
+
+    /**
+     * Two-finger tap = secondary click, matching every laptop trackpad. This
+     * is the gesture users reach for first and it was missing.
+     */
+    fun onTrackpadTwoFingerTap() = dispatch(HidAction.MouseClick(secondaryButton), isDiscreteTap = true)
+
+    /** Left-handed mode mirrors the two buttons everywhere. */
+    private val primaryButton: MouseButton
+        get() = if (mouseSettings.value.leftHanded) MouseButton.RIGHT else MouseButton.LEFT
+
+    private val secondaryButton: MouseButton
+        get() = if (mouseSettings.value.leftHanded) MouseButton.LEFT else MouseButton.RIGHT
 
     fun clickButton(button: MouseButton) = dispatch(HidAction.MouseClick(button), isDiscreteTap = true)
     fun buttonDown(button: MouseButton) = dispatch(HidAction.MouseDown(button), isDiscreteTap = true)

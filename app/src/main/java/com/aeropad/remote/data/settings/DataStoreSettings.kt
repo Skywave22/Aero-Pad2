@@ -69,6 +69,7 @@ class DataStoreSettings @Inject constructor(
         val M_INVERT = booleanPreferencesKey("m_invert")
         val M_TAP_CLICK = booleanPreferencesKey("m_tap_click")
         val M_PEN = booleanPreferencesKey("m_pen")
+        val M_LEFT_HANDED = booleanPreferencesKey("m_left_handed")
         // Keyboard
         val K_TEXT_BAR = booleanPreferencesKey("k_text_bar")
         val K_TAP_DELAY_MS = intPreferencesKey("k_tap_delay_ms") // L2
@@ -85,6 +86,7 @@ class DataStoreSettings @Inject constructor(
         val HIDDEN_TILES = stringPreferencesKey("hidden_tiles")
         val EXTENDED_REPORTS = booleanPreferencesKey("extended_reports")
         val POWER_PROFILE = stringPreferencesKey("power_profile") // A12
+        val ACCENT_COLOR = stringPreferencesKey("accent_color")     // Round 9
     }
 
     /** Preferences flow that never throws: IO errors → defaults. */
@@ -123,7 +125,8 @@ class DataStoreSettings @Inject constructor(
             uiStyle = p[Keys.UI_STYLE] ?: "MATERIAL",
             hiddenTiles = p[Keys.HIDDEN_TILES] ?: "",
             extendedReports = p[Keys.EXTENDED_REPORTS] ?: false,
-            powerProfile = p[Keys.POWER_PROFILE].toEnum(PowerProfile.BALANCED)
+            powerProfile = p[Keys.POWER_PROFILE].toEnum(PowerProfile.BALANCED),
+            accentColor = p[Keys.ACCENT_COLOR] ?: "BLUE"
         )
     }
 
@@ -134,7 +137,8 @@ class DataStoreSettings @Inject constructor(
             movementSmoothing = p[Keys.M_SMOOTHING] ?: 12,
             invertScroll = p[Keys.M_INVERT] ?: false,
             tapToClick = p[Keys.M_TAP_CLICK] ?: true,
-            penMode = p[Keys.M_PEN] ?: false
+            penMode = p[Keys.M_PEN] ?: false,
+            leftHanded = p[Keys.M_LEFT_HANDED] ?: false
         ).sanitized()
     }
 
@@ -184,6 +188,7 @@ class DataStoreSettings @Inject constructor(
             p[Keys.HIDDEN_TILES] = settings.hiddenTiles
             p[Keys.EXTENDED_REPORTS] = settings.extendedReports
             p[Keys.POWER_PROFILE] = settings.powerProfile.name
+            p[Keys.ACCENT_COLOR] = settings.accentColor
         }
     }
 
@@ -196,6 +201,7 @@ class DataStoreSettings @Inject constructor(
             p[Keys.M_INVERT] = s.invertScroll
             p[Keys.M_TAP_CLICK] = s.tapToClick
             p[Keys.M_PEN] = s.penMode
+            p[Keys.M_LEFT_HANDED] = s.leftHanded
         }
     }
 

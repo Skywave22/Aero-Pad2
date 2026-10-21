@@ -59,6 +59,8 @@ class SettingsViewModel @Inject constructor(
     fun setTheme(theme: ThemeMode) = updateApp { it.copy(theme = theme) }
     // Round 7 — personalization.
     fun setUiStyle(style: String) = updateApp { it.copy(uiStyle = style) }
+    /** Round 9 — accent colour (see AccentPalette). */
+    fun setAccentColor(id: String) = updateApp { it.copy(accentColor = id) }
     fun setHiddenTiles(csv: String) = updateApp { it.copy(hiddenTiles = csv) }
     fun setExtendedReports(value: Boolean) = updateApp { it.copy(extendedReports = value) }
     fun setFullscreen(value: Boolean) = updateApp { it.copy(fullscreenMode = value) }
@@ -124,6 +126,8 @@ class SettingsViewModel @Inject constructor(
     fun setInvertScroll(value: Boolean) = updateMouse { it.copy(invertScroll = value) }
     fun setTapToClick(value: Boolean) = updateMouse { it.copy(tapToClick = value) }
     fun setPenMode(value: Boolean) = updateMouse { it.copy(penMode = value) }
+    /** Round 9 — left-handed mode: swaps primary/secondary click everywhere. */
+    fun setLeftHanded(value: Boolean) = updateMouse { it.copy(leftHanded = value) }
 
     // ----- Keyboard -----
     // SECTION 3 AUDIT FIX: copy the CURRENT settings instead of constructing

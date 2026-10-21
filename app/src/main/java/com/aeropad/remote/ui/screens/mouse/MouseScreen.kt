@@ -3,6 +3,7 @@ package com.aeropad.remote.ui.screens.mouse
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import com.aeropad.remote.ui.gestures.detectTwoFingerTap
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -169,6 +170,15 @@ ScrollableChipRow {
                         .fillMaxHeight()
                         .onSizeChanged { padWidthPx = it.width.toFloat() }
                         .pointerInput(Unit) {
+                            // Two-finger tap = right click (laptop trackpad
+                            // convention). Non-consuming, so the drag
+                            // detector below is unaffected.
+                            detectTwoFingerTap {
+                                haptic()
+                                viewModel.onTrackpadTwoFingerTap()
+                            }
+                        }
+                        .pointerInput(Unit) {
                             detectTapGestures(
                                 onTap = { haptic(); viewModel.onTrackpadTap() },
                                 onDoubleTap = { haptic(); viewModel.onTrackpadDoubleTap() },
@@ -181,8 +191,14 @@ ScrollableChipRow {
                                     edgeScrolling = padWidthPx > 0f && startOffset.x >= padWidthPx * 0.88f
                                     viewModel.onTrackpadGestureStart()
                                 },
-                                onDragEnd = { edgeScrolling = false },
-                                onDragCancel = { edgeScrolling = false }
+                                onDragEnd = {
+                                    edgeScrolling = false
+                                    viewModel.onTrackpadGestureEnd()
+                                },
+                                onDragCancel = {
+                                    edgeScrolling = false
+                                    viewModel.onTrackpadGestureEnd()
+                                }
                             ) { change, dragAmount ->
                                 change.consume()
                                 if (edgeScrolling) {
@@ -283,15 +299,29 @@ ScrollableChipRow {
                     .heightIn(min = 56.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // STITCH REDESIGN — LEFT CLICK is the accent (primary) button.
-                KeyCard("LEFT CLICK", modifier = Modifier.weight(2f), height = 56.dp, emphasized = true) {
-                    haptic(); viewModel.clickButton(MouseButton.LEFT)
+                // STITCH REDESIGN — the primary click is the accent (wide)
+                // button. In left-handed mode the two click buttons swap sides
+                // so the thumb lands on the primary one.
+                val leftFirst = !mouseSettings.leftHanded
+                if (leftFirst) {
+                    KeyCard("LEFT CLICK", modifier = Modifier.weight(2f), height = 56.dp, emphasized = true) {
+                        haptic(); viewModel.clickButton(MouseButton.LEFT)
+                    }
                 }
                 KeyCard("MID", modifier = Modifier.weight(1f), height = 56.dp) {
                     haptic(); viewModel.clickButton(MouseButton.MIDDLE)
                 }
-                KeyCard("RIGHT CLICK", modifier = Modifier.weight(2f), height = 56.dp) {
-                    haptic(); viewModel.clickButton(MouseButton.RIGHT)
+                if (leftFirst) {
+                    KeyCard("RIGHT CLICK", modifier = Modifier.weight(2f), height = 56.dp) {
+                        haptic(); viewModel.clickButton(MouseButton.RIGHT)
+                    }
+                } else {
+                    KeyCard("RIGHT CLICK", modifier = Modifier.weight(2f), height = 56.dp, emphasized = true) {
+                        haptic(); viewModel.clickButton(MouseButton.RIGHT)
+                    }
+                    KeyCard("LEFT CLICK", modifier = Modifier.weight(2f), height = 56.dp) {
+                        haptic(); viewModel.clickButton(MouseButton.LEFT)
+                    }
                 }
             }
             Spacer(Modifier.height(16.dp))

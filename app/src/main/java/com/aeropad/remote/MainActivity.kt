@@ -80,7 +80,12 @@ class MainActivity : ComponentActivity() {
                 onDispose { }
             }
 
-            AeroPadAppTheme(spec = AeroPadSpecs.styled(app.uiStyle, darkTheme)) {
+            AeroPadAppTheme(
+                spec = AeroPadSpecs.accented(
+                    AeroPadSpecs.styled(app.uiStyle, darkTheme),
+                    app.accentColor
+                )
+            ) {
                 val iconPack = runCatching { IconPack.valueOf(app.iconPack) }
                     .getOrDefault(IconPack.ROUNDED)
                 androidx.compose.runtime.CompositionLocalProvider(

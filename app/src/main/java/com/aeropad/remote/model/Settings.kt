@@ -63,7 +63,9 @@ data class AppSettings(
      *  is proven stable on real hosts. */
     val extendedReports: Boolean = false,
     /** A12 — one-tap power profile (Performance / Balanced / Battery saver). */
-    val powerProfile: PowerProfile = PowerProfile.BALANCED
+    val powerProfile: PowerProfile = PowerProfile.BALANCED,
+    /** Round 9 — accent colour id (see AccentPalette). */
+    val accentColor: String = "BLUE"
 )
 
 /** Mouse/trackpad tuning. All percentages 0..100. */
@@ -73,7 +75,12 @@ data class MouseSettings(
     val movementSmoothing: Int = 12,
     val invertScroll: Boolean = false,
     val tapToClick: Boolean = true,
-    val penMode: Boolean = false
+    val penMode: Boolean = false,
+    /**
+     * Mirror the mouse for left-handed use: tap = right click, long-press =
+     * left click, and the on-screen buttons swap sides.
+     */
+    val leftHanded: Boolean = false
 ) {
     companion object { const val MIN = 0; const val MAX = 100 }
 

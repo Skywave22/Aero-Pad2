@@ -75,6 +75,22 @@ object AeroPadSpecs {
 
     fun byMode(dark: Boolean): AppThemeSpec = if (dark) DARK else LIGHT
 
+    /**
+     * Round 9 — apply the user's accent palette on top of whatever finish is
+     * active (Material / Glass / Neon). Only the accent hues move; every
+     * surface colour stays as designed so contrast and OLED blackness are
+     * preserved.
+     */
+    fun accented(spec: AppThemeSpec, accentId: String?): AppThemeSpec {
+        val palette = AccentPalette.fromId(accentId)
+        if (palette == AccentPalette.DEFAULT) return spec
+        return spec.copy(
+            primary = palette.accent(spec.isDark),
+            onPrimary = palette.onAccent(spec.isDark),
+            secondary = palette.secondary(spec.isDark)
+        )
+    }
+
     /** Round 7 — premium finishes layered on the Light/Dark base. */
     fun styled(style: String, dark: Boolean): AppThemeSpec = when (style) {
         "GLASS" -> byMode(dark).copy(

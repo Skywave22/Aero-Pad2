@@ -50,6 +50,12 @@ class WidgetInteractor(
 
     fun trackpadStart() = trackpad.startGesture()
 
+    /** Drag end: send the movement the coalescer was holding. */
+    fun trackpadEnd() {
+        val (ix, iy) = trackpad.endGesture()
+        if (ix != 0 || iy != 0) send(HidAction.MouseMove(ix, iy))
+    }
+
     fun trackpadDelta(dx: Float, dy: Float) {
         val (ix, iy) = trackpad.move(dx, dy)
         if (ix != 0 || iy != 0) send(HidAction.MouseMove(ix, iy))

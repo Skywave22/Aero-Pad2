@@ -69,7 +69,8 @@ object PropertyCatalog {
 
     /** AppSettings 20 + MouseSettings 6 + KeyboardSettings 2
      *  + GamepadSettings 8 = 36 global toggles/values. */
-    const val SETTINGS_PROPS = 36
+    // 38 after Round 9 added AppSettings.accentColor and MouseSettings.leftHanded.
+    const val SETTINGS_PROPS = 38
 
     /** Keys on the real default board + favorites cap + FN overlay cap. */
     fun keyboardKeyInstances(): Int {
