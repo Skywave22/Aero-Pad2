@@ -59,6 +59,10 @@ class ScreenshotTourTest {
 
     @After
     fun tearDown() {
+        runCatching {
+            device.setOrientationNatural()
+            device.unfreezeRotation()
+        }
         scenario.close()
     }
 
@@ -250,5 +254,65 @@ class ScreenshotTourTest {
             }
             back()
         }
+    }
+
+    /**
+     * Landscape pass.
+     *
+     * Every screenshot until now was portrait, so the whole app was effectively
+     * untested in the orientation people actually use when it is propped next
+     * to a keyboard or clamped to a TV. This drives the same screens sideways
+     * and photographs them.
+     *
+     * Rotation is frozen rather than "left/right" so the result is deterministic
+     * on any emulator image.
+     */
+    @Test
+    fun captureEveryTopLevelScreenLandscape() {
+        device.setOrientationLeft()
+        device.waitForIdle()
+        Thread.sleep(1500)
+
+        shot("L01-home-top")
+        scrollDown(1)
+        shot("L02-home-scrolled")
+
+        scrollToTop()
+        if (findAndTap("Keyboard")) {
+            shot("L03-keyboard")
+            scrollDown(1)
+            shot("L04-keyboard-scrolled")
+            back()
+        }
+        scrollToTop()
+        if (findAndTap("Mouse")) {
+            shot("L05-mouse")
+            back()
+        }
+        scrollToTop()
+        if (findAndTap("Gamepad")) {
+            shot("L06-gamepad")
+            back()
+        }
+        scrollToTop()
+        if (tap("Layouts")) {
+            shot("L07-layouts")
+            back()
+        }
+        scrollToTop()
+        if (tap("Devices")) {
+            shot("L08-devices")
+            back()
+        }
+        scrollToTop()
+        if (tap("Settings")) {
+            shot("L09-settings-top")
+            scrollDown(3)
+            shot("L10-settings-mid")
+            back()
+        }
+
+        device.setOrientationNatural()
+        device.waitForIdle()
     }
 }
