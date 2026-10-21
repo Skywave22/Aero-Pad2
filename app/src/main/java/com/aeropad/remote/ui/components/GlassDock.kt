@@ -65,9 +65,15 @@ object DockMetrics {
      */
     val height = 100.dp
 
-    /** What the dock actually covers in the current orientation. */
+    /**
+     * What the dock actually covers in the current orientation.
+     *
+     * In landscape a phone window is only ~190 dp tall on a small device, so the
+     * full labelled pill took almost half the screen. Landscape uses a compact
+     * icon-only bar instead.
+     */
     @Composable
-    fun height(): Dp = if (isLandscape()) 82.dp else height
+    fun height(): Dp = if (isLandscape()) 62.dp else height
 
     /** Bottom padding a docked screen should reserve. */
     @Composable
@@ -118,7 +124,10 @@ fun GlassDock(
             // Centre + cap the width: stretching a 4-tab pill across a landscape
             // window leaves the tabs stranded at the extremes.
             .widthIn(max = Adaptive.DOCK_MAX_WIDTH)
-            .padding(horizontal = 24.dp, vertical = 10.dp)
+            .padding(
+                horizontal = if (isLandscape()) 96.dp else 24.dp,
+                vertical = if (isLandscape()) 4.dp else 10.dp
+            )
             .shadow(
                 elevation = 22.dp,
                 shape = RoundedCornerShape(26.dp),
@@ -140,7 +149,10 @@ fun GlassDock(
                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
                 shape = RoundedCornerShape(26.dp)
             )
-            .padding(horizontal = 8.dp, vertical = 7.dp)
+            .padding(
+                horizontal = 8.dp,
+                vertical = if (isLandscape()) 3.dp else 7.dp
+            )
     ) {
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
             val tabWidth = maxWidth / DockItems.size
@@ -158,7 +170,7 @@ fun GlassDock(
                 modifier = Modifier
                     .offset(x = indicatorOffset)
                     .width(tabWidth)
-                    .height(50.dp)
+                    .height(if (isLandscape()) 40.dp else 50.dp)
                     .padding(horizontal = 4.dp)
                     .clip(RoundedCornerShape(19.dp))
                     .background(
@@ -214,7 +226,7 @@ private fun DockTab(
         verticalArrangement = Arrangement.Center,
         modifier = Modifier
             .width(width)
-            .heightIn(min = 50.dp)
+            .heightIn(min = if (isLandscape()) 40.dp else 50.dp)
             // A rounded rect, not a circle: clipping a ~65dp-wide tab to a
             // circle used to slice the corners off the label (the dock
             // literally rendered "Layouts" as "ayouts").
@@ -243,8 +255,12 @@ private fun DockTab(
                 .size(22.dp)
                 .graphicsLayer { scaleX = iconScale; scaleY = iconScale }
         )
-        Box(modifier = Modifier.height(3.dp))
-        Text(
+        if (!isLandscape()) {
+            Box(modifier = Modifier.height(3.dp))
+        }
+        // Landscape is ~190 dp tall on a small phone: the icon is enough, and
+        // TalkBack still announces the label through the tab's semantics.
+        if (!isLandscape()) Text(
             item.label,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
