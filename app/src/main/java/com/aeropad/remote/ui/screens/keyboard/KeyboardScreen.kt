@@ -227,6 +227,43 @@ fun KeyboardScreen(
                 }
             }
 
+            // ---------- F3: sticky modifiers ----------
+            // Tapping latches for one key, double-tapping locks it down, so
+            // Ctrl+Shift+Esc and Alt+Tab are possible with one thumb.
+            SectionLabel("Modifiers (tap = next key, double-tap = lock)")
+            run {
+                val stickyState by viewModel.stickyState.collectAsStateWithLifecycle()
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val mods = listOf(
+                        "Ctrl" to HidModifiers.LEFT_CTRL,
+                        "Shift" to HidModifiers.LEFT_SHIFT,
+                        "Alt" to HidModifiers.LEFT_ALT,
+                        "Win" to HidModifiers.LEFT_GUI
+                    )
+                    mods.forEach { (label, mod) ->
+                        FilterChip(
+                            selected = stickyState.isOn(mod),
+                            onClick = { haptic(); viewModel.toggleStickyModifier(mod) },
+                            label = {
+                                Text(
+                                    if (stickyState.isLockedFor(mod)) "$label 🔒" else label
+                                )
+                            }
+                        )
+                    }
+                    AssistChip(
+                        onClick = { haptic(); viewModel.clearStickyModifiers() },
+                        label = { Text("Clear") },
+                        enabled = stickyState.mask != 0
+                    )
+                }
+            }
+
             // ---------- Shortcuts ----------
             SectionLabel("Shortcuts")
             val ctrl = HidModifiers.LEFT_CTRL

@@ -139,6 +139,95 @@ emulator with UiAutomator and uploads a PNG of every top-level screen as the
 
 ---
 
+## 3c. New features added in this pass (from `AeroPad-New-Features.txt`)
+
+Version stays **3.6.0 / versionCode 360** — no bump, per instruction. These are
+additions *inside existing screens*; no new hub screen was created (X5), and the
+app still has no `INTERNET` permission (X2), no PC companion (X1), no
+marketplace (X4), no second editor (X6).
+
+### F1 — Setup Doctor (Connection Health screen)
+
+New `domain/SetupDoctor.kt`: a **pure, Android-free** decision table that turns
+real engine/platform state into an ordered, actionable list of findings.
+
+- Inputs it is allowed to read: Bluetooth adapter state, permission state,
+  `HidConnectionState` (incl. `HidUnsupported.reason` and `Error.message`),
+  measured `sendReport()` failures/timings, RSSI **only when the platform
+  provides it**, disconnect count, battery level, power-saver mode, descriptor
+  mode, reconnect backoff.
+- Levels: `BLOCKER` → `WARNING` → `INFO` → `OK`, sorted so the top item is
+  always the next thing to fix. Verdict header: BLOCKED / NEEDS_ATTENTION /
+  READY / NOT_CONNECTED.
+- Unknowns are never treated as faults (null RSSI ≠ weak signal, null battery ≠
+  low battery).
+- Each actionable finding carries a `Fix` enum; the ViewModel maps it to a real
+  Settings intent (Bluetooth, battery saver, app details) behind `runCatching`,
+  so a ROM without that activity cannot crash the screen.
+- Rendered as a card at the top of **Connection Health** — new
+  `ConnectionHealthViewModel.setupReport` (combine of 5 flows).
+
+### F2 — Shortcut Packs (Layouts, seeded)
+
+New `data/layout/ShortcutPacks.kt` with **five** ready-made layouts built only
+from documented OS shortcuts: **Editing**, **Browser**, **Window**, **Present**,
+**Media Studio**.
+
+- `LayoutRepository.seedIfEmpty()` previously **bailed out entirely** if any
+  layout existed, so upgrading users never received new built-ins. It now
+  inserts any built-in whose **name** is missing, guarded by a `Mutex` (both
+  app startup and the Layouts screen call it) and backed by a new
+  `LayoutProfileDao.allNames()`.
+- Seeding now also runs from `AeroPadApplication.onCreate`, so packs are
+  available even if the Layouts screen is never opened first.
+- Built-ins remain undeletable (existing `deleteById` only removes `isBuiltIn=0`),
+  so re-seeding can never duplicate or resurrect a user-deleted layout.
+
+### F3 — Sticky modifiers (Keyboard)
+
+New `domain/StickyModifiers.kt` — tap latches a modifier for the next key,
+double-tap within 450 ms locks it, tapping a locked modifier turns it off.
+Wired through `RemoteControlViewModel` (`stickyState`, `toggleStickyModifier`)
+into the modifier chip row above **Shortcuts**; latches are consumed by the next
+`keyTap`/`typeText` and cleared on disconnect.
+
+### F6 — Connect / disconnect triggers (Devices → host profile)
+
+New `domain/HostTriggerController.kt` + `HostTriggerRunner` (started by
+`HidService`). Fires the profile's macro on the real connect edge and only on
+`Idle` for disconnect — a transient `Error` or reconnect does **not** fire the
+disconnect macro. UI: "When this host connects / disconnects" pickers in the
+Devices host-profile dialog.
+
+### F19 — Per-host settings (Devices → host profile)
+
+`HostProfile` gained `scrollSpeed`, `hapticIntensity`, `onConnectMacroId`,
+`onDisconnectMacroId`; `bindHostTuning` writes all ten fields atomically and
+`clearTuning()` resets a host to global. Applied on connect in `AeroPadApp`.
+Dialog now has a scroll-speed override slider, haptic-intensity chips, and a
+**Clear** action.
+
+### Tests added (all pure JVM, no device)
+
+| File | Covers |
+|---|---|
+| `features/SetupDoctorTest.kt` (16) | blocker ordering, unknown-value handling, thresholds, fix wiring |
+| `features/StickyModifiersTest.kt` (14) | latch / lock / 450 ms boundary / consume / clear / mask width |
+| `features/HostTriggerControllerTest.kt` (10) | connect edge once, disconnect on Idle only, host switching, throwing engine |
+| `features/ShortcutPacksTest.kt` (10) | unique names/ids, in-bounds frames, no overlaps, real bindings |
+
+**`./gradlew :app:testDebugUnitTest` → 362 tests, 0 failures.**
+`:app:assembleDebug` → BUILD SUCCESSFUL.
+
+### Bug found while testing
+
+`",".format(locale, args)` — Kotlin's `String.format(vararg)` extension has no
+Locale overload, so a Locale passed first is swallowed as a format argument and
+the raw template is emitted. `SetupDoctor` now formats through one `fmt()`
+helper that calls `java.lang.String.format(locale, template, *args)`.
+
+---
+
 ## 4. Still open (deliberately not changed in this pass)
 
 - **H4 — Play Store targetSdk.** Still `targetSdk 35`, AGP 8.2.2, Kotlin 1.9.22.
@@ -152,6 +241,9 @@ emulator with UiAutomator and uploads a PNG of every top-level screen as the
 - **Part 8 screen merges** (keyboard ×4 → 2, layout surfaces, gamepad editors)
   were not done; they are UX restructuring, not bug fixes, and would risk the
   now-stable navigation.
+- **F1/F2/F3/F6/F19 follow-ups not done:** turbo/double-tap on widgets (F10/F17),
+  QR pairing (F9 — needs CAMERA and must not add networking), rumble (F12), BLE
+  HID fallback (F13).
 - **Small remaining polish seen in the screenshots:** the Layouts template chip
   row is horizontally scrollable but gives no affordance that more chips exist
   off-screen (the third chip is cut), and the same is true of the home "Quick

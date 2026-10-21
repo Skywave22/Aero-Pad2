@@ -12,6 +12,8 @@ import com.aeropad.remote.model.HidConsumer
 import com.aeropad.remote.model.HidKeys
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -74,16 +76,42 @@ class LayoutRepository @Inject constructor(
         return save(null, spec.copy(name = spec.name + " (imported)"))
     }
 
-    /** Seed starter layouts exactly once. */
+    /**
+     * Seed built-in packs.
+     *
+     * F2 — previously this bailed out entirely when ANY layout existed, so
+     * users upgrading from an older version never received new packs. It now
+     * inserts any built-in whose name is missing, which is also how a fresh
+     * install gets all of them.
+     */
     suspend fun seedIfEmpty() {
+        // Application startup and the Layouts ViewModel both call this; the
+        // mutex makes the name check and the inserts atomic so a pack can
+        // never be inserted twice.
+        seedMutex.withLock {
         runCatching {
-            if (dao.count() > 0) return
-            save(null, starterMediaRemote(), isBuiltIn = true)
-            save(null, starterTrackpadCombo(), isBuiltIn = true)
-            save(null, starterGamepadLayout(), isBuiltIn = true)
-            Timber.i("seeded built-in layouts")
+            val existing = dao.allNames().toSet()
+            val all = builtInPacks()
+            var added = 0
+            all.forEach { spec ->
+                if (spec.name !in existing) {
+                    save(null, spec, isBuiltIn = true)
+                    added++
+                }
+            }
+            if (added > 0) Timber.i("seeded %d built-in layouts", added)
         }.onFailure { Timber.e(it, "layout seeding failed") }
+        }
     }
+
+    private val seedMutex = Mutex()
+
+    /** Every built-in starter + shortcut pack, in menu order. */
+    internal fun builtInPacks(): List<LayoutSpec> = listOf(
+        starterMediaRemote(),
+        starterTrackpadCombo(),
+        starterGamepadLayout()
+    ) + com.aeropad.remote.data.layout.ShortcutPacks.all()
 
     // ------------------------------------------------------------------
     // Built-in starter layouts

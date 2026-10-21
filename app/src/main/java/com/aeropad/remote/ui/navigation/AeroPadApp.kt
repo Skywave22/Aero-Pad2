@@ -170,6 +170,15 @@ fun AeroPadApp(
                         runCatching { ThemeMode.valueOf(profile.themeMode) }
                             .getOrNull()?.let { settingsViewModel.setTheme(it) }
                     }
+                    // F19 — the remaining per-host overrides.
+                    if (profile.scrollSpeed >= 0) {
+                        settingsViewModel.setScrollSpeed(profile.scrollSpeed)
+                    }
+                    if (profile.hapticIntensity.isNotBlank()) {
+                        runCatching {
+                            com.aeropad.remote.model.HapticIntensity.valueOf(profile.hapticIntensity)
+                        }.getOrNull()?.let { settingsViewModel.setHapticIntensity(it) }
+                    }
                 }
             }
         } else {

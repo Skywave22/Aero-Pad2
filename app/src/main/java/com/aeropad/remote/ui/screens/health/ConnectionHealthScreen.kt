@@ -21,6 +21,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.MedicalServices
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -72,6 +74,7 @@ fun ConnectionHealthScreen(
     val diagRunning by viewModel.diagRunning.collectAsStateWithLifecycle()
     val exportPayload by viewModel.exportPayload.collectAsStateWithLifecycle()
     val appSettings by viewModel.appSettings.collectAsStateWithLifecycle()
+    val doctor by viewModel.setupReport.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     val exportLauncher = rememberLauncherForActivityResult(
@@ -116,6 +119,9 @@ fun ConnectionHealthScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // ---------- F1: Setup Doctor ----------
+            DoctorCard(report = doctor, onFix = viewModel::applyFix)
+
             // ---------- Status card ----------
             GlassCard(modifier = Modifier.fillMaxWidth()) {
                 Row(
@@ -411,5 +417,87 @@ private fun MetricRow(label: String, value: String) {
             textAlign = androidx.compose.ui.text.style.TextAlign.End,
             modifier = Modifier.weight(1.4f)
         )
+    }
+}
+
+// ---------------------------------------------------------------------------
+// F1 — Setup Doctor
+// ---------------------------------------------------------------------------
+
+/** One-line verdict + an ordered, actionable list of what the doctor found. */
+@Composable
+private fun DoctorCard(
+    report: com.aeropad.remote.domain.SetupDoctor.Report,
+    onFix: (com.aeropad.remote.domain.SetupDoctor.Fix) -> Unit
+) {
+    val accent = when (report.verdict) {
+        com.aeropad.remote.domain.SetupDoctor.Verdict.BLOCKED -> Color(0xFFE74C3C)
+        com.aeropad.remote.domain.SetupDoctor.Verdict.NEEDS_ATTENTION -> Color(0xFFF1C40F)
+        com.aeropad.remote.domain.SetupDoctor.Verdict.READY -> Color(0xFF2ECC71)
+        com.aeropad.remote.domain.SetupDoctor.Verdict.NOT_CONNECTED ->
+            MaterialTheme.colorScheme.outline
+    }
+
+    GlassCard(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Rounded.MedicalServices,
+                    contentDescription = null,
+                    tint = accent,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.size(8.dp))
+                Column {
+                    Text("Setup Doctor", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        report.headline,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = accent
+                    )
+                }
+            }
+
+            report.findings.forEach { finding ->
+                val color = when (finding.level) {
+                    com.aeropad.remote.domain.SetupDoctor.Level.BLOCKER -> Color(0xFFE74C3C)
+                    com.aeropad.remote.domain.SetupDoctor.Level.WARNING -> Color(0xFFF1C40F)
+                    com.aeropad.remote.domain.SetupDoctor.Level.INFO ->
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    com.aeropad.remote.domain.SetupDoctor.Level.OK -> Color(0xFF2ECC71)
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(7.dp)
+                                .background(color, CircleShape)
+                        )
+                        Spacer(Modifier.size(8.dp))
+                        Text(
+                            finding.title,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = color
+                        )
+                    }
+                    Text(
+                        finding.detail,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 15.dp)
+                    )
+                    if (finding.fix != com.aeropad.remote.domain.SetupDoctor.Fix.NONE) {
+                        AssistChip(
+                            modifier = Modifier.padding(start = 15.dp, top = 4.dp),
+                            onClick = { onFix(finding.fix) },
+                            label = { Text(finding.action) }
+                        )
+                    }
+                }
+            }
+        }
     }
 }

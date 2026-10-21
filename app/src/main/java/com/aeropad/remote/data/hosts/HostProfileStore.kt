@@ -42,7 +42,14 @@ data class HostProfile(
     val mouseSensitivity: Int = -1,
     val keyTapDelayMs: Int = -1,
     val gamepadMode: String = "",
-    val themeMode: String = ""
+    val themeMode: String = "",
+    // F19 — finish per-host binding: scroll speed + haptic intensity.
+    val scrollSpeed: Int = -1,
+    val hapticIntensity: String = "",
+    // F6 — automation triggers: run a macro on connect / disconnect.
+    // 0 = none. Stored as macro row ids.
+    val onConnectMacroId: Long = 0,
+    val onDisconnectMacroId: Long = 0
 ) {
     companion object {
         const val LABEL_MAX = 30
@@ -110,15 +117,27 @@ interface HostProfiles {
     fun bindLayout(address: String, layoutId: Long)
     fun layoutFor(address: String): Long
 
-    /** A4 — bind per-host tuning (layout + mouse sensitivity + key delay + gamepad mode + theme). */
+    /**
+     * A4 + F19 — bind the full per-host tuning in ONE write: layout, mouse
+     * sensitivity, scroll speed, key tap delay, haptic intensity, gamepad
+     * mode, theme, and the F6 connect/disconnect trigger macros.
+     * -1 / "" / 0 = use the global setting / no trigger.
+     */
     fun bindHostTuning(
         address: String,
         layoutId: Long = layoutFor(address),
         mouseSensitivity: Int = -1,
         keyTapDelayMs: Int = -1,
         gamepadMode: String = "",
-        themeMode: String = ""
+        themeMode: String = "",
+        scrollSpeed: Int = -1,
+        hapticIntensity: String = "",
+        onConnectMacroId: Long = 0,
+        onDisconnectMacroId: Long = 0
     ) {}
+
+    /** Clear every per-host override back to the global settings. */
+    fun clearTuning(address: String) {}
 
     fun profileFor(address: String): HostProfile? =
         profiles.value.firstOrNull { it.address == address }
@@ -182,6 +201,25 @@ class HostProfileStore @Inject constructor(
         )
     }
 
+    override fun clearTuning(address: String) {
+        val existing = _profiles.value.firstOrNull { it.address == address } ?: return
+        persist(
+            HostProfileCodec.upsert(
+                _profiles.value,
+                existing.copy(
+                    mouseSensitivity = -1,
+                    scrollSpeed = -1,
+                    keyTapDelayMs = -1,
+                    hapticIntensity = "",
+                    gamepadMode = "",
+                    themeMode = "",
+                    onConnectMacroId = 0,
+                    onDisconnectMacroId = 0
+                ).sanitized()
+            )
+        )
+    }
+
     override fun layoutFor(address: String): Long =
         _profiles.value.firstOrNull { it.address == address }?.layoutId ?: 0L
 
@@ -191,7 +229,11 @@ class HostProfileStore @Inject constructor(
         mouseSensitivity: Int,
         keyTapDelayMs: Int,
         gamepadMode: String,
-        themeMode: String
+        themeMode: String,
+        scrollSpeed: Int,
+        hapticIntensity: String,
+        onConnectMacroId: Long,
+        onDisconnectMacroId: Long
     ) {
         val existing = _profiles.value.firstOrNull { it.address == address }
         persist(
@@ -206,8 +248,12 @@ class HostProfileStore @Inject constructor(
                     mouseSensitivity = mouseSensitivity,
                     keyTapDelayMs = keyTapDelayMs,
                     gamepadMode = gamepadMode,
-                    themeMode = themeMode
-                )
+                    themeMode = themeMode,
+                    scrollSpeed = scrollSpeed,
+                    hapticIntensity = hapticIntensity,
+                    onConnectMacroId = onConnectMacroId,
+                    onDisconnectMacroId = onDisconnectMacroId
+                ).sanitized()
             )
         )
     }

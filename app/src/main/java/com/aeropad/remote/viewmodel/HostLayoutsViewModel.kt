@@ -16,7 +16,8 @@ import javax.inject.Inject
 @HiltViewModel
 class HostLayoutsViewModel @Inject constructor(
     private val hosts: HostProfiles,
-    repository: LayoutRepository
+    repository: LayoutRepository,
+    macroRepository: com.aeropad.remote.data.macros.MacroRepository
 ) : ViewModel() {
 
     val layouts: StateFlow<List<LayoutProfile>> = repository.observeProfiles()
@@ -32,15 +33,31 @@ class HostLayoutsViewModel @Inject constructor(
         mouseSensitivity: Int,
         keyTapDelayMs: Int,
         gamepadMode: String,
-        themeMode: String
+        themeMode: String,
+        scrollSpeed: Int = -1,
+        hapticIntensity: String = "",
+        onConnectMacroId: Long = 0,
+        onDisconnectMacroId: Long = 0
     ) = hosts.bindHostTuning(
         address = address,
         layoutId = layoutId,
         mouseSensitivity = mouseSensitivity,
         keyTapDelayMs = keyTapDelayMs,
         gamepadMode = gamepadMode,
-        themeMode = themeMode
+        themeMode = themeMode,
+        scrollSpeed = scrollSpeed,
+        hapticIntensity = hapticIntensity,
+        onConnectMacroId = onConnectMacroId,
+        onDisconnectMacroId = onDisconnectMacroId
     )
+
+    /** Reset every per-host override for this address. */
+    fun clearTuning(address: String) = hosts.clearTuning(address)
+
+    /** F6 — macros that can be bound as connect/disconnect triggers. */
+    val macros: StateFlow<List<com.aeropad.remote.data.macros.Macro>> =
+        macroRepository.observeAll()
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     fun profileFor(address: String): HostProfile? = hosts.profileFor(address)
 

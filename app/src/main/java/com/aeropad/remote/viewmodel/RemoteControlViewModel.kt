@@ -174,9 +174,69 @@ class RemoteControlViewModel @Inject constructor(
     // Keyboard / text
     // ------------------------------------------------------------------
 
-    fun keyTap(key: Byte, modifiers: Byte = 0) = dispatch(HidAction.KeyTap(key, modifiers), isDiscreteTap = true)
+    // ------------------------------------------------------------------
+    // F3 — sticky (latched) modifiers
+    //
+    // Tap Shift once and the NEXT key is shifted; double-tap to lock it down.
+    // This is what makes Ctrl+Shift+Esc or Alt+Tab possible one-handed.
+    // Stored as a snapshot StateFlow so the keyboard screens can highlight the
+    // latched/locked keys.
+    // ------------------------------------------------------------------
+
+    /** Snapshot of the latch state for the UI (0 = nothing latched). */
+    data class StickyState(val latched: Int = 0, val locked: Int = 0) {
+        val mask: Int get() = latched or locked
+        fun isOn(mod: Byte): Boolean = (mask and (mod.toInt() and 0xFF)) != 0
+        fun isLockedFor(mod: Byte): Boolean = (locked and (mod.toInt() and 0xFF)) != 0
+    }
+
+    private val sticky = com.aeropad.remote.domain.StickyModifiers()
+    private val _stickyState = kotlinx.coroutines.flow.MutableStateFlow(StickyState())
+    val stickyState: kotlinx.coroutines.flow.StateFlow<StickyState> = _stickyState
+
+    /** Tap a modifier to latch it; double-tap to lock; tap a locked one to clear. */
+    fun toggleStickyModifier(mod: Byte) {
+        sticky.toggle(mod)
+        _stickyState.value = StickyState(sticky.latched, sticky.locked)
+    }
+
+    /** Release every latched/locked modifier. */
+    fun clearStickyModifiers() {
+        sticky.clear()
+        _stickyState.value = StickyState()
+    }
+
+    /**
+     * A key tap, with any latched modifiers folded in.
+     * The one-shot latch is consumed by this keystroke; locked ones persist.
+     */
+    fun keyTap(key: Byte, modifiers: Byte = 0) {
+        if (key == HidKeys.NONE && modifiers.toInt() == 0 && sticky.isActive) {
+            // A modifier-only press (e.g. tapping Win on its own): send the
+            // latched mask with no key so the host sees the modifier down.
+            dispatch(
+                HidAction.KeyTap(HidKeys.NONE, sticky.mask.toByte()),
+                isDiscreteTap = true
+            )
+            return
+        }
+        val combined = ((modifiers.toInt() or sticky.mask) and 0xFF).toByte()
+        dispatch(HidAction.KeyTap(key, combined), isDiscreteTap = true)
+        if (sticky.isActive) {
+            sticky.consume()
+            _stickyState.value = StickyState(sticky.latched, sticky.locked)
+        }
+    }
+
     fun typeText(text: String) {
         if (text.isNotEmpty()) {
+            // Typed text carries its own case/shift state, so applying a
+            // latched modifier here would be wrong — but the latch has still
+            // been "used up" by the user typing.
+            if (sticky.isActive) {
+                sticky.consume()
+                _stickyState.value = StickyState(sticky.latched, sticky.locked)
+            }
             val skipped = CharToHidMapper.countUnmappable(text)
             if (skipped > 0) {
                 _uiNotice.value = "$skipped character(s) could not be sent (unsupported by standard HID layout)."
@@ -364,6 +424,9 @@ class RemoteControlViewModel @Inject constructor(
                     _dragLock.value = false
                     _scrollMode.value = false
                     lastFallbackStickKey = null
+                    // F3 — never leave a modifier latched across a reconnect.
+                    sticky.clear()
+                    _stickyState.value = StickyState()
                 }
             }
         }

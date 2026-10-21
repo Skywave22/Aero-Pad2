@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -65,6 +66,69 @@ class ConnectionHealthViewModel @Inject constructor(
     /** (levelPercent, currentMicroAmps?) — both from BatteryManager. */
     private val _battery = MutableStateFlow<Pair<Int, Int?>>(0 to null)
     val battery: StateFlow<Pair<Int, Int?>> = _battery.asStateFlow()
+
+    /** F1 — Setup Doctor report, recomputed whenever any input moves. */
+    val setupReport: StateFlow<com.aeropad.remote.domain.SetupDoctor.Report> =
+        combine(
+            connection,
+            _snapshot,
+            _batterySaver,
+            _battery,
+            reconnectNextAtMs
+        ) { conn, snap, saver, battery, nextRetry ->
+            com.aeropad.remote.domain.SetupDoctor.diagnose(
+                com.aeropad.remote.domain.SetupDoctor.SetupInputs(
+                    bluetoothOn = runCatching {
+                        (context.getSystemService(Context.BLUETOOTH_SERVICE)
+                            as? android.bluetooth.BluetoothManager)?.adapter?.isEnabled
+                    }.getOrNull() ?: true,
+                    permissionsGranted = conn !is HidConnectionState.PermissionMissing,
+                    hidUnsupportedReason = (conn as? HidConnectionState.HidUnsupported)?.reason,
+                    errorMessage = (conn as? HidConnectionState.Error)?.message,
+                    connected = conn is HidConnectionState.Connected,
+                    hostName = (conn as? HidConnectionState.Connected)?.device?.name,
+                    batterySaverOn = saver,
+                    batteryPercent = battery.first.takeIf { it > 0 },
+                    sendFailures = snap.totalFailed,
+                    sendTotal = snap.totalSent,
+                    recentMaxSendUs = snap.recentMaxSendUs,
+                    rssiDbm = snap.rssiDbm,
+                    disconnects = snap.disconnects,
+                    extendedDescriptor = runCatching { engine.isExtendedDescriptorActive() }
+                        .getOrDefault(false),
+                    reconnecting = nextRetry != null
+                )
+            )
+        }.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5_000),
+            com.aeropad.remote.domain.SetupDoctor.diagnose(
+                com.aeropad.remote.domain.SetupDoctor.SetupInputs()
+            )
+        )
+
+    /**
+     * F1 — fire the system screen that fixes a doctor finding. Every target is
+     * a real Settings intent; nothing is faked, and failures are swallowed so a
+     * ROM without the activity can't crash us.
+     */
+    fun applyFix(fix: com.aeropad.remote.domain.SetupDoctor.Fix) {
+        val intent = when (fix) {
+            com.aeropad.remote.domain.SetupDoctor.Fix.BLUETOOTH ->
+                android.content.Intent(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS)
+            com.aeropad.remote.domain.SetupDoctor.Fix.BATTERY ->
+                android.content.Intent(android.provider.Settings.ACTION_BATTERY_SAVER_SETTINGS)
+            com.aeropad.remote.domain.SetupDoctor.Fix.PERMISSIONS,
+            com.aeropad.remote.domain.SetupDoctor.Fix.APP_SETTINGS ->
+                android.content.Intent(
+                    android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    android.net.Uri.fromParts("package", context.packageName, null)
+                )
+            com.aeropad.remote.domain.SetupDoctor.Fix.NONE -> return
+        }
+        intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        runCatching { context.startActivity(intent) }
+    }
 
     val appSettings = settingsStore.appSettings
         .stateIn(viewModelScope, SharingStarted.Eagerly, com.aeropad.remote.model.AppSettings())

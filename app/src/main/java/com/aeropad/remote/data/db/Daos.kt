@@ -27,6 +27,10 @@ interface LayoutProfileDao {
 
     @Query("SELECT COUNT(*) FROM layout_profiles")
     suspend fun count(): Int
+
+    /** F2 — names only, so seeding can add missing built-in packs. */
+    @Query("SELECT name FROM layout_profiles")
+    suspend fun allNames(): List<String>
 }
 
 @Dao

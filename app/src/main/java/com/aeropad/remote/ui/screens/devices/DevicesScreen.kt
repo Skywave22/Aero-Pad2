@@ -85,6 +85,8 @@ fun DevicesScreen(
     val hostLayouts: com.aeropad.remote.viewmodel.HostLayoutsViewModel = hiltViewModel()
     val layouts by hostLayouts.layouts.collectAsStateWithLifecycle()
     val hostProfiles by hostLayouts.hostProfiles.collectAsStateWithLifecycle()
+    // F6 — macros available as connect/disconnect triggers.
+    val macros by hostLayouts.macros.collectAsStateWithLifecycle()
     var bindTarget by remember { mutableStateOf<RemoteDevice?>(null) }
     val discovered by viewModel.discoveredDevices.collectAsStateWithLifecycle()
     val isScanning by viewModel.isScanning.collectAsStateWithLifecycle()
@@ -280,6 +282,15 @@ fun DevicesScreen(
         }
         var selectedGamepadMode by remember(current) { mutableStateOf(current?.gamepadMode.orEmpty()) }
         var selectedThemeMode by remember(current) { mutableStateOf(current?.themeMode.orEmpty()) }
+        // F19 — remaining overrides.
+        var overrideScroll by remember(current) { mutableStateOf((current?.scrollSpeed ?: -1) >= 0) }
+        var scrollSpeed by remember(current) {
+            mutableIntStateOf(current?.scrollSpeed?.takeIf { it >= 0 } ?: 55)
+        }
+        var selectedHaptics by remember(current) { mutableStateOf(current?.hapticIntensity.orEmpty()) }
+        // F6 — trigger macros.
+        var onConnectMacro by remember(current) { mutableStateOf(current?.onConnectMacroId ?: 0L) }
+        var onDisconnectMacro by remember(current) { mutableStateOf(current?.onDisconnectMacroId ?: 0L) }
 
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { bindTarget = null },
@@ -381,6 +392,93 @@ fun DevicesScreen(
                             )
                         }
                     }
+
+                    // ---------- F19: scroll speed ----------
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Override scroll speed", modifier = Modifier.weight(1f))
+                        Switch(checked = overrideScroll, onCheckedChange = { overrideScroll = it })
+                    }
+                    if (overrideScroll) {
+                        Text("Scroll speed: $scrollSpeed%")
+                        Slider(
+                            value = scrollSpeed.toFloat(),
+                            onValueChange = { scrollSpeed = it.toInt() },
+                            valueRange = 0f..100f
+                        )
+                    }
+
+                    // ---------- F19: haptics ----------
+                    Text("Haptic intensity override", style = MaterialTheme.typography.labelLarge)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        FilterChip(
+                            selected = selectedHaptics.isBlank(),
+                            onClick = { selectedHaptics = "" },
+                            label = { Text("Default") }
+                        )
+                        com.aeropad.remote.model.HapticIntensity.entries.forEach { h ->
+                            FilterChip(
+                                selected = selectedHaptics == h.name,
+                                onClick = { selectedHaptics = h.name },
+                                label = { Text(h.name.lowercase().replaceFirstChar { it.uppercase() }) }
+                            )
+                        }
+                    }
+
+                    // ---------- F6: automation triggers ----------
+                    Text("When this host connects", style = MaterialTheme.typography.labelLarge)
+                    if (macros.isEmpty()) {
+                        Text(
+                            "No macros yet — record one on the Macros screen to use triggers.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            FilterChip(
+                                selected = onConnectMacro == 0L,
+                                onClick = { onConnectMacro = 0L },
+                                label = { Text("Nothing") }
+                            )
+                            macros.forEach { m ->
+                                FilterChip(
+                                    selected = onConnectMacro == m.id,
+                                    onClick = { onConnectMacro = m.id },
+                                    label = { Text("▶ " + m.spec.name, maxLines = 1) }
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        Text("When this host disconnects", style = MaterialTheme.typography.labelLarge)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            FilterChip(
+                                selected = onDisconnectMacro == 0L,
+                                onClick = { onDisconnectMacro = 0L },
+                                label = { Text("Nothing") }
+                            )
+                            macros.forEach { m ->
+                                FilterChip(
+                                    selected = onDisconnectMacro == m.id,
+                                    onClick = { onDisconnectMacro = m.id },
+                                    label = { Text("▶ " + m.spec.name, maxLines = 1) }
+                                )
+                            }
+                        }
+                    }
                 }
             },
             confirmButton = {
@@ -392,7 +490,11 @@ fun DevicesScreen(
                             mouseSensitivity = if (overrideMouse) mouseSens else -1,
                             keyTapDelayMs = if (overrideKeyDelay) keyDelay else -1,
                             gamepadMode = selectedGamepadMode,
-                            themeMode = selectedThemeMode
+                            themeMode = selectedThemeMode,
+                            scrollSpeed = if (overrideScroll) scrollSpeed else -1,
+                            hapticIntensity = selectedHaptics,
+                            onConnectMacroId = onConnectMacro,
+                            onDisconnectMacroId = onDisconnectMacro
                         )
                         bindTarget = null
                     }
@@ -401,8 +503,18 @@ fun DevicesScreen(
                 }
             },
             dismissButton = {
-                androidx.compose.material3.TextButton(onClick = { bindTarget = null }) {
-                    Text("Cancel")
+                Row {
+                    androidx.compose.material3.TextButton(
+                        onClick = {
+                            hostLayouts.clearTuning(target.address)
+                            bindTarget = null
+                        }
+                    ) {
+                        Text("Clear")
+                    }
+                    androidx.compose.material3.TextButton(onClick = { bindTarget = null }) {
+                        Text("Cancel")
+                    }
                 }
             }
         )

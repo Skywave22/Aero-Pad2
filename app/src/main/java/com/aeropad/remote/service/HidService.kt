@@ -75,6 +75,8 @@ class HidService : Service() {
     }
 
     @Inject lateinit var hidController: HidController
+    // F6 — connect/disconnect trigger macros (per host).
+    @Inject lateinit var hostTriggers: com.aeropad.remote.domain.HostTriggerRunner
     @Inject lateinit var haptics: com.aeropad.remote.haptics.Haptics
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -114,6 +116,9 @@ class HidService : Service() {
                 }
             }
             .launchIn(serviceScope)
+        // F6 — the service is alive exactly as long as the HID link, which is
+        // exactly when connect/disconnect triggers need to fire.
+        hostTriggers.start()
         Timber.i("HidService created")
     }
 
