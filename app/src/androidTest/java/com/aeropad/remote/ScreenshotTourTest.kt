@@ -95,6 +95,36 @@ class ScreenshotTourTest {
         return true
     }
 
+    /**
+     * Find [text] anywhere on the page and tap it.
+     *
+     * The earlier version tapped from the top and silently gave up when the
+     * tile was below the fold, so whole screens were never captured. This
+     * scrolls down looking for it, and — when a horizontally scrolling chip
+     * row hides the target — swipes that row sideways too.
+     */
+    private fun findAndTap(text: String, maxScrolls: Int = 6): Boolean {
+        repeat(maxScrolls + 1) { attempt ->
+            device.findObject(By.text(text))?.let { it.click(); device.waitForIdle(); Thread.sleep(900); return true }
+            device.findObject(By.textContains(text))?.let { it.click(); device.waitForIdle(); Thread.sleep(900); return true }
+
+            // Try revealing chips hidden to the right of any scrolling row.
+            val row = device.findObject(By.textContains("Air Mouse"))
+                ?: device.findObject(By.textContains("PC Combo"))
+            if (row != null) {
+                val b = row.visibleBounds
+                device.swipe(b.right - 10, b.centerY(), b.left + 20, b.centerY(), 20)
+                Thread.sleep(400)
+                device.findObject(By.textContains(text))?.let {
+                    it.click(); device.waitForIdle(); Thread.sleep(900); return true
+                }
+            }
+            if (attempt < maxScrolls) scrollDown(1)
+        }
+        android.util.Log.w("ScreenshotTour", "not reachable: $text")
+        return false
+    }
+
     private fun back() {
         device.pressBack()
         device.waitForIdle()
@@ -184,14 +214,12 @@ class ScreenshotTourTest {
         // is what actually makes them reachable (tapping from the top silently
         // found nothing and the screenshots were never taken).
         scrollToTop()
-        scrollDown(2)
-        if (tap("Macros")) {
+        if (findAndTap("Macros")) {
             shot("17-macros")
             back()
         }
         scrollToTop()
-        scrollDown(2)
-        if (tap("Help")) {
+        if (findAndTap("Help")) {
             shot("18-help")
             scrollDown(2)
             shot("19-help-scrolled")
@@ -200,8 +228,7 @@ class ScreenshotTourTest {
 
         // Round 8 — My Layout + the new key pad sheet.
         scrollToTop()
-        scrollDown(3)
-        if (tapContains("My Layout")) {
+        if (findAndTap("My Layout")) {
             shot("20-my-layout")
             if (tap("Keys")) {
                 shot("21-key-pad")
