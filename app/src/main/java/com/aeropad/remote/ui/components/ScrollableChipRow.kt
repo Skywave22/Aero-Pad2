@@ -1,25 +1,17 @@
 package com.aeropad.remote.ui.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -55,53 +47,54 @@ fun ScrollableChipRow(
     val canScrollBack = scroll.value > 0
     val fadeColor = MaterialTheme.colorScheme.surface
 
-    Box(modifier = modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(scroll)
-                .drawWithContent {
-                    drawContent()
-                    val w = 24.dp.toPx()
-                    if (canScrollBack) {
-                        drawRect(
-                            brush = Brush.horizontalGradient(
-                                listOf(fadeColor, fadeColor.copy(alpha = 0f)),
-                                startX = 0f,
-                                endX = w
-                            ),
-                            size = Size(w, size.height),
-                            topLeft = Offset.Zero
-                        )
+    // The chevron lives in its own slot so chips never scroll underneath it
+    // (the earlier overlay version covered the last visible chip's label).
+    Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Box(modifier = Modifier.weight(1f)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(scroll)
+                    .drawWithContent {
+                        drawContent()
+                        val w = 20.dp.toPx()
+                        if (canScrollBack) {
+                            drawRect(
+                                brush = Brush.horizontalGradient(
+                                    listOf(fadeColor, fadeColor.copy(alpha = 0f)),
+                                    startX = 0f,
+                                    endX = w
+                                ),
+                                size = Size(w, size.height),
+                                topLeft = Offset.Zero
+                            )
+                        }
+                        if (canScrollFwd) {
+                            drawRect(
+                                brush = Brush.horizontalGradient(
+                                    listOf(fadeColor.copy(alpha = 0f), fadeColor),
+                                    startX = size.width - w,
+                                    endX = size.width
+                                ),
+                                size = Size(w, size.height),
+                                topLeft = Offset(size.width - w, 0f)
+                            )
+                        }
                     }
-                    if (canScrollFwd) {
-                        drawRect(
-                            brush = Brush.horizontalGradient(
-                                listOf(fadeColor.copy(alpha = 0f), fadeColor),
-                                startX = size.width - w,
-                                endX = size.width
-                            ),
-                            size = Size(w, size.height),
-                            topLeft = Offset(size.width - w, 0f)
-                        )
-                    }
-                }
-                // Leave room so the last chip never hides under the chevron.
-                .padding(end = if (canScrollFwd) 22.dp else 0.dp),
-            horizontalArrangement = horizontalArrangement,
-            verticalAlignment = Alignment.CenterVertically,
-            content = content
-        )
-
+                    .padding(end = if (canScrollFwd) 12.dp else 0.dp),
+                horizontalArrangement = horizontalArrangement,
+                verticalAlignment = Alignment.CenterVertically,
+                content = content
+            )
+        }
         if (canScrollFwd) {
             Icon(
                 imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                contentDescription = "More",
+                contentDescription = "More options — scroll the row sideways",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
-                    .align(Alignment.CenterEnd)
+                    .padding(start = 2.dp)
                     .size(20.dp)
-                    .background(MaterialTheme.colorScheme.surface, CircleShape)
             )
         }
     }
