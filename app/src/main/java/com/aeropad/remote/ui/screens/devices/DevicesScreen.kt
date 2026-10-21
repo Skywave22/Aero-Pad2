@@ -64,6 +64,7 @@ import com.aeropad.remote.model.GamepadMappingMode
 import com.aeropad.remote.model.HidConnectionState
 import com.aeropad.remote.model.RemoteDevice
 import com.aeropad.remote.model.ThemeMode
+import com.aeropad.remote.ui.components.ScrollableChipRow
 import com.aeropad.remote.ui.components.ConnectionStatusCard
 import com.aeropad.remote.viewmodel.ConnectionViewModel
 
@@ -344,12 +345,7 @@ fun DevicesScreen(
                     }
 
                     Text("Gamepad mode override", style = MaterialTheme.typography.labelLarge)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
+                    ScrollableChipRow {
                         FilterChip(
                             selected = selectedGamepadMode.isBlank(),
                             onClick = { selectedGamepadMode = "" },
@@ -373,12 +369,7 @@ fun DevicesScreen(
                     }
 
                     Text("Theme override", style = MaterialTheme.typography.labelLarge)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
+                    ScrollableChipRow {
                         FilterChip(
                             selected = selectedThemeMode.isBlank(),
                             onClick = { selectedThemeMode = "" },
@@ -409,12 +400,7 @@ fun DevicesScreen(
 
                     // ---------- F19: haptics ----------
                     Text("Haptic intensity override", style = MaterialTheme.typography.labelLarge)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
+                    ScrollableChipRow {
                         FilterChip(
                             selected = selectedHaptics.isBlank(),
                             onClick = { selectedHaptics = "" },
@@ -438,12 +424,7 @@ fun DevicesScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     } else {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
+                        ScrollableChipRow {
                             FilterChip(
                                 selected = onConnectMacro == 0L,
                                 onClick = { onConnectMacro = 0L },
@@ -459,12 +440,7 @@ fun DevicesScreen(
                         }
                         Spacer(Modifier.height(6.dp))
                         Text("When this host disconnects", style = MaterialTheme.typography.labelLarge)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
+                        ScrollableChipRow {
                             FilterChip(
                                 selected = onDisconnectMacro == 0L,
                                 onClick = { onDisconnectMacro = 0L },

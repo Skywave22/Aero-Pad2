@@ -46,6 +46,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aeropad.remote.model.HidKeys
 import com.aeropad.remote.model.HidModifiers
 import com.aeropad.remote.model.KeyboardSettings
+import com.aeropad.remote.ui.components.ScrollableChipRow
 import com.aeropad.remote.ui.components.KeyCard
 import com.aeropad.remote.ui.components.NotConnectedBanner
 import com.aeropad.remote.ui.components.rememberHaptic
@@ -233,12 +234,7 @@ fun KeyboardScreen(
             SectionLabel("Modifiers (tap = next key, double-tap = lock)")
             run {
                 val stickyState by viewModel.stickyState.collectAsStateWithLifecycle()
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                ScrollableChipRow {
                     val mods = listOf(
                         "Ctrl" to HidModifiers.LEFT_CTRL,
                         "Shift" to HidModifiers.LEFT_SHIFT,

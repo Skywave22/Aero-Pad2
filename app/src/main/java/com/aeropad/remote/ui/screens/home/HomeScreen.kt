@@ -79,6 +79,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aeropad.remote.model.HidConnectionState
 import com.aeropad.remote.ui.components.ConnectionStatusCard
+import com.aeropad.remote.ui.components.ScrollableChipRow
 import com.aeropad.remote.ui.components.GelIcon
 import com.aeropad.remote.ui.components.toComposeColor
 import com.aeropad.remote.ui.navigation.Routes
@@ -355,12 +356,7 @@ fun HomeScreen(
                 item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
                     Column {
                         SectionHeader("Quick Tools")
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
+                        ScrollableChipRow {
                             AssistChip(
                                 onClick = { onNavigate(Routes.AIR_MOUSE) },
                                 label = { Text("🎯 Air Mouse") }

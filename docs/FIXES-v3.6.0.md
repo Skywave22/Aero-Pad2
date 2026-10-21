@@ -219,6 +219,15 @@ Dialog now has a scroll-speed override slider, haptic-intensity chips, and a
 **`./gradlew :app:testDebugUnitTest` → 362 tests, 0 failures.**
 `:app:assembleDebug` → BUILD SUCCESSFUL.
 
+### UI — scroll affordance for chip rows (phase-1 leftover, now fixed)
+
+New `ui/components/ScrollableChipRow.kt`. Rows of chips that overflow used to
+just clip at the screen edge with no indication that more existed; the Layouts
+template row, Home "Quick Tools", the keyboard modifier row, the Text Tools deck
+row and all five Devices dialog rows now show an edge fade plus a small chevron
+while content remains hidden, and drop it at the end of the list. The last chip
+also gets end padding so it is never covered by the chevron.
+
 ### Bug found while testing
 
 `",".format(locale, args)` — Kotlin's `String.format(vararg)` extension has no
@@ -244,10 +253,8 @@ helper that calls `java.lang.String.format(locale, template, *args)`.
 - **F1/F2/F3/F6/F19 follow-ups not done:** turbo/double-tap on widgets (F10/F17),
   QR pairing (F9 — needs CAMERA and must not add networking), rumble (F12), BLE
   HID fallback (F13).
-- **Small remaining polish seen in the screenshots:** the Layouts template chip
-  row is horizontally scrollable but gives no affordance that more chips exist
-  off-screen (the third chip is cut), and the same is true of the home "Quick
-  Tools" row.
+- ~~Small remaining polish: chip rows cut off with no scroll affordance.~~
+  **Fixed** — see §3c `ScrollableChipRow`.
 
 ---
 

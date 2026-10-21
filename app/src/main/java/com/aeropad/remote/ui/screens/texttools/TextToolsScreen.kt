@@ -50,6 +50,7 @@ import com.aeropad.remote.model.HidKeys
 import com.aeropad.remote.model.HidModifiers
 import com.aeropad.remote.model.ShortcutCatalog
 import com.aeropad.remote.model.ShortcutDeck
+import com.aeropad.remote.ui.components.ScrollableChipRow
 import com.aeropad.remote.ui.components.GlassCard
 import com.aeropad.remote.ui.components.KeyCard
 import com.aeropad.remote.ui.components.NotConnectedBanner
@@ -193,12 +194,7 @@ fun TextToolsScreen(
                                 style = MaterialTheme.typography.titleSmall,
                                 color = MaterialTheme.colorScheme.primary
                             )
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .horizontalScroll(rememberScrollState()),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
+                            ScrollableChipRow {
                                 AssistChip(
                                     onClick = {
                                         haptic()
@@ -257,12 +253,7 @@ fun TextToolsScreen(
             }
 
             Section("Snippets")
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+            ScrollableChipRow {
                 AssistChip(onClick = { showAdd = true }, label = { Text("＋ Add") })
                 snippets.forEach { sn ->
                     AssistChip(

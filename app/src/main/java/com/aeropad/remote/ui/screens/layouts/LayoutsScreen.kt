@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aeropad.remote.model.widgets.WidgetSpec
+import com.aeropad.remote.ui.components.ScrollableChipRow
 import com.aeropad.remote.ui.components.NotConnectedBanner
 import com.aeropad.remote.ui.widgets.LayoutCanvas
 import com.aeropad.remote.ui.widgets.WidgetEvents
@@ -238,12 +239,7 @@ fun LayoutsScreen(
             }
             // R1, R2, R3 — Quick-create template chips (Blank, Gamepad Template, PC Combo, Media) + builders
             item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                ScrollableChipRow {
                     AssistChip(
                         onClick = { viewModel.createNew { newId -> onEdit(newId) } },
                         label = { Text("＋ Blank Layout") }
