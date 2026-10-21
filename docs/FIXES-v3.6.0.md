@@ -416,6 +416,28 @@ tests.
 
 **437 tests, 0 failures** (11 new for turbo).
 
+### What the sideways screenshots actually showed
+
+Every screen is now photographed in landscape (11 shots, plus the scrolled state
+of each hub), and the tour opens screens by deep link instead of hunting for
+tiles — a tile tap depends on scroll position and on Compose merging a tile's
+title and subtitle into one semantics node, which is why three screens had been
+invisible sideways for two rounds.
+
+Fixed from those screenshots:
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| Dock covered ~43% of the window | Labelled pill, portrait metrics | Compact icon-only bar in landscape (62 dp), `DockMetrics` orientation-aware |
+| Devicess "Open App Settings" half-hidden | Flat 100 dp inset | `contentInset()` everywhere |
+| Home grid stretched, sparse | Fixed 2 columns | `adaptiveColumns(2,3,4)` + `maxLineSpan` |
+| "Connect to a device" stranded mid-screen under the dock | Hard-coded 128 dp bottom padding | `DockMetrics.contentInset()` |
+| Dock tabs unreachable by TalkBack **and** by tests | Hiding the label left `contentDescription = null` | Label becomes the accessible name when it is not drawn |
+| Full Keyboard showed only 2 of 5 key rows | 40 dp keycaps + a hint bar costing a whole row | 30 dp keycaps in landscape, hint bar hidden (it also lives in Help) |
+| "Rotate to landscape for the best play experience" *in landscape* | Static copy | Orientation-aware |
+| Gamepad Builder's FAB sliced the last card | No bottom content padding | 88 dp reserved |
+
+
 ---
 
 ## 4. Still open (deliberately not changed in this pass)

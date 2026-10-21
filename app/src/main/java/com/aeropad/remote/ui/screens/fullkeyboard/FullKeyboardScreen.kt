@@ -139,6 +139,7 @@ fun FullKeyboardScreen(
             )
         }
     ) { padding ->
+        val compactBoard = com.aeropad.remote.ui.components.isLandscape()
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -147,7 +148,13 @@ fun FullKeyboardScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             NotConnectedBanner(!isConnected)
-            HintBar("Long-press a key for its secondary symbol • edit mode: tap keys to recolor")
+            // Round 11 — in landscape a phone window is only ~190 dp tall and
+            // the board needs every one of those dp for keys: the hint bar cost
+            // a whole row of them, which is why only two key rows were visible
+            // sideways. (The same tip lives in Help.)
+            if (!compactBoard) {
+                HintBar("Long-press a key for its secondary symbol • edit mode: tap keys to recolor")
+            }
             if (editMode) {
                 Text(
                     "EDIT MODE — long-press any key to customize it",
@@ -233,7 +240,7 @@ fun FullKeyboardScreen(
                     modifier = Modifier
                         .fillMaxWidth(boardWidthFraction)
                         .align(boardAlign)
-                        .padding(vertical = 2.dp),
+                        .padding(vertical = if (compactBoard) 1.dp else 2.dp),
                     horizontalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
                     row.forEach { key ->
@@ -245,6 +252,7 @@ fun FullKeyboardScreen(
                             editMode = editMode,
                             highlight = fnOnBoard && shown !== key,
                             modifier = Modifier.weight(key.widthWeight),
+                            compact = compactBoard,
                             onTap = { haptic(); viewModel.tap(key) },
                             onLongPress = { haptic(); viewModel.longPress(key) }
                         )
@@ -316,6 +324,11 @@ private fun KeyCap(
     modifier: Modifier = Modifier,
     /** V2 M7 — FN overlay is remapping this key: tinted so it's obvious. */
     highlight: Boolean = false,
+    /**
+     * Round 11 — landscape squeezes the board into ~130 dp of window, so the
+     * keycaps shrink rather than pushing whole rows off-screen.
+     */
+    compact: Boolean = false,
     onTap: () -> Unit,
     onLongPress: () -> Unit
 ) {
@@ -328,7 +341,7 @@ private fun KeyCap(
     var pressed by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     Box(
         modifier = modifier
-            .heightIn(min = 40.dp)
+            .heightIn(min = if (compact) 30.dp else 40.dp)
             .graphicsLayer {
                 if (pressed) {
                     scaleX = 0.95f; scaleY = 0.95f

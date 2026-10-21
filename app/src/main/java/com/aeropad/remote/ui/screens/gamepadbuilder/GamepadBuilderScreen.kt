@@ -182,11 +182,19 @@ private fun ProfileList(onBack: () -> Unit, viewModel: GamepadBuilderViewModel) 
     ) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            // Round 11 — the build FAB sat on top of the last card ("Casual
+            // Layout" was sliced in half). Reserve room for it.
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 88.dp)
         ) {
             item {
                 Text(
-                    "Tap ▶ to play a gamepad • pencil to edit • + to build a new one. Rotate to landscape for the best play experience.",
+                    // Round 11 — telling a landscape window to "rotate to
+                    // landscape" reads like a bug.
+                    if (com.aeropad.remote.ui.components.isLandscape())
+                        "Tap ▶ to play a gamepad • pencil to edit • + to build a new one."
+                    else
+                        "Tap ▶ to play a gamepad • pencil to edit • + to build a new one. Rotate to landscape for the best play experience.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 8.dp)
