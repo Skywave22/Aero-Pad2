@@ -172,10 +172,42 @@ class ScreenshotTourTest {
      * landscape at all. This retries from the top of the page with fewer
      * graceful scrolls, which is what actually lands the tap.
      */
+    /**
+     * Click a home *tile* by its title.
+     *
+     * A plain By.text lookup proved unreliable here: Compose merges a tile's
+     * title and subtitle into one node (so an exact match can miss) and a
+     * substring match happily hits the tagline "Bluetooth keyboard, mouse &
+     * gamepad" instead. This filters candidate nodes by shape — a title inside
+     * a card is narrow and taller than a line of body text — and skips anything
+     * hidden under the dock.
+     */
+    private fun clickTile(label: String, maxScrolls: Int = 6): Boolean {
+        repeat(maxScrolls + 1) { attempt ->
+            val dockTop = (h * 0.74f).toInt()
+            val hit = device.findObjects(By.textContains(label))
+                .filter { n ->
+                    val b = n.visibleBounds
+                    b.height() > 30 && b.width() < (w * 0.75f).toInt() && b.centerY() < dockTop
+                }
+                .minByOrNull { it.visibleBounds.centerY() }
+            if (hit != null) {
+                android.util.Log.i("ScreenshotTour", "tile '$label' at ${hit.visibleBounds}")
+                hit.click()
+                device.waitForIdle()
+                Thread.sleep(1000)
+                return true
+            }
+            if (attempt < maxScrolls) scrollDown(1)
+        }
+        android.util.Log.w("ScreenshotTour", "tile not found: $label")
+        return false
+    }
+
     private fun openFromHome(text: String): Boolean {
         repeat(3) {
             scrollToTop()
-            if (findAndTapExact(text, maxScrolls = 3)) return true
+            if (clickTile(text)) return true
         }
         android.util.Log.w("ScreenshotTour", "gave up opening $text")
         return false
