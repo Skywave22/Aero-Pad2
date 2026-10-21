@@ -180,12 +180,17 @@ class ScreenshotTourTest {
             shot("16-settings-bottom")
             back()
         }
+        // These tiles sit below the fold on the home grid, so scrolling first
+        // is what actually makes them reachable (tapping from the top silently
+        // found nothing and the screenshots were never taken).
         scrollToTop()
+        scrollDown(2)
         if (tap("Macros")) {
             shot("17-macros")
             back()
         }
         scrollToTop()
+        scrollDown(2)
         if (tap("Help")) {
             shot("18-help")
             scrollDown(2)
@@ -195,6 +200,7 @@ class ScreenshotTourTest {
 
         // Round 8 — My Layout + the new key pad sheet.
         scrollToTop()
+        scrollDown(3)
         if (tapContains("My Layout")) {
             shot("20-my-layout")
             if (tap("Keys")) {
