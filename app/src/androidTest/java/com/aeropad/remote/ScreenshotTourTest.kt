@@ -188,7 +188,7 @@ class ScreenshotTourTest {
             val hit = device.findObjects(By.textContains(label))
                 .filter { n ->
                     val b = n.visibleBounds
-                    b.height() > 30 && b.width() < (w * 0.75f).toInt() && b.centerY() < dockTop
+                    b.height() > 15 && b.width() < (w * 0.7f).toInt() && b.centerY() < dockTop
                 }
                 .minByOrNull { it.visibleBounds.centerY() }
             if (hit != null) {
@@ -200,6 +200,10 @@ class ScreenshotTourTest {
             }
             if (attempt < maxScrolls) scrollDown(1)
         }
+        // Evidence, not guesses: a missing tile used to fail silently and the
+        // screen was simply never photographed.
+        shot("FAIL-$label")
+        runCatching { device.dumpWindowHierarchy(File(outDir, "FAIL-$label.xml")) }
         android.util.Log.w("ScreenshotTour", "tile not found: $label")
         return false
     }
