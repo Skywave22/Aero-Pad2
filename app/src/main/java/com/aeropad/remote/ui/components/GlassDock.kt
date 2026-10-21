@@ -39,6 +39,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -231,6 +233,14 @@ private fun DockTab(
             // circle used to slice the corners off the label (the dock
             // literally rendered "Layouts" as "ayouts").
             .clip(RoundedCornerShape(19.dp))
+            // Round 11 — landscape hides the text label to save height, which
+            // left the tab as a bare icon: TalkBack had nothing to say and no
+            // test could find it. The label becomes the tab's accessible name
+            // exactly when it is not drawn.
+            .then(
+                if (isLandscape()) Modifier.semantics { this.contentDescription = item.label }
+                else Modifier
+            )
             .selectable(
                 selected = selected,
                 role = Role.Tab,

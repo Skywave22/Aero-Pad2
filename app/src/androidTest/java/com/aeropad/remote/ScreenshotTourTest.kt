@@ -82,6 +82,39 @@ class ScreenshotTourTest {
         device.takeScreenshot(File(outDir, "$name.png"))
     }
 
+    /**
+     * Tap by visible text OR by accessible name.
+     *
+     * In landscape the dock drops its text label to save height and keeps the
+     * name as a content description, so a By.text-only lookup finds nothing.
+     */
+    private fun tapAny(text: String): Boolean {
+        val node = device.wait(Until.findObject(By.text(text)), 3000)
+            ?: device.wait(Until.findObject(By.desc(text)), 3000)
+            ?: return false
+        node.click()
+        device.waitForIdle()
+        Thread.sleep(900)
+        return true
+    }
+
+    /**
+     * Exact-text tap that scrolls to find the target.
+     *
+     * [findAndTap] falls back to a substring match, which on the home screen
+     * matched the tagline "Bluetooth keyboard, mouse & gamepad" instead of the
+     * Keyboard tile — the tap went nowhere and the screen was never captured.
+     */
+    private fun findAndTapExact(text: String, maxScrolls: Int = 4): Boolean {
+        repeat(maxScrolls + 1) { attempt ->
+            device.findObject(By.text(text))?.let {
+                it.click(); device.waitForIdle(); Thread.sleep(900); return true
+            }
+            if (attempt < maxScrolls) scrollDown(1)
+        }
+        return false
+    }
+
     private fun tap(text: String): Boolean {
         val node = device.wait(Until.findObject(By.text(text)), 4000) ?: return false
         node.click()
@@ -142,7 +175,7 @@ class ScreenshotTourTest {
     private fun openFromHome(text: String): Boolean {
         repeat(3) {
             scrollToTop()
-            if (findAndTap(text, maxScrolls = 3)) return true
+            if (findAndTapExact(text, maxScrolls = 3)) return true
         }
         android.util.Log.w("ScreenshotTour", "gave up opening $text")
         return false
@@ -316,7 +349,7 @@ class ScreenshotTourTest {
         // Top-level hubs, reached through the dock (no scrolling needed).
         val hubs = listOf("Layouts" to "L06-layouts", "Devices" to "L07-devices", "Settings" to "L08-settings")
         hubs.forEach { (hub, name) ->
-            if (tap(hub)) {
+            if (tapAny(hub)) {
                 shot(name)
                 scrollDown(1)
                 shot("$name-scrolled")

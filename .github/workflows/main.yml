@@ -162,6 +162,10 @@ jobs:
             find ui-screenshots -name '*.png' -exec mv {} ui-screenshots/ \; || true
             adb shell screencap -p /sdcard/fallback-home.png || true
             adb pull /sdcard/fallback-home.png ui-screenshots/ || true
+            # Keep the raw instrumentation output: the tour is best-effort and
+            # a silently skipped screen (an unreachable tap) is invisible in the
+            # screenshots alone.
+            cp /tmp/inst.log ui-screenshots/instrumentation.log || true
             ls -la ui-screenshots
 
       - name: Upload UI screenshots
