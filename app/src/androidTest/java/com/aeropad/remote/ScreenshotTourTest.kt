@@ -129,6 +129,25 @@ class ScreenshotTourTest {
         return false
     }
 
+
+    /**
+     * Round 11 — open a screen from the home grid, robustly.
+     *
+     * In landscape the home grid is taller than the ~190 dp window and the
+     * permission card sits on top, so a single findAndTap silently missed and
+     * three screens (Keyboard, Mouse, Gamepad) were never photographed in
+     * landscape at all. This retries from the top of the page with fewer
+     * graceful scrolls, which is what actually lands the tap.
+     */
+    private fun openFromHome(text: String): Boolean {
+        repeat(3) {
+            scrollToTop()
+            if (findAndTap(text, maxScrolls = 3)) return true
+        }
+        android.util.Log.w("ScreenshotTour", "gave up opening $text")
+        return false
+    }
+
     private fun back() {
         device.pressBack()
         device.waitForIdle()
@@ -267,52 +286,43 @@ class ScreenshotTourTest {
      * Rotation is frozen rather than "left/right" so the result is deterministic
      * on any emulator image.
      */
+    /**
+     * Round 11 — the app had never been photographed in landscape.
+     *
+     * Landscape is the orientation people actually use when the phone is
+     * propped next to a keyboard, so a broken sideways layout is a broken app.
+     * This freezes rotation to landscape left, walks the top-level screens and
+     * the three pointer/typing screens, then restores the sensor in tearDown.
+     */
     @Test
     fun captureEveryTopLevelScreenLandscape() {
         device.setOrientationLeft()
-        device.waitForIdle()
         Thread.sleep(1500)
+        device.waitForIdle()
 
         shot("L01-home-top")
         scrollDown(1)
         shot("L02-home-scrolled")
+        scrollToTop()
 
-        scrollToTop()
-        if (findAndTap("Keyboard")) {
-            shot("L03-keyboard")
-            scrollDown(1)
-            shot("L04-keyboard-scrolled")
-            back()
-        }
-        scrollToTop()
-        if (findAndTap("Mouse")) {
-            shot("L05-mouse")
-            back()
-        }
-        scrollToTop()
-        if (findAndTap("Gamepad")) {
-            shot("L06-gamepad")
-            back()
-        }
-        scrollToTop()
-        if (tap("Layouts")) {
-            shot("L07-layouts")
-            back()
-        }
-        scrollToTop()
-        if (tap("Devices")) {
-            shot("L08-devices")
-            back()
-        }
-        scrollToTop()
-        if (tap("Settings")) {
-            shot("L09-settings-top")
-            scrollDown(3)
-            shot("L10-settings-mid")
-            back()
+        val visited = listOf("Keyboard", "Mouse", "Gamepad")
+        visited.forEachIndexed { i, name ->
+            if (openFromHome(name)) {
+                shot("L0${3 + i}-${name.lowercase()}")
+                back()
+            }
         }
 
-        device.setOrientationNatural()
-        device.waitForIdle()
+        // Top-level hubs, reached through the dock (no scrolling needed).
+        val hubs = listOf("Layouts" to "L06-layouts", "Devices" to "L07-devices", "Settings" to "L08-settings")
+        hubs.forEach { (hub, name) ->
+            if (tap(hub)) {
+                shot(name)
+                scrollDown(1)
+                shot("$name-scrolled")
+                scrollToTop()
+                back()
+            }
+        }
     }
 }

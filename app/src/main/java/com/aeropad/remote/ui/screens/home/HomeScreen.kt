@@ -208,8 +208,15 @@ fun HomeScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
+                // Round 11 — was a hard-coded 128.dp. The dock is 100 dp in
+                // portrait but only 62 dp in landscape, and the extra 66 dp of
+                // reserved space pushed the primary Connect button up into the
+                // middle of a short landscape window for no reason.
                 contentPadding = PaddingValues(
-                    start = 16.dp, end = 16.dp, top = 8.dp, bottom = 128.dp
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 8.dp,
+                    bottom = com.aeropad.remote.ui.components.DockMetrics.contentInset()
                 ),
                 modifier = Modifier.fillMaxSize()
             ) {
