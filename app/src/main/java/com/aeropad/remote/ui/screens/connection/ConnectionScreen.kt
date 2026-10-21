@@ -183,6 +183,22 @@ fun ConnectionScreen(
                     onClick = { viewModel.disconnect() },
                     modifier = Modifier.fillMaxWidth()
                 ) { Text("Disconnect") }
+            } else {
+                // Round 10 — an explicit way back. AeroPad retries by itself,
+                // but when someone walks back to a sleeping PC they should not
+                // have to wait for the next scheduled attempt.
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = { viewModel.retryNow() },
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Retry connection now") }
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "AeroPad keeps retrying on its own — quickly at first, then " +
+                        "every 15–30 s. Waking the phone also triggers a retry.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
             Spacer(Modifier.height(24.dp))

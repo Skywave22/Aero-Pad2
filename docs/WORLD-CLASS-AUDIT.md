@@ -92,11 +92,12 @@ user-named combos.
 
 Honest ordering, with the reason each is not done yet:
 
-1. **Reconnect after the host sleeps (complaint #2).** Backoff exists and
-   triggers fire on real edges, but a host that drops the HID link while the
-   phone is locked is the single most damaging failure mode in the category.
-   Needs work in `HidEngine` around re-registration and a "wake the host" path.
-   **Highest-value next item.**
+1. ~~**Reconnect after the host sleeps (complaint #2).**~~ **Closed in Round 10**
+   (see `FIXES-v3.6.0.md` §3f). The old code gave up after 15 s, did nothing when
+   the HID registration was lost, and never retried on unlock. It now retries
+   forever on a calm 15–30 s cadence, repairs its own registration, and retries
+   instantly on screen-on / user-present, with a manual "Retry now" in both the
+   Setup Doctor and the Connection screen.
 2. **Latency measurement the user can see.** Connection Health measures
    `sendReport()` duration, not perceived end-to-end latency (HID has no ACK).
    A phone-side "time from touch to report handed to the stack" figure would let

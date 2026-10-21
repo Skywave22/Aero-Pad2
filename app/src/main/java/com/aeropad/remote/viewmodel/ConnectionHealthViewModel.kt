@@ -96,7 +96,11 @@ class ConnectionHealthViewModel @Inject constructor(
                     disconnects = snap.disconnects,
                     extendedDescriptor = runCatching { engine.isExtendedDescriptorActive() }
                         .getOrDefault(false),
-                    reconnecting = nextRetry != null
+                    reconnecting = nextRetry != null,
+                    reconnectAttempts = engine.reconnectStatus.value?.first,
+                    reconnectNextInSeconds = nextRetry?.let { at ->
+                        ((at - System.currentTimeMillis()) / 1000).coerceAtLeast(0)
+                    }
                 )
             )
         }.stateIn(
@@ -124,6 +128,10 @@ class ConnectionHealthViewModel @Inject constructor(
                     android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                     android.net.Uri.fromParts("package", context.packageName, null)
                 )
+            com.aeropad.remote.domain.SetupDoctor.Fix.RECONNECT -> {
+                engine.retryNow()
+                return
+            }
             com.aeropad.remote.domain.SetupDoctor.Fix.NONE -> return
         }
         intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)

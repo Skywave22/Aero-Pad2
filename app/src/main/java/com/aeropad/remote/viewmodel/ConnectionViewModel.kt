@@ -39,6 +39,8 @@ class ConnectionViewModel @Inject constructor(
     private val connectDevice: ConnectDeviceUseCase,
     private val disconnectDevice: DisconnectDeviceUseCase,
     private val getBondedDevices: GetBondedDevicesUseCase,
+    /** Round 10 — retry affordance for a link that dropped. */
+    private val hidController: com.aeropad.remote.domain.HidController,
     private val permissionChecker: PermissionChecker,
     private val scanner: NearbyScanner,
     // V2 M4 deferred-item — save bonded hosts as quick-switch profiles.
@@ -121,6 +123,15 @@ class ConnectionViewModel @Inject constructor(
 
     fun connect(address: String) {
         connectDevice(address)
+    }
+
+    /**
+     * Round 10 — "try again now". Clears backoff and starts a fast-phase attempt
+     * against the remembered host, which is what people expect when they walk
+     * back to a PC that went to sleep.
+     */
+    fun retryNow() {
+        runCatching { hidController.retryNow() }
     }
 
     fun disconnect() {

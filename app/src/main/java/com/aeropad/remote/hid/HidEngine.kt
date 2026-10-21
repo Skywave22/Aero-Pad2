@@ -61,7 +61,10 @@ class HidEngine @Inject constructor(
         /** HID subclass: 0xC0 = combo keyboard+pointing device. */
         const val SUBCLASS_COMBO: Byte = 0xC0.toByte()
         const val KEY_TAP_DELAY_MS = 8L
+        /** Kept for the status UI (attempt N of M in the fast phase). */
         const val RECONNECT_MAX_ATTEMPTS = 4
+        /** How long to wait for the stack to answer a connect attempt. */
+        const val CONNECT_RESULT_WAIT_MS = 3_000L
         const val RECONNECT_BASE_DELAY_MS = 1000L
         /** Round 6: "Connecting…" can never hang forever anymore. */
         const val CONNECT_TIMEOUT_MS = 15_000L
@@ -100,6 +103,10 @@ class HidEngine @Inject constructor(
     private var proxyRequested = false
     private var userInitiatedDisconnect = false
     private var reconnectAttempts = 0
+    /** Round 10 — never-give-up reconnect (see ReconnectPolicy). */
+    private val reconnectPolicy = com.aeropad.remote.domain.ReconnectPolicy()
+    private val flapGuard = com.aeropad.remote.domain.FlapGuard()
+    private var reconnectJob: kotlinx.coroutines.Job? = null
     private var lastHostDevice: BluetoothDevice? = null
     // Round 6 — lifecycle resilience: adapter on/off recovery + connect watchdog.
     private var stopped = false
@@ -230,6 +237,8 @@ class HidEngine @Inject constructor(
     override fun stop() {
         stopped = true
         userInitiatedDisconnect = true
+        reconnectJob?.cancel()
+        reconnectJob = null
         connectWatchdog?.cancel()
         keepAlive?.cancel()
         mouseButtons.clear()
@@ -546,6 +555,23 @@ class HidEngine @Inject constructor(
      */
     private val btStateReceiver = object : android.content.BroadcastReceiver() {
         override fun onReceive(c: android.content.Context?, intent: android.content.Intent?) {
+            // Round 10 — wake triggers. A link that died while the phone was in
+            // Doze used to stay dead until the user did something; unlocking or
+            // simply turning the screen on is the strongest possible signal that
+            // they want to use the remote again, so retry immediately.
+            when (intent?.action) {
+                android.content.Intent.ACTION_SCREEN_ON,
+                android.content.Intent.ACTION_USER_PRESENT -> {
+                    if (connectedDevice == null &&
+                        !userInitiatedDisconnect &&
+                        lastHostDevice != null
+                    ) {
+                        Timber.i("screen woke with no link — retrying immediately")
+                        retryNow()
+                    }
+                    return
+                }
+            }
             when (intent?.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR)) {
                 BluetoothAdapter.STATE_OFF -> {
                     Timber.w("Bluetooth adapter turned off")
@@ -559,6 +585,10 @@ class HidEngine @Inject constructor(
                     Timber.i("Bluetooth adapter turned on — re-initializing HID engine")
                     proxyRequested = false
                     start()
+                    // Round 10 — resume the link we lost when the radio went off.
+                    if (lastHostDevice != null && !userInitiatedDisconnect) {
+                        retryNow()
+                    }
                 }
             }
         }
@@ -566,7 +596,12 @@ class HidEngine @Inject constructor(
 
     private fun ensureBtStateReceiver() {
         if (btReceiverRegistered) return
-        val filter = android.content.IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
+        val filter = android.content.IntentFilter().apply {
+            addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
+            // Round 10 — wake triggers (neither needs a permission).
+            addAction(android.content.Intent.ACTION_SCREEN_ON)
+            addAction(android.content.Intent.ACTION_USER_PRESENT)
+        }
         btReceiverRegistered = runCatching {
             context.registerReceiver(btStateReceiver, filter)
             true
@@ -610,6 +645,12 @@ class HidEngine @Inject constructor(
                 if (_state.value !is HidConnectionState.HidUnsupported) {
                     updateState(HidConnectionState.Idle)
                 }
+                // Round 10 — this used to be a dead end: the app lost its HID
+                // registration (ROM cleanup, radio reset, host stack restart)
+                // and nothing ever re-registered it. Now the loop takes over.
+                if (!stopped && !userInitiatedDisconnect) {
+                    startReconnectLoop(reason = "HID app unregistered")
+                }
                 return
             }
             updateState(HidConnectionState.Idle)
@@ -631,7 +672,11 @@ class HidEngine @Inject constructor(
                     device?.let { startKeepAlive(it) }
                     lastHostDevice = device
                     reconnectAttempts = 0
+                    flapGuard.onStableLink()
+                    reconnectJob?.cancel()
+                    reconnectJob = null
                     _reconnectStatus.value = null           // ADV S5
+                    _reconnectNextAtMs.value = null
                     health.markConnected()                   // ADV S5
                     device?.let {
                         history.onConnected("BLUETOOTH", it.safeName())   // #41
@@ -652,22 +697,33 @@ class HidEngine @Inject constructor(
                             if (userInitiatedDisconnect) "user disconnect" else "link dropped")  // #41
                     }
                     if (wasConnected && !userInitiatedDisconnect) {
-                        // Round 8 — break the connect/drop ping-pong: a link
-                        // that dies within 5s counts as a flap; three flaps
-                        // stops auto-reconnect and asks for a manual retry.
+                        // Round 8 — break the connect/drop ping-pong.
+                        // Round 10 — but never punish permanently: a flapping
+                        // link now *rests* (60 s, doubling to a 15-min cap) and
+                        // then resumes on its own, because "the host was mid-
+                        // wake" is exactly the case the user wants fixed.
                         val heldMs = System.currentTimeMillis() - connectedAtMs
-                        if (heldMs >= STABLE_LINK_MS) flapCount = 0 else flapCount++
-                        if (flapCount >= MAX_FLAPS) {
+                        val rest = flapGuard.onDrop(heldMs, System.currentTimeMillis())
+                        if (rest != null) {
+                            Timber.w("link flapping — resting %dms before retrying", rest.restMs)
                             _reconnectStatus.value = null
                             updateState(
                                 HidConnectionState.Error(
-                                    "Connection kept dropping right after connecting. " +
-                                        "Reconnect manually — keep the host awake and " +
-                                        "nearby, and re-pair if it repeats."
+                                    "The link keeps dropping right after connecting. " +
+                                        "AeroPad will keep retrying every " +
+                                        "${rest.restMs / 1000}s — keep the host awake " +
+                                        "and nearby. Re-pair if it keeps happening."
                                 )
                             )
+                            scope.launch {
+                                delay(rest.restMs)
+                                if (connectedDevice == null && !userInitiatedDisconnect) {
+                                    updateState(HidConnectionState.Idle)
+                                    startReconnectLoop(reason = "after flapping rest")
+                                }
+                            }
                         } else {
-                            scheduleReconnect()
+                            startReconnectLoop(reason = "link dropped")
                         }
                     }
                 }
@@ -743,27 +799,123 @@ class HidEngine @Inject constructor(
         }
     }
 
-    /** Auto-reconnect with capped exponential backoff (1s, 2s, 4s, 8s). */
-    private fun scheduleReconnect() {
-        val target = lastHostDevice ?: return
-        if (reconnectAttempts >= RECONNECT_MAX_ATTEMPTS) {
-            Timber.w("auto-reconnect gave up after %d attempts", reconnectAttempts)
+    /**
+     * Round 10 — persistent reconnect.
+     *
+     * Replaces the old 15-second-and-give-up timer. Runs until the link is back,
+     * the user disconnects, or the engine stops. Each pass:
+     *
+     *  1. re-registers the HID app if Android dropped it (this used to silently
+     *     end the story: the old code required `appRegistered` and did nothing
+     *     when it was false);
+     *  2. waits the policy delay (fast phase, then a calm 15–30 s cadence);
+     *  3. asks the stack to connect and gives the callback time to answer.
+     *
+     * Idempotent: a second call while the loop is alive is a no-op, so a burst
+     * of disconnect callbacks cannot start two competing loops.
+     */
+    private fun startReconnectLoop(reason: String, immediate: Boolean = false) {
+        if (reconnectJob?.isActive == true) return
+        reconnectJob = scope.launch {
+            Timber.i("reconnect loop start (%s)", reason)
+            var first = true
+            while (!stopped && !userInitiatedDisconnect && connectedDevice == null) {
+                val decision = com.aeropad.remote.domain.ReconnectDecision.decide(
+                    adapterOn = safeIsEnabled(),
+                    appRegistered = appRegistered,
+                    hasRememberedHost = lastHostDevice != null,
+                    userInitiatedDisconnect = userInitiatedDisconnect,
+                    resting = flapGuard.isResting(System.currentTimeMillis())
+                )
+                when (decision) {
+                    com.aeropad.remote.domain.ReconnectDecision.Action.STOP -> break
+
+                    com.aeropad.remote.domain.ReconnectDecision.Action.WAIT_FOR_ADAPTER -> {
+                        // Radio is off (or resting). Do not poll hot — a cheap
+                        // 2 s tick keeps us responsive without waking the CPU
+                        // constantly.
+                        _reconnectStatus.value = null
+                        _reconnectNextAtMs.value = null
+                        delay(2_000)
+                        continue
+                    }
+
+                    com.aeropad.remote.domain.ReconnectDecision.Action.RE_REGISTER -> {
+                        Timber.i("reconnect: HID app was unregistered — re-registering")
+                        reRegisterApp()
+                        delay(1_500)
+                        continue
+                    }
+
+                    com.aeropad.remote.domain.ReconnectDecision.Action.CONNECT -> Unit
+                }
+
+                val target = lastHostDevice ?: break
+                if (!first || !immediate) {
+                    reconnectAttempts++
+                    val delayMs = reconnectPolicy.delayFor(
+                        attempt = reconnectAttempts,
+                        random = kotlin.random.Random.nextFloat()
+                    )
+                    val fast = reconnectPolicy.isFastPhase(reconnectAttempts)
+                    _reconnectStatus.value = reconnectAttempts to
+                        RECONNECT_MAX_ATTEMPTS
+                    _reconnectNextAtMs.value = System.currentTimeMillis() + delayMs
+                    Timber.i("reconnect attempt %d in %dms", reconnectAttempts, delayMs)
+                    delay(delayMs)
+                    _reconnectNextAtMs.value = null
+                }
+                first = false
+
+                if (userInitiatedDisconnect || connectedDevice != null) break
+                autoConnect(target)
+                // Give the Bluetooth callback a moment to report back before
+                // deciding whether to schedule another pass.
+                delay(CONNECT_RESULT_WAIT_MS)
+            }
+            _reconnectStatus.value = null
+            _reconnectNextAtMs.value = null
+            reconnectJob = null
+            Timber.i("reconnect loop end (connected=%s)", connectedDevice != null)
+        }
+    }
+
+    /** Re-register the HID app after the system or a ROM dropped it. */
+    private fun reRegisterApp() {
+        if (appRegistered) return
+        val hd = hidDevice
+        if (hd == null) {
+            // The proxy itself is gone — rebuild it from scratch.
+            proxyRequested = false
+            start()
             return
         }
-        val attempt = ++reconnectAttempts
-        val backoff = RECONNECT_BASE_DELAY_MS shl (attempt - 1)
-        Timber.i("auto-reconnect attempt %d in %dms", attempt, backoff)
-        _reconnectStatus.value = attempt to RECONNECT_MAX_ATTEMPTS   // ADV S5
-        _reconnectNextAtMs.value = System.currentTimeMillis() + backoff   // #39
-        scope.launch {
-            delay(backoff)
-            _reconnectNextAtMs.value = null   // #39
-            if (connectedDevice == null && !userInitiatedDisconnect && appRegistered) {
-                autoConnect(target)
-            } else {
-                _reconnectStatus.value = null
+        runCatching { hd.unregisterApp() }
+        registerApp()
+    }
+
+    /**
+     * User pressed "retry now" (or the screen turned on and we noticed the link
+     * was gone). Clears any penalty, cancels the waiting loop and starts a fresh
+     * fast-phase attempt immediately.
+     */
+    override fun retryNow() {
+        userInitiatedDisconnect = false
+        flapGuard.forgive()
+        reconnectAttempts = 0
+        reconnectJob?.cancel()
+        reconnectJob = null
+        _reconnectStatus.value = null
+        _reconnectNextAtMs.value = null
+        if (lastHostDevice == null) {
+            // Nothing remembered yet — make sure the engine is at least ready.
+            if (!appRegistered) {
+                proxyRequested = if (hidDevice != null) proxyRequested else false
+                start()
             }
+            return
         }
+        startReconnectLoop(reason = "user retry", immediate = true)
     }
 
     // ------------------------------------------------------------------

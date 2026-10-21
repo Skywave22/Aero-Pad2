@@ -32,6 +32,12 @@ interface HidController {
     /** Round 7 — one-tap reconnect to the most recent host (Quick Connect). */
     fun reconnectLast() {}
 
+    /**
+     * Round 10 — "try again right now": clears any backoff penalty and starts a
+     * fresh fast-phase attempt. Safe to call when nothing is remembered.
+     */
+    fun retryNow() {}
+
     /** Currently bonded devices, never throws. */
     fun bondedDevices(): List<RemoteDevice>
 

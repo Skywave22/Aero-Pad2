@@ -318,6 +318,55 @@ settings fields are added — it caught the omission immediately).
 
 ---
 
+## 3f. Round 10 — reconnect that never gives up
+
+Version still **3.6.0 / 360**. This closes the gap `WORLD-CLASS-AUDIT.md` listed
+as #1 remaining: *"it won't reconnect after the PC sleeps"* — the most common
+complaint in the category and the app's most damaging failure mode.
+
+**What was actually broken** (not just "sometimes flaky"):
+
+1. `scheduleReconnect()` **gave up after 4 attempts** — 1 + 2 + 4 + 8 = 15 s of
+   total tolerance. A host that sleeps for a minute, or a phone that dozes for
+   five, outlived it. The app was correct and useless at the same time.
+2. It required `appRegistered` and **did nothing** when that was false. Android
+   or a ROM can drop the HID registration (radio reset, host stack restart); the
+   old code then went silent forever until a force-stop.
+3. Three short-lived connections triggered a **permanent** error state. But a
+   host that is *mid-wake* is exactly what produces flaps — so the penalty
+   landed on the one case the user most wanted fixed.
+4. Nothing retried when the phone was unlocked or the screen came on, so a link
+   lost in Doze stayed lost until the user intervened by hand.
+
+**New `domain/ReconnectStrategy.kt`** (pure, tested):
+
+- `ReconnectPolicy` — 0.5 s, 1 s, 2 s, 4 s, 8 s, then **every 15 s backing off to
+  a 30 s ceiling, forever**, with ±20 % jitter so retries don't resonate with the
+  host's own scan interval. Never returns a delay it can't honour, never busy-loops.
+- `FlapGuard` — a flapping link now **rests** (60 s, doubling to a 15 min cap) and
+  then resumes on its own; one stable connection clears the history.
+- `ReconnectDecision` — the decision table that actually fixes bug (2): when the
+  HID app is unregistered the action is **RE_REGISTER**, not "give up".
+
+**Engine changes (`HidEngine`)**: a single idempotent `startReconnectLoop()` runs
+until the link is back, the user disconnects, or the service stops; it
+re-registers the app when needed, re-arms after the Bluetooth adapter comes back
+on, and follows the policy schedule. New `retryNow()` (also on `HidController`,
+so it is available to any ViewModel) clears the penalty and attempts immediately.
+
+**Wake triggers**: the existing broadcast receiver now also listens for
+`ACTION_SCREEN_ON` and `ACTION_USER_PRESENT` (neither needs a permission) and
+fires an immediate retry — picking the phone up is the strongest signal that the
+user wants the remote back.
+
+**UI**: Setup Doctor reports the real attempt number and countdown with a
+**Retry now** button; the Connection screen gained **"Retry connection now"**
+plus one line explaining that the app keeps trying on its own.
+
+**426 tests, 0 failures** (22 new).
+
+---
+
 ## 4. Still open (deliberately not changed in this pass)
 
 - **H4 — Play Store targetSdk.** Still `targetSdk 35`, AGP 8.2.2, Kotlin 1.9.22.

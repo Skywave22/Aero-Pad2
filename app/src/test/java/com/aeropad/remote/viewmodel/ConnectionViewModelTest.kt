@@ -117,6 +117,7 @@ class ConnectionViewModelTest {
         connectDevice = ConnectDeviceUseCase(controller),
         disconnectDevice = DisconnectDeviceUseCase(controller),
         getBondedDevices = GetBondedDevicesUseCase(controller),
+        hidController = controller,
         permissionChecker = permissions,
         scanner = scanner,
         hostStore = FakeHostProfiles()

@@ -21,7 +21,7 @@ object SetupDoctor {
      * Where a finding's suggested fix lives. Pure enum (no Android types) —
      * the UI decides which Intent to fire.
      */
-    enum class Fix { NONE, BLUETOOTH, PERMISSIONS, BATTERY, APP_SETTINGS }
+    enum class Fix { NONE, BLUETOOTH, PERMISSIONS, BATTERY, APP_SETTINGS, RECONNECT }
 
     /** One thing the doctor noticed. */
     data class Finding(
@@ -78,7 +78,11 @@ object SetupDoctor {
         /** Extended (digitizer/gamepad) descriptor is active. */
         val extendedDescriptor: Boolean = false,
         /** A reconnect is currently scheduled with backoff. */
-        val reconnecting: Boolean = false
+        val reconnecting: Boolean = false,
+        /** Which attempt the persistent loop is on (null when idle). */
+        val reconnectAttempts: Int? = null,
+        /** Seconds until the next scheduled attempt. */
+        val reconnectNextInSeconds: Long? = null
     )
 
     /**
@@ -240,9 +244,20 @@ object SetupDoctor {
             out += Finding(
                 id = "reconnecting",
                 level = Level.INFO,
-                title = "Reconnecting automatically",
-                detail = "AeroPad backs off between attempts — each retry waits " +
-                    "longer than the last so a dead host can't spin the radio."
+                title = input.reconnectAttempts?.let { attempt ->
+                    if (attempt in 1..5) "Reconnecting (attempt $attempt)"
+                    else "Still trying to reconnect"
+                } ?: "Reconnecting automatically",
+                detail = buildString {
+                    append("AeroPad never gives up on its own: it retries quickly at " +
+                        "first, then every 15–30 s, and immediately when you wake " +
+                        "the phone. If the host is asleep, wake it and tap Retry.")
+                    input.reconnectNextInSeconds?.let {
+                        append(" Next attempt in about ${it}s.")
+                    }
+                },
+                action = "Retry now",
+                fix = Fix.RECONNECT
             )
         }
 
