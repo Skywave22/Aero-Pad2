@@ -223,10 +223,13 @@ Dialog now has a scroll-speed override slider, haptic-intensity chips, and a
 
 New `ui/components/ScrollableChipRow.kt`. Rows of chips that overflow used to
 just clip at the screen edge with no indication that more existed; the Layouts
-template row, Home "Quick Tools", the keyboard modifier row, the Text Tools deck
-row and all five Devices dialog rows now show an edge fade plus a small chevron
-while content remains hidden, and drop it at the end of the list. The last chip
-also gets end padding so it is never covered by the chevron.
+template row, Home "Quick Tools", the keyboard tab row, the keyboard modifier
+row and sent-history row, the Mouse mode row, the Text Tools / Shortcut deck
+pickers, the My Layout profile row, the Macros step row and all five Devices
+dialog rows now show an edge fade plus a small chevron while content remains
+hidden, and drop it at the end of the list. The last chip also gets end padding
+so it is never covered by the chevron. This is what hid the "⌨ Full QWERTY" chip
+on the keyboard screen — users could not see it existed.
 
 ### Bug found while testing
 

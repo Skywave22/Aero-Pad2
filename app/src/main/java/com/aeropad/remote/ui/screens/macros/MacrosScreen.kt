@@ -61,6 +61,7 @@ import com.aeropad.remote.model.HidKeys
 import com.aeropad.remote.model.HidModifiers
 import com.aeropad.remote.model.macros.MacroSpec
 import com.aeropad.remote.model.macros.MacroStep
+import com.aeropad.remote.ui.components.ScrollableChipRow
 import com.aeropad.remote.ui.components.GlassCard
 import com.aeropad.remote.ui.components.NotConnectedBanner
 import com.aeropad.remote.ui.theme.LocalAppTheme
@@ -519,13 +520,7 @@ private fun StepChipRow(
     onAdd: (MacroStep) -> Unit
 ) {
     val themeSpec = LocalAppTheme.current
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(vertical = 2.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
+ScrollableChipRow(modifier = Modifier.padding(vertical = 2.dp)) {
         entries.forEach { (label, step) ->
             AssistChip(
                 onClick = { onAdd(step) },

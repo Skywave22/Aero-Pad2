@@ -144,12 +144,7 @@ fun TextToolsScreen(
                 // R6 — Merged Shortcut Decks tab
                 Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
                     NotConnectedBanner(!isConnected)
-                    Row(
-                        modifier = Modifier
-                            .horizontalScroll(rememberScrollState())
-                            .padding(vertical = 6.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
+ScrollableChipRow(modifier = Modifier.padding(vertical = 6.dp)) {
                         ShortcutCatalog.DECKS.forEach { d ->
                             FilterChip(
                                 selected = selectedDeck.name == d.name,

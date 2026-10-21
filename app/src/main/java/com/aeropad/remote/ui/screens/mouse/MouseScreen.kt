@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aeropad.remote.model.MouseButton
+import com.aeropad.remote.ui.components.ScrollableChipRow
 import com.aeropad.remote.ui.components.GlassCard
 import com.aeropad.remote.ui.components.KeyCard
 import com.aeropad.remote.ui.components.HintBar
@@ -133,12 +134,7 @@ fun MouseScreen(
                 val precision by viewModel.precisionMode.collectAsStateWithLifecycle()
                 val dragLock by viewModel.dragLock.collectAsStateWithLifecycle()
                 val scrollMode by viewModel.scrollMode.collectAsStateWithLifecycle()
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+ScrollableChipRow {
                     FilterChip(
                         selected = precision,
                         onClick = { viewModel.setPrecisionMode(!precision) },

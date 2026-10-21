@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.aeropad.remote.model.ShortcutCatalog
 import com.aeropad.remote.model.ShortcutDeck
+import com.aeropad.remote.ui.components.ScrollableChipRow
 import com.aeropad.remote.ui.components.KeyCard
 import com.aeropad.remote.ui.components.NotConnectedBanner
 import com.aeropad.remote.ui.components.rememberHaptic
@@ -72,12 +73,7 @@ fun ShortcutDeckScreen(
         ) {
             NotConnectedBanner(!isConnected)
 
-            androidx.compose.foundation.layout.Row(
-                modifier = Modifier
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+ScrollableChipRow(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
                 ShortcutCatalog.DECKS.forEach { d ->
                     AssistChip(
                         onClick = { deck = d },

@@ -147,12 +147,7 @@ fun KeyboardScreen(
                 run {
                     val history by viewModel.sentHistory.collectAsStateWithLifecycle()
                     if (history.isNotEmpty()) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
+ScrollableChipRow {
                             history.forEach { item ->
                                 AssistChip(
                                     onClick = { haptic(); viewModel.typeText(item) },
@@ -170,12 +165,7 @@ fun KeyboardScreen(
             // R1 — Prominent Numpad tab & Full Board shortcut.
             run {
                 var showNumpad by remember { mutableStateOf(false) }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                ScrollableChipRow {
                     FilterChip(
                         selected = !showNumpad,
                         onClick = { showNumpad = false },

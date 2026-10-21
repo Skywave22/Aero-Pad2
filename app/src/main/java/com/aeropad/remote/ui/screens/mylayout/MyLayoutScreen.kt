@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.aeropad.remote.model.widgets.WidgetSpec
+import com.aeropad.remote.ui.components.ScrollableChipRow
 import com.aeropad.remote.ui.components.NotConnectedBanner
 import com.aeropad.remote.ui.widgets.LayoutCanvas
 import com.aeropad.remote.ui.widgets.WidgetEvents
@@ -83,13 +84,7 @@ fun MyLayoutScreen(
             NotConnectedBanner(connected == null)
 
             if (profiles.isNotEmpty()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+ScrollableChipRow(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
                     profiles.forEach { p ->
                         val current = layout?.name == p.spec.name
                         AssistChip(
