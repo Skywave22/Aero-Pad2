@@ -82,7 +82,7 @@ fun KeyPadSheet(
     hasLayout: Boolean,
     onDismiss: () -> Unit,
     onSend: (Byte, Int) -> Unit,
-    onAdd: (String, Byte, Int) -> Unit,
+    onAdd: (String, Byte, Int, Boolean) -> Unit,
     onSaveCombo: (String, Byte, Int) -> Unit,
     onDeleteCombo: (String) -> Unit,
     onAddCombo: (NamedCombo) -> Unit,
@@ -98,6 +98,8 @@ fun KeyPadSheet(
     // The key the next "Save" will store. Starts on Esc so an accidental Save
     // can never store "no key" (which would send nothing).
     var lastKey by remember { mutableStateOf(KeyCatalog.navigation.first()) }
+    // F10 — when adding, these keys repeat while held (ideal for WASD/arrows).
+    var turbo by remember { mutableStateOf(false) }
 
     val chordPreview = NamedCombo.chord(mods, "key")
 
@@ -184,6 +186,28 @@ fun KeyPadSheet(
                 }
             }
 
+            // F10 — hold-to-repeat switch, only meaningful when adding.
+            AnimatedVisibility(visible = addMode && hasLayout) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Turbo keys", style = MaterialTheme.typography.labelLarge)
+                        Text(
+                            if (turbo) "Hold a key to repeat it ~16x/second"
+                            else "One press per tap — turn on for WASD / arrows",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    androidx.compose.material3.Switch(
+                        checked = turbo,
+                        onCheckedChange = { turbo = it }
+                    )
+                }
+            }
+
             // Ready-made groups — the fastest way to get a usable pad onto an
             // empty layout without tapping 12 keys one at a time.
             AnimatedVisibility(visible = addMode && hasLayout) {
@@ -227,7 +251,7 @@ fun KeyPadSheet(
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         lastKey = key
                         if (addMode) {
-                            onAdd(key.label, key.code, mods)
+                            onAdd(key.label, key.code, mods, turbo)
                         } else {
                             onSend(key.code, mods)
                         }

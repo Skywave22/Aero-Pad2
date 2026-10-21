@@ -132,6 +132,34 @@ fun WidgetStylePanel(viewModel: LayoutEditorViewModel) {
             onCreateMacro = { name, text, cb -> viewModel.createInlineMacro(name, text, cb) }
         ) { viewModel.setSelectedSecondaryAction(it) }
 
+        // F10 + F17 — only buttons can meaningfully repeat / double-tap.
+        if (widget.type == com.aeropad.remote.model.widgets.WidgetType.BUTTON) {
+            PanelSection("Turbo (hold to repeat)")
+            androidx.compose.foundation.layout.Row(
+                modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                Text(
+                    if (widget.turbo) "On — holding repeats ~16x/s"
+                    else "Off — one press per tap",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = androidx.compose.ui.Modifier.weight(1f)
+                )
+                androidx.compose.material3.Switch(
+                    checked = widget.turbo,
+                    onCheckedChange = { viewModel.setSelectedTurbo(it) }
+                )
+            }
+
+            PanelSection("Double-tap action")
+            ActionPicker(
+                current = widget.doubleTapAction,
+                macros = macros,
+                onCreateMacro = { name, text, cb -> viewModel.createInlineMacro(name, text, cb) }
+            ) { viewModel.setSelectedDoubleTapAction(it) }
+        }
+
         // GESTURE_ZONE: per-direction swipe + two-finger-tap bindings.
         if (widget.type == com.aeropad.remote.model.widgets.WidgetType.GESTURE_ZONE) {
             PanelSection("Swipe up")

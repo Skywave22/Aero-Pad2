@@ -367,6 +367,57 @@ plus one line explaining that the app keeps trying on its own.
 
 ---
 
+## 3g. Round 11 — landscape pass (real bugs found) + turbo keys
+
+Version still **3.6.0 / 360**.
+
+### The app had never been looked at sideways
+
+Every screenshot to date was portrait, so the whole UI was effectively untested
+in the orientation people use when the phone is propped next to a keyboard or
+clamped to a TV. A second instrumentation pass now rotates to landscape and
+photographs the main screens. It found three real defects:
+
+1. **The dock overlapped content in landscape.** `DockMetrics.height` was a flat
+   100 dp built for portrait (pill + system nav padding). In landscape the pill is
+   ~82 dp and there is no nav padding, so screens reserved 18 dp too much *and*
+   still had items hidden behind the dock. The Devicess screenshot showed
+   "Open App Settings" half-covered. `DockMetrics` now exposes an
+   orientation-aware `contentInset()`, used by Settings and Devices.
+2. **The home grid stayed two columns in landscape**, producing half-screen-wide
+   slabs with a huge empty gutter. It is now `adaptiveColumns(2, 3, 4)` driven by
+   the real window size, and full-width rows use `GridItemSpan(maxLineSpan)`
+   instead of a hard-coded 2.
+3. **The dock stretched edge to edge** on a wide window, stranding the four tabs
+   at the extremes. It is now centred and capped at `Adaptive.DOCK_MAX_WIDTH`.
+
+New `ui/components/Adaptive.kt` centralises this (`isLandscape`, `isWideWindow`,
+`adaptiveColumns`, `ReadableWidth`) so screens stop each inventing a breakpoint.
+
+### F10 — turbo keys (hold to repeat)
+
+`domain/TurboRepeater.kt`: a key fires once on tap, or repeats ~16×/s while held
+after a 300 ms hold delay. The delay is what makes it safe — a normal tap can
+never double-fire — and catch-up is capped at 3 so a stall (GC, backgrounding)
+cannot dump a burst at the host.
+
+Available in three places: **My Layout → Keys → "Turbo keys"** (ideal for WASD
+and arrows), the **layout editor** (per-button switch), and on any button that
+was saved with it. Turbo buttons show a live dot while repeating.
+
+### F17 — double-tap bindings
+
+`WidgetSpec.doubleTapAction`: a button can now fire a second action on
+double-tap, independent of long-press. Both new fields are defaulted, so every
+layout saved before this still decodes — verified by the serialisation round-trip
+tests.
+
+`PropertyCatalog.WIDGET_PROPS` 22 → 24 (the guard test caught it immediately).
+
+**437 tests, 0 failures** (11 new for turbo).
+
+---
+
 ## 4. Still open (deliberately not changed in this pass)
 
 - **H4 — Play Store targetSdk.** Still `targetSdk 35`, AGP 8.2.2, Kotlin 1.9.22.

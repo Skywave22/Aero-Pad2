@@ -203,7 +203,9 @@ fun HomeScreen(
                 .padding(padding)
         ) {
             LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
+                columns = GridCells.Fixed(
+                    com.aeropad.remote.ui.components.adaptiveColumns(portrait = 2, expanded = 3, wide = 4)
+                ),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(
@@ -212,7 +214,7 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxSize()
             ) {
                 // ---------- Header ----------
-                item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
+                item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
                     Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
                         // UI fix — the title, tagline and the Customize/version
                         // chips used to share ONE Row. The chips squeezed the
@@ -265,7 +267,7 @@ fun HomeScreen(
                 }
 
                 // ---------- Live status (tap → connection flow) ----------
-                item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
+                item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
                     ConnectionStatusCard(
                         state = effectiveState,
                         modifier = Modifier
@@ -278,7 +280,7 @@ fun HomeScreen(
                 }
 
                 // ---------- Primary action ----------
-                item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
+                item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
                     val connected = state is HidConnectionState.Connected
                     Button(
                         onClick = {
@@ -308,11 +310,11 @@ fun HomeScreen(
                 }
 
                 // ---------- Controls ----------
-                item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
+                item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
                     SectionHeader("Controls")
                 }
                 if (hidden.isNotEmpty()) {
-                    item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
+                    item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
@@ -337,7 +339,7 @@ fun HomeScreen(
                 }
 
                 // ---------- Create ----------
-                item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
+                item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
                     SectionHeader("Create")
                 }
                 items(visible(createTiles), key = { it.id }) { tile ->
@@ -345,7 +347,7 @@ fun HomeScreen(
                 }
 
                 // ---------- System ----------
-                item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
+                item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
                     SectionHeader("System")
                 }
                 items(visible(systemTiles), key = { it.id }) { tile ->
@@ -353,7 +355,7 @@ fun HomeScreen(
                 }
 
                 // ---------- Quick Tools (1-tap access to secondary & builder screens) ----------
-                item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
+                item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
                     Column {
                         SectionHeader("Quick Tools")
                         ScrollableChipRow {

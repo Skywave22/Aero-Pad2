@@ -132,7 +132,7 @@ fun SettingsScreen(
                 // top-level hub so the dock is always drawn over it, but there
                 // was no bottom padding, meaning the last settings rows were
                 // permanently unreachable behind it.
-                .padding(bottom = com.aeropad.remote.ui.components.DockMetrics.height + 16.dp)
+                .padding(bottom = com.aeropad.remote.ui.components.DockMetrics.contentInset() + 4.dp)
                 .verticalScroll(rememberScrollState())
         ) {
             OutlinedTextField(

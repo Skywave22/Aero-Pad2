@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -38,6 +39,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
@@ -52,8 +54,24 @@ import androidx.compose.ui.unit.dp
  * scrolled out from under the dock.
  */
 object DockMetrics {
-    /** Vertical space the floating dock covers, including its shadow + nav bar. */
+    /**
+     * Vertical space the floating dock covers, including its shadow + nav bar.
+     *
+     * Round 11 — this was wrong in landscape: the dock is ~84 dp tall there (the
+     * same pill, no taller), but the layout is only ~340 dp high, so reserving
+     * 100 dp of it shoved content off the bottom while the dock still overlapped
+     * it. The extra 24 dp also came from portrait's system-nav padding, which
+     * does not exist on a landscape phone.
+     */
     val height = 100.dp
+
+    /** What the dock actually covers in the current orientation. */
+    @Composable
+    fun height(): Dp = if (isLandscape()) 82.dp else height
+
+    /** Bottom padding a docked screen should reserve. */
+    @Composable
+    fun contentInset(): Dp = height() + 12.dp
 }
 
 data class DockItem(val route: String, val label: String, val icon: AppIcon)
@@ -97,6 +115,9 @@ fun GlassDock(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
+            // Centre + cap the width: stretching a 4-tab pill across a landscape
+            // window leaves the tabs stranded at the extremes.
+            .widthIn(max = Adaptive.DOCK_MAX_WIDTH)
             .padding(horizontal = 24.dp, vertical = 10.dp)
             .shadow(
                 elevation = 22.dp,

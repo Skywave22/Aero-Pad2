@@ -151,16 +151,22 @@ class MyLayoutViewModel @Inject constructor(
      * Built-in templates are never modified in place — the first edit forks
      * them into a personal copy so a user can always go back to the original.
      */
-    fun addKeyToLayout(label: String, key: Byte, mods: Int) {
-        appendKeys(listOf(KeyEntry(label, key, mods)))
+    fun addKeyToLayout(label: String, key: Byte, mods: Int, turbo: Boolean = false) {
+        appendKeys(listOf(KeyEntry(label, key, mods, turbo)))
     }
 
     /** Add a small ready-made group of keys (WASD, arrows, …) in one write. */
-    fun addPreset(preset: KeyPreset) {
-        appendKeys(preset.keys.map { KeyEntry(it.label, it.code, 0) })
+    fun addPreset(preset: KeyPreset, turbo: Boolean = false) {
+        appendKeys(preset.keys.map { KeyEntry(it.label, it.code, 0, turbo) })
     }
 
-    data class KeyEntry(val label: String, val key: Byte, val mods: Int)
+    data class KeyEntry(
+        val label: String,
+        val key: Byte,
+        val mods: Int,
+        /** F10 — hold-to-repeat on this key button. */
+        val turbo: Boolean = false
+    )
 
     /**
      * One coroutine for the whole batch: the fork of a built-in happens once,
@@ -195,7 +201,8 @@ class MyLayoutViewModel @Inject constructor(
                         icon = "",
                         backgroundColor = KEY_BG
                     ),
-                    action = WidgetAction.KeyTap(entry.key, (entry.mods and 0xFF).toByte())
+                    action = WidgetAction.KeyTap(entry.key, (entry.mods and 0xFF).toByte()),
+                    turbo = entry.turbo
                 )
                 added++
             }

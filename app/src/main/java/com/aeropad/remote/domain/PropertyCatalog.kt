@@ -58,7 +58,8 @@ object PropertyCatalog {
 
     /** WidgetSpec: 12 ctor fields − id − frame − style + 4 WidgetFrame
      *  + 9 WidgetStyle = 22. */
-    const val WIDGET_PROPS = 22
+    // +2 in Round 11: WidgetSpec.turbo and WidgetSpec.doubleTapAction.
+    const val WIDGET_PROPS = 24
 
     /** LayoutSpec (widgets): 5 ctor fields − widgets list = 4. */
     const val WIDGET_LAYOUT_PROPS = 4

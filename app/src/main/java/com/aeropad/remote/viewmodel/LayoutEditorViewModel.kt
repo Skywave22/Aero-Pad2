@@ -214,6 +214,18 @@ class LayoutEditorViewModel @Inject constructor(
         mutate { LayoutEditorOps.updateWidget(it, id) { w -> w.copy(action = action) } }
     }
 
+    /** F10 — hold-to-repeat on the selected button. */
+    fun setSelectedTurbo(enabled: Boolean) {
+        val id = _selectedId.value ?: return
+        mutate { LayoutEditorOps.updateWidget(it, id) { w -> w.copy(turbo = enabled) } }
+    }
+
+    /** F17 — double-tap binding for the selected button. */
+    fun setSelectedDoubleTapAction(action: WidgetAction) {
+        val id = _selectedId.value ?: return
+        mutate { LayoutEditorOps.updateWidget(it, id) { w -> w.copy(doubleTapAction = action) } }
+    }
+
     fun setSelectedSecondaryAction(action: WidgetAction) {
         val id = _selectedId.value ?: return
         mutate { LayoutEditorOps.updateWidget(it, id) { w -> w.copy(secondaryAction = action) } }

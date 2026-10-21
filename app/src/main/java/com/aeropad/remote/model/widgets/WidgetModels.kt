@@ -173,7 +173,14 @@ data class WidgetSpec(
     val twoFingerTap: WidgetAction = WidgetAction.None,
     /** SECTION 2 — element grouping: same non-blank id = moves as one unit.
      *  Serialized with a default so every pre-upgrade layout loads fine. */
-    val groupId: String = ""
+    val groupId: String = "",
+    /**
+     * F10 — hold the button to repeat its action ~16x/second. Defaulted so
+     * every layout saved before this existed still decodes.
+     */
+    val turbo: Boolean = false,
+    /** F17 — separate binding for a double-tap (defaults to none). */
+    val doubleTapAction: WidgetAction = WidgetAction.None
 ) {
     fun sanitized(): WidgetSpec = copy(
         frame = frame.sanitized(),

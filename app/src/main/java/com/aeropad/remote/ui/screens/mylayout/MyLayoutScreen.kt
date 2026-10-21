@@ -168,7 +168,7 @@ fun MyLayoutScreen(
             hasLayout = layout != null,
             onDismiss = { showKeyPad = false },
             onSend = { key, mods -> viewModel.playKey(key, mods) },
-            onAdd = { label, key, mods -> viewModel.addKeyToLayout(label, key, mods) },
+            onAdd = { label, key, mods, turbo -> viewModel.addKeyToLayout(label, key, mods, turbo) },
             onSaveCombo = { name, key, mods -> viewModel.saveCombo(name, key, mods) },
             onDeleteCombo = { viewModel.deleteCombo(it) },
             onAddCombo = { viewModel.addComboToLayout(it) },

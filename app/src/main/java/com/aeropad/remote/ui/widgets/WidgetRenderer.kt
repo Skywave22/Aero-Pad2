@@ -1,5 +1,13 @@
 package com.aeropad.remote.ui.widgets
 
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.coroutineScope
+import com.aeropad.remote.model.widgets.WidgetAction
+import com.aeropad.remote.domain.TurboRepeater
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -175,12 +183,79 @@ private fun ButtonBody(widget: WidgetSpec, events: WidgetEvents, fg: Color) {
             .pointerInput(widget.id) {
                 detectTapGestures(
                     onTap = { events.onPrimary(widget) },
+                    // F17 — a double-tap binding wins over long-press so a
+                    // turbo button can still fire its repeat separately.
+                    onDoubleTap = if (widget.doubleTapAction != WidgetAction.None) {
+                        { events.onSecondary(widget) }
+                    } else null,
                     onLongPress = { events.onSecondary(widget) }
                 )
             },
         contentAlignment = Alignment.Center
     ) {
         WidgetLabel(widget.style.icon, widget.style.label, widget.style.fontSize, fg)
+
+        // F10 — turbo: hold to repeat. The indicator makes it obvious that the
+        // button is latched rather than stuck.
+        if (widget.turbo) {
+            TurboOverlay(widget, events)
+        }
+    }
+}
+
+/**
+ * F10 — hold-to-repeat behaviour for a turbo button.
+ *
+ * Uses `detectTapGestures(onPress = …)` so it gets an explicit down/up pair and
+ * can drive [TurboRepeater]; a coroutine polls the repeater while the pointer is
+ * down. It does not consume events, so the normal tap/long-press handlers on the
+ * same node keep working.
+ */
+@Composable
+private fun TurboOverlay(widget: WidgetSpec, events: WidgetEvents) {
+    var repeating by remember(widget.id) { mutableStateOf(false) }
+    val accent = MaterialTheme.colorScheme.primary
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(widget.id, "turbo") {
+                val repeater = TurboRepeater()
+                detectTapGestures(
+                    onPress = {
+                        repeater.start()
+                        // PressGestureScope is not a CoroutineScope, so run the
+                        // poller inside one explicitly; it is cancelled in the
+                        // finally block however the press ends.
+                        coroutineScope {
+                            val pollJob = launch {
+                                while (isActive) {
+                                    if (repeater.poll() > 0) events.onPrimary(widget)
+                                    repeating = repeater.isRepeating
+                                    delay(TurboRepeater.DEFAULT_INTERVAL_MS)
+                                }
+                            }
+                            try {
+                                tryAwaitRelease()
+                            } finally {
+                                pollJob.cancel()
+                                repeater.stop()
+                                repeating = false
+                            }
+                        }
+                    }
+                )
+            }
+    ) {
+        if (repeating) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(4.dp)
+                    .size(6.dp)
+                    .background(accent, CircleShape)
+            )
+        }
     }
 }
 

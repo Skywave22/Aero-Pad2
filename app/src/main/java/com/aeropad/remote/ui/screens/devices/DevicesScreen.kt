@@ -147,7 +147,9 @@ fun DevicesScreen(
                 .padding(padding)
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 96.dp)
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                bottom = com.aeropad.remote.ui.components.DockMetrics.contentInset()
+            )
         ) {
             item {
                 ConnectionStatusCard(
