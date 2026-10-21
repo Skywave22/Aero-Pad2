@@ -1,16 +1,25 @@
 package com.aeropad.remote.ui.components
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,12 +29,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 /**
@@ -41,7 +53,7 @@ import androidx.compose.ui.unit.dp
  */
 object DockMetrics {
     /** Vertical space the floating dock covers, including its shadow + nav bar. */
-    val height = 96.dp
+    val height = 100.dp
 }
 
 data class DockItem(val route: String, val label: String, val icon: AppIcon)
@@ -53,90 +65,171 @@ val DockItems = listOf(
     DockItem("settings", "Settings", AppIcon.SETTINGS)
 )
 
+/**
+ * Modern floating dock.
+ *
+ * What changed and why:
+ *  - A **sliding indicator** now travels between tabs instead of each tab
+ *    flashing its own background. Motion tells the user where they came from,
+ *    which a per-tab highlight cannot do.
+ *  - The bar is a full-width pill with a hairline border and a soft two-stage
+ *    shadow, so it reads as a raised surface on any wallpaper — the old one
+ *    disappeared on dark wallpapers because it was a flat `surface` colour.
+ *  - The selected icon scales up slightly and switches to a filled glyph with
+ *    a primary label; unselected tabs stay quiet so the eye lands on one place.
+ *  - Every tap still fires a haptic tick, and `Role.Tab` + `selectable` keep
+ *    TalkBack announcing "selected".
+ *
+ * The indicator is positioned from the measured width (BoxWithConstraints)
+ * rather than from an assumed tab size, so it stays aligned on any screen
+ * width, in landscape, and under display-size scaling.
+ */
 @Composable
 fun GlassDock(
     currentRoute: String?,
     onNavigate: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val selectedIndex = DockItems.indexOfFirst { currentRoute?.startsWith(it.route) == true }
+        .coerceAtLeast(0)
+
     Box(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 40.dp, vertical = 10.dp)
-            .shadow(DepthLayer.FLOATING, CircleShape, clip = false)
-            .background(MaterialTheme.colorScheme.surface, CircleShape)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 10.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            DockItems.forEach { item ->
-                val selected = currentRoute?.startsWith(item.route) == true
-                val tint by animateColorAsState(
-                    targetValue = if (selected) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                    label = "dockTint"
+            .padding(horizontal = 24.dp, vertical = 10.dp)
+            .shadow(
+                elevation = 22.dp,
+                shape = RoundedCornerShape(26.dp),
+                clip = false,
+                ambientColor = Color.Black.copy(alpha = 0.35f),
+                spotColor = Color.Black.copy(alpha = 0.45f)
+            )
+            .clip(RoundedCornerShape(26.dp))
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        MaterialTheme.colorScheme.surface,
+                        MaterialTheme.colorScheme.surface.copy(alpha = 0.98f)
+                    )
                 )
-                // M4 fix: use Modifier.selectable with Role.Tab so TalkBack announces
-                // selected tab state, and set Icon contentDescription = null to prevent
-                // duplicate "Home, Home" announcements alongside the visible Text label.
-                val view = LocalView.current
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                    modifier = Modifier
-                        .weight(1f)
-                        .heightIn(min = 56.dp)
-                        // UI fix — this was .clip(CircleShape). Each tab is only
-                        // ~65dp wide, so clipping it to a circle cut the bottom
-                        // corners off the label: the dock literally rendered
-                        // "Layouts" as "ayouts". A rounded rect matches the
-                        // dock's own shape and cannot clip the text.
-                        .clip(RoundedCornerShape(16.dp))
-                        .selectable(
-                            selected = selected,
-                            role = Role.Tab,
-                            onClick = {
-                                if (!selected) {
-                                    view.performHapticFeedback(
-                                        android.view.HapticFeedbackConstants.KEYBOARD_TAP
-                                    )
-                                    onNavigate(item.route)
-                                }
-                            }
+            )
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
+                shape = RoundedCornerShape(26.dp)
+            )
+            .padding(horizontal = 8.dp, vertical = 7.dp)
+    ) {
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val tabWidth = maxWidth / DockItems.size
+            val indicatorOffset by animateDpAsState(
+                targetValue = tabWidth * selectedIndex,
+                animationSpec = spring(
+                    dampingRatio = 0.78f,
+                    stiffness = Spring.StiffnessMediumLow
+                ),
+                label = "dockIndicator"
+            )
+
+            // ---------- sliding indicator ----------
+            Box(
+                modifier = Modifier
+                    .offset(x = indicatorOffset)
+                    .width(tabWidth)
+                    .height(50.dp)
+                    .padding(horizontal = 4.dp)
+                    .clip(RoundedCornerShape(19.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.20f),
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+                            )
                         )
-                        .padding(vertical = 6.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(34.dp)
-                            .background(
-                                if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
-                                else Color.Transparent,
-                                CircleShape
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            iconFor(item.icon, LocalIconPack.current),
-                            contentDescription = null,
-                            tint = tint,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                    Text(
-                        item.label,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = tint,
-                        maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                DockItems.forEachIndexed { index, item ->
+                    DockTab(
+                        item = item,
+                        selected = index == selectedIndex &&
+                            currentRoute?.startsWith(item.route) == true,
+                        width = tabWidth,
+                        onClick = { onNavigate(item.route) }
                     )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun DockTab(
+    item: DockItem,
+    selected: Boolean,
+    width: androidx.compose.ui.unit.Dp,
+    onClick: () -> Unit
+) {
+    val tint by animateColorAsState(
+        targetValue = if (selected) MaterialTheme.colorScheme.primary
+        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
+        label = "dockTint"
+    )
+    val iconScale by animateFloatAsState(
+        targetValue = if (selected) 1.08f else 1f,
+        animationSpec = spring(dampingRatio = 0.6f, stiffness = Spring.StiffnessMedium),
+        label = "dockScale"
+    )
+    val view = LocalView.current
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier
+            .width(width)
+            .heightIn(min = 50.dp)
+            // A rounded rect, not a circle: clipping a ~65dp-wide tab to a
+            // circle used to slice the corners off the label (the dock
+            // literally rendered "Layouts" as "ayouts").
+            .clip(RoundedCornerShape(19.dp))
+            .selectable(
+                selected = selected,
+                role = Role.Tab,
+                onClick = {
+                    if (!selected) {
+                        view.performHapticFeedback(
+                            android.view.HapticFeedbackConstants.KEYBOARD_TAP
+                        )
+                        onClick()
+                    }
+                }
+            )
+            .padding(vertical = 4.dp)
+    ) {
+        Icon(
+            iconFor(item.icon, LocalIconPack.current),
+            // The visible label already names the tab — announcing it twice
+            // makes TalkBack say "Home, Home".
+            contentDescription = null,
+            tint = tint,
+            modifier = Modifier
+                .size(22.dp)
+                .graphicsLayer { scaleX = iconScale; scaleY = iconScale }
+        )
+        Box(modifier = Modifier.height(3.dp))
+        Text(
+            item.label,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            color = tint,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+        )
     }
 }

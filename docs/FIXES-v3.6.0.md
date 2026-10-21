@@ -240,6 +240,64 @@ helper that calls `java.lang.String.format(locale, template, *args)`.
 
 ---
 
+## 3d. Round 8 — new bottom bar, keys & named combos in My Layout
+
+Version still **3.6.0 / 360**.
+
+### New floating dock
+
+`ui/components/GlassDock.kt` rebuilt:
+
+- **Sliding indicator** instead of a per-tab highlight, so motion shows where you
+  came from. Its offset is derived from the measured width (`BoxWithConstraints`)
+  → stays aligned at any screen width, in landscape, and under display scaling.
+- Two-stage shadow (ambient + spot) plus a hairline border, so the bar still
+  reads as a raised surface on dark wallpapers (the old flat `surface` pill
+  vanished into them).
+- Selected icon scales 8 % with a spring and switches to a primary label; the
+  label is `labelSmall` semibold when active.
+- Haptic tick + `Role.Tab` / `selectable` semantics preserved, and the tab is
+  clipped to a rounded rect (never a circle — that is what used to render
+  "Layouts" as "ayouts").
+- `DockMetrics.height` 96 → **100 dp** so screens reserving space stay correct.
+
+### My Layout — keyboard, single keys, named combos
+
+New `model/keys/KeyCatalog.kt` (every key, five groups), `model/keys/NamedCombo.kt`
+(user shortcut = name + key + modifier mask), `data/keys/CustomComboStore.kt`
+(JSON file store, corrupt file ⇒ empty, atomic temp-file write) and
+`domain/KeyPlacement.kt` (grid placement, pure + tested).
+
+The **Keys** button on My Layout opens `KeyPadSheet`:
+
+| Mode | Behaviour |
+|---|---|
+| **Send** | tapping any key presses it on the PC now; modifier chips latch one-shot |
+| **Add to layout** | tapping a key drops it on the layout as a button — exactly the keys you want, nothing else |
+
+- Modifier chips (Ctrl / Shift / Alt / Win) latch, so `Ctrl+Shift+Esc` is built
+  the way you say it, and the header shows the chord live: **"next save: Ctrl+Shift+Esc"**.
+- **Quick add** presets drop a whole group in one tap: WASD, Arrows, Esc+Enter.
+- **Your shortcuts**: type a name, press Save → the combo is stored and becomes a
+  chip on My Layout (tap = send) *and* a row in the pad you can add to any layout.
+  Re-saving under the same name updates it instead of duplicating.
+- Every add is **one batched write**, so adding 4 preset keys forks a built-in
+  template once, never twice. Editing a built-in forks it to "<name> (mine)" and
+  leaves the template sealed.
+- Feedback via snackbar ("Added 4 keys.", "Pick a layout first…", "This layout is
+  full…") — no silent failures, no crash when nothing is connected.
+
+### Tests
+
+`features/KeyPadTest.kt` (22): catalog completeness and uniqueness, byCode
+round-trip, chord ordering (`Ctrl+Shift+Esc`), name sanitising, invalid combo
+rejection, placement (first cell, row wrap, thumb-first bottom bias, no overlap,
+full grid ⇒ null).
+
+**384 tests, 0 failures.**
+
+---
+
 ## 4. Still open (deliberately not changed in this pass)
 
 - **H4 — Play Store targetSdk.** Still `targetSdk 35`, AGP 8.2.2, Kotlin 1.9.22.

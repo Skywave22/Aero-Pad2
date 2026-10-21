@@ -86,6 +86,15 @@ class ScreenshotTourTest {
         return true
     }
 
+    /** Same as [tap] but matches a substring (chips carry an emoji prefix). */
+    private fun tapContains(text: String): Boolean {
+        val node = device.wait(Until.findObject(By.textContains(text)), 4000) ?: return false
+        node.click()
+        device.waitForIdle()
+        Thread.sleep(900)
+        return true
+    }
+
     private fun back() {
         device.pressBack()
         device.waitForIdle()
@@ -181,6 +190,20 @@ class ScreenshotTourTest {
             shot("18-help")
             scrollDown(2)
             shot("19-help-scrolled")
+            back()
+        }
+
+        // Round 8 — My Layout + the new key pad sheet.
+        scrollToTop()
+        if (tapContains("My Layout")) {
+            shot("20-my-layout")
+            if (tap("Keys")) {
+                shot("21-key-pad")
+                // "Add to layout" switches the pad into builder mode and
+                // reveals the quick-add presets.
+                if (tap("Add to layout")) shot("22-key-pad-add")
+                back()
+            }
             back()
         }
     }
