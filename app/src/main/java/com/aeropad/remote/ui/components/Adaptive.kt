@@ -103,3 +103,22 @@ fun ReadableWidth(
 fun padArrangement(spacing: Dp = 12.dp): Arrangement.Vertical =
     if (isLandscape()) Arrangement.spacedBy(spacing, Alignment.CenterVertically)
     else Arrangement.spacedBy(spacing)
+
+/**
+ * How much aspect correction to apply to a control deck.
+ *
+ * A deck's widget frames are fractions of its canvas, so a deck authored on a
+ * portrait phone used to stretch across a landscape window: controls drifted to
+ * the far corners with a dead band between them. Letterboxing it strictly to
+ * 9:16 would be worse — a narrow strip you cannot use with two thumbs.
+ *
+ * So the deck is fitted, but never narrower than [MIN_FILL] of the window: the
+ * geometry is recognisably preserved and the controls stay big enough to hit.
+ */
+fun fittedAspect(designAspect: Float, windowAspect: Float): Float {
+    val design = if (designAspect > 0.05f) designAspect else 9f / 16f
+    return maxOf(design, windowAspect * MIN_FILL)
+}
+
+/** The deck may shrink to this fraction of the window before it stops shrinking. */
+const val MIN_FILL = 0.62f

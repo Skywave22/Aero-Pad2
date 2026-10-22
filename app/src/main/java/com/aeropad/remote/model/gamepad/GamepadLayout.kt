@@ -287,7 +287,13 @@ data class GamepadLayoutSpec(
     /** V2 M3 deferred-item — persisted flick mapping: direction name
      *  ("UP"/"DOWN"/"LEFT"/"RIGHT") → HID button 0..15, -1 = off.
      *  Empty map = the built-in default (UP=0). Legacy JSON loads fine. */
-    val flickMap: Map<String, Int> = emptyMap()
+    val flickMap: Map<String, Int> = emptyMap(),
+    /**
+     * Round 12 — authored canvas aspect (width/height). 0 = unknown (a profile
+     * saved before this field), which is treated as a portrait phone. Without
+     * it a deck designed for portrait stretched into the corners in landscape.
+     */
+    val designAspect: Float = 0f
 ) {
     companion object {
         const val MAX_CONTROLS = 32

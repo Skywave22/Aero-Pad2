@@ -51,7 +51,8 @@ object PropertyCatalog {
 
     /** GamepadLayoutSpec: 8 ctor fields − controls list = 7
      *  (flickMap added in the M3/M5 deferred-items batch). */
-    const val GAMEPAD_LAYOUT_PROPS = 7
+    // +1 in Round 12: GamepadLayoutSpec.designAspect.
+    const val GAMEPAD_LAYOUT_PROPS = 8
 
     /** KeySpec: 11 ctor fields − id = 10. */
     const val KEYBOARD_KEY_PROPS = 10

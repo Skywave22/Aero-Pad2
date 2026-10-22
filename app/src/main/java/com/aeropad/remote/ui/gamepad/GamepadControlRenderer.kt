@@ -95,9 +95,29 @@ fun GamepadCanvas(
     modifier: Modifier = Modifier,
     activeLayer: Int = 0
 ) {
-    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        val w = maxWidth
-        val h = maxHeight
+    BoxWithConstraints(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = androidx.compose.ui.Alignment.Center
+    ) {
+        // Round 12 — this canvas stretched its controls across whatever window
+        // it was given. On a real phone in landscape (800x360 dp) the d-pad
+        // hugged the left edge, FIRE and JUMP the right, and a dead band
+        // opened between them, because the frames are normalised 0..1 and the
+        // window is 2.2:1. Fit the authored aspect, centre it, and outline the
+        // play area so the deck looks deliberate instead of stretched.
+        val windowAspect = maxWidth.value / maxHeight.value.coerceAtLeast(1f)
+        val targetAspect = com.aeropad.remote.ui.components.fittedAspect(layout.designAspect, windowAspect)
+        val w = if (windowAspect > targetAspect) (maxHeight * targetAspect) else maxWidth
+        val h = if (windowAspect > targetAspect) maxHeight else (maxWidth / targetAspect)
+        androidx.compose.foundation.layout.Box(
+            modifier = Modifier
+                .size(w, h)
+                .border(
+                    1.dp,
+                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                    androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+                )
+        ) {
         layout.controls.forEach { control ->
             val isShiftKey = control.id == layout.shiftControlId
             val visible = control.layer == 0 || control.layer == activeLayer || isShiftKey
@@ -116,6 +136,7 @@ fun GamepadCanvas(
                     .graphicsLayer { if (dimmed) alpha = 0.35f }
                     .semantics { contentDescription = a11yLabel }
             )
+        }
         }
     }
 }

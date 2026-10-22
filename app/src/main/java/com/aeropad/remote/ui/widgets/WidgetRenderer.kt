@@ -96,8 +96,8 @@ fun LayoutCanvas(
         // slid to the far corners with dead space between them. Fit the
         // authored aspect inside the window and centre it instead. A layout
         // authored in landscape letterboxes the same way in portrait.
-        val targetAspect = if (layout.designAspect > 0.05f) layout.designAspect else 9f / 16f
         val windowAspect = maxWidth.value / maxHeight.value.coerceAtLeast(1f)
+        val targetAspect = com.aeropad.remote.ui.components.fittedAspect(layout.designAspect, windowAspect)
         val canvasW = if (windowAspect > targetAspect) (maxHeight * targetAspect) else maxWidth
         val canvasH = if (windowAspect > targetAspect) maxHeight else (maxWidth / targetAspect)
         androidx.compose.foundation.layout.Box(
