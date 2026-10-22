@@ -409,16 +409,24 @@ private fun KeyGrid(
     columns: Int,
     haptic: () -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        keys.chunked(columns).forEach { row ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                row.forEach { (label, action) ->
-                    KeyCard(label, modifier = Modifier.weight(1f)) { haptic(); action() }
+    // Round 12 — four keys across an 800 dp landscape window are 200 dp slabs
+    // with nothing in them. Cap the grid so keys stay keyboard-sized and centre
+    // it on the wide window instead of stretching to the edges.
+    com.aeropad.remote.ui.components.ReadableWidth(maxWidth = 640.dp) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
+        ) {
+            keys.chunked(columns).forEach { row ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    row.forEach { (label, action) ->
+                        KeyCard(label, modifier = Modifier.weight(1f)) { haptic(); action() }
+                    }
+                    repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
                 }
-                repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }
