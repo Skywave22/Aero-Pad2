@@ -81,7 +81,17 @@ jobs:
           if [ -z "$KEY_ALIAS" ]; then MISSING="$MISSING KEY_ALIAS"; fi
           if [ -z "$KEY_PASS" ]; then MISSING="$MISSING KEY_PASS"; fi
 
-          if [ -n "$MISSING" ]; then
+          # A key committed to the repo (keys/release/) also counts as signing
+          # material — see keys/release/README.md. Secrets win when present so
+          # the key can be rotated out of the repo later without touching CI.
+          if [ -f keys/release/keystore.properties ]; then
+            echo "Repo keystore found at keys/release/ (secrets, if any, take priority)."
+            HAVE_REPO_KEY=yes
+          else
+            HAVE_REPO_KEY=no
+          fi
+
+          if [ -n "$MISSING" ] && [ "$HAVE_REPO_KEY" = "no" ]; then
             echo "::error title=Release signing is NOT configured::Missing repository secrets:$MISSING. This build will be DEBUG-signed, cannot be installed over an existing AeroPad install, and will NOT be published. See docs/SIGNING.md."
             {
               echo "## :warning: Release signing is NOT configured"
@@ -93,6 +103,10 @@ jobs:
               echo "See \`docs/SIGNING.md\`."
             } >> "$GITHUB_STEP_SUMMARY"
             echo "SIGNED=false" >> "$GITHUB_ENV"
+          elif [ "$HAVE_REPO_KEY" = "yes" ] && [ -n "$MISSING" ]; then
+            echo "## :white_check_mark: Release keystore present (committed at keys/release/)" >> "$GITHUB_STEP_SUMMARY"
+            echo "SIGNED=true" >> "$GITHUB_ENV"
+            echo "KEY_SOURCE=repo" >> "$GITHUB_ENV"
           else
             echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/aeropad-release.p12"
             echo "RELEASE_KEYSTORE_FILE=$RUNNER_TEMP/aeropad-release.p12" >> "$GITHUB_ENV"
@@ -100,7 +114,8 @@ jobs:
             echo "RELEASE_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
             echo "RELEASE_KEY_PASSWORD=$KEY_PASS" >> "$GITHUB_ENV"
             echo "SIGNED=true" >> "$GITHUB_ENV"
-            echo "## :white_check_mark: Release keystore present" >> "$GITHUB_STEP_SUMMARY"
+            echo "## :white_check_mark: Release keystore present (repository secrets)" >> "$GITHUB_STEP_SUMMARY"
+            echo "KEY_SOURCE=secrets" >> "$GITHUB_ENV"
           fi
 
       - name: Assemble release

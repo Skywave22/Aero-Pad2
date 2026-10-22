@@ -1,3 +1,5 @@
+import java.util.Properties
+
 // AeroPad Remote v3 — app module.
 // Clean Kotlin DSL build with KSP (no kapt), version catalog, zero deprecated APIs.
 plugins {
@@ -11,10 +13,29 @@ plugins {
 // Signing inputs must be resolved BEFORE android {} so defaultConfig can
 // record which key signs this build for every variant (a release-only
 // placeholder makes debug manifest merging fail).
-val keystorePath = System.getenv("RELEASE_KEYSTORE_FILE") ?: findProperty("RELEASE_KEYSTORE_FILE") as String?
-val keystorePassword = System.getenv("RELEASE_KEYSTORE_PASSWORD") ?: findProperty("RELEASE_KEYSTORE_PASSWORD") as String?
-val keyAliasName = System.getenv("RELEASE_KEY_ALIAS") ?: findProperty("RELEASE_KEY_ALIAS") as String?
-val keyPasswordValue = System.getenv("RELEASE_KEY_PASSWORD") ?: findProperty("RELEASE_KEY_PASSWORD") as String?
+// Round 13 — three sources, in priority order:
+//   1. environment (CI secrets, or a local export)
+//   2. gradle properties (local ~/.gradle/gradle.properties)
+//   3. keys/release/keystore.properties shipped with the repo
+// (3) exists because the CI secrets were removed and every build silently
+// fell back to the DEBUG key, which cannot be installed over an existing
+// install. See keys/release/README.md for the trade-off.
+val repoKeystoreFile = rootProject.file("keys/release/keystore.properties")
+val repoKeystoreProps = Properties().apply {
+    if (repoKeystoreFile.exists()) repoKeystoreFile.inputStream().use { load(it) }
+}
+val keystorePath = System.getenv("RELEASE_KEYSTORE_FILE")
+    ?: findProperty("RELEASE_KEYSTORE_FILE") as String?
+    ?: repoKeystoreProps.getProperty("storeFile")?.let { rootProject.file(it).absolutePath }
+val keystorePassword = System.getenv("RELEASE_KEYSTORE_PASSWORD")
+    ?: findProperty("RELEASE_KEYSTORE_PASSWORD") as String?
+    ?: repoKeystoreProps.getProperty("storePassword")
+val keyAliasName = System.getenv("RELEASE_KEY_ALIAS")
+    ?: findProperty("RELEASE_KEY_ALIAS") as String?
+    ?: repoKeystoreProps.getProperty("keyAlias")
+val keyPasswordValue = System.getenv("RELEASE_KEY_PASSWORD")
+    ?: findProperty("RELEASE_KEY_PASSWORD") as String?
+    ?: repoKeystoreProps.getProperty("keyPassword")
 val hasReleaseKeystore = !keystorePath.isNullOrBlank() && file(keystorePath!!).exists()
 val requireReleaseSigning =
     (System.getenv("REQUIRE_RELEASE_SIGNING")

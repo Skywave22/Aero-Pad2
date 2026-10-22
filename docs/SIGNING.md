@@ -31,7 +31,32 @@ that *was* produced looked like a release but was signed with the debug key** �
 so it cannot be installed over an existing AeroPad install (Android refuses a
 signature mismatch with "App not installed"), and it is not updateable later.
 
-## How to fix it
+## What was actually done (Round 13)
+
+The repository-secret API was not writable with the available token, so the key
+is **committed to the repo** at `keys/release/` and the build reads it
+automatically (priority: environment → Gradle properties → `keys/release/`).
+`keys/release/README.md` documents the trade-off and how to move it back into
+secrets later.
+
+The new key (this replaces the lost one, and is what 3.6.0 is signed with):
+
+```
+Owner:   CN=AeroPad, OU=Mobile, O=Skywave22, L=Bahawalpur, ST=Punjab, C=PK
+Alias:   AEROPAD          PKCS#12, RSA 4096, valid until 2054
+SHA-256: 57:D0:0E:93:A6:35:83:66:D5:FE:C0:EE:97:A3:7D:C0:7E:64:17:D9:A9:BE:8F:74:4F:A5:1B:18:9E:A4:9C:DB
+```
+
+**Because this key is not the one that signed v3.4.0/v3.5.0, uninstall once:**
+
+```bash
+adb uninstall com.aeropad.remote
+```
+
+Then install `AeroPad-v3.6.0-release.apk`. Every release after this updates in
+place normally.
+
+## How to restore the old key instead
 
 ```bash
 # If you still have the keystore that signed v3.4.0 (aeropad-release.p12/.jks):
