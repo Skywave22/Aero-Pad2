@@ -440,6 +440,43 @@ Fixed from those screenshots:
 
 ---
 
+## 3h. Round 12 — the real-device landscape pass
+
+Version still **3.6.0 / 360**.
+
+Round 11 photographed landscape on the default emulator, which is a tiny
+320 px-wide device. Screenshots from an actual 1600x720 phone (800x360 dp)
+showed a different and much worse set of problems, so the emulator is now set
+to that geometry before the tour runs. What the real device showed:
+
+| What I saw on the phone | Cause | Fix |
+| --- | --- | --- |
+| The trackpad was a 55 dp sliver | App bar + "not connected" banner + tip bar + chip row all sat above it | The tip bar is hidden in landscape (it is repeated in Help) |
+| Click buttons under the pad ate the height | Portrait stacking order | Landscape puts LEFT/MID/RIGHT in a thumb column *beside* the pad — laptop layout |
+| "⏻ Power" rendered as a tofu box | U+23FB is missing from many Android fonts | `KeyCard` takes a vector `icon`; Power/Touch use `Icons.Rounded` |
+| Gamepad sticks, d-pad and ABXY collapsed into slivers | A weighted row in a window that had almost no height left | Landscape gets a fixed 210 dp control deck in a scrolling column |
+| Gamepad deck: d-pad far left, FIRE/JUMP far right, dead band between | Frames are normalised 0..1 and were stretched across 2.2:1 | `fittedAspect()` in both canvases fits the authored shape, but never below 62% of the window (strict letterboxing a 9:16 deck into a 2.2:1 window would be a strip you cannot play) |
+| Android Remote / Multimedia: everything hugged the top, bottom half empty | Fixed-height stack, top-aligned | `padArrangement()` centres it in landscape |
+| PC Keyboard: four 200 dp empty slabs per row | Key grid stretched to the window | Capped at 640 dp and centred |
+
+Bugs I introduced and caught before shipping (worth recording):
+
+- The landscape click column was first added as a **sibling** of the weighted
+  row; a `fillMaxHeight()` child of a `Column` is measured first and consumed
+  the whole height, so the trackpad disappeared entirely. It now lives inside
+  the row.
+- The tour's first-run overlay handle was a single non-waiting lookup, so on a
+  fresh CI install **every** screenshot was the onboarding card. It now waits,
+  retries, and is re-checked before each capture.
+- After the gamepad step the tour was no longer on Home, so Layouts/Devices/
+  Settings silently vanished from the artifact.
+
+`GamepadLayoutSpec.designAspect` and `LayoutSpec.designAspect` are both
+defaulted to 0 = "authored before this field", treated as a portrait phone, so
+old layouts and shared JSON still load. Property counts updated to match.
+
+---
+
 ## 4. Still open (deliberately not changed in this pass)
 
 - **H4 — Play Store targetSdk.** Still `targetSdk 35`, AGP 8.2.2, Kotlin 1.9.22.
