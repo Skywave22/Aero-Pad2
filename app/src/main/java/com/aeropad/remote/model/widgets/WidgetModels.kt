@@ -199,7 +199,17 @@ data class LayoutSpec(
     /** SECTION 2 — profile category/folder (e.g. "FPS", "Media", "Work"). */
     val category: String = "",
     /** SECTION 2 — free-text description/notes shown in the profile list. */
-    val notes: String = ""
+    val notes: String = "",
+    /**
+     * Round 12 — the canvas aspect (width/height) this layout was authored on.
+     *
+     * Widget frames are normalised 0..1, so without this a deck designed on a
+     * portrait phone stretched across a 2.2:1 landscape window: the stick,
+     * JUMP and FIRE drifted to the far corners with a dead band between them.
+     * 0 means "unknown" (layouts saved before this field), which is treated as
+     * a portrait phone.
+     */
+    val designAspect: Float = 0f
 ) {
     companion object {
         const val MAX_WIDGETS = 60
@@ -211,6 +221,7 @@ data class LayoutSpec(
     fun sanitized(): LayoutSpec = copy(
         name = name.take(NAME_MAX).ifBlank { "Untitled" },
         gridSize = if (gridSize.isNaN()) 0f else gridSize.coerceIn(0f, 0.25f),
+        designAspect = if (designAspect.isNaN()) 0f else designAspect.coerceIn(0f, 4f),
         widgets = widgets.take(MAX_WIDGETS).map { it.sanitized() },
         category = category.take(CATEGORY_MAX),
         notes = notes.take(NOTES_MAX)

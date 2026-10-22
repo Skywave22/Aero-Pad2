@@ -9,6 +9,7 @@ import com.aeropad.remote.domain.TurboRepeater
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -85,9 +86,31 @@ fun LayoutCanvas(
     events: WidgetEvents,
     modifier: Modifier = Modifier
 ) {
-    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        val canvasW = maxWidth
-        val canvasH = maxHeight
+    BoxWithConstraints(
+        modifier = modifier.fillMaxSize(),
+        // Round 12 — keep the deck's authored geometry instead of stretching it.
+        contentAlignment = androidx.compose.ui.Alignment.Center
+    ) {
+        // Widget frames are fractions of the canvas, so a deck authored on a
+        // portrait phone used to stretch across a landscape window: controls
+        // slid to the far corners with dead space between them. Fit the
+        // authored aspect inside the window and centre it instead. A layout
+        // authored in landscape letterboxes the same way in portrait.
+        val targetAspect = if (layout.designAspect > 0.05f) layout.designAspect else 9f / 16f
+        val windowAspect = maxWidth.value / maxHeight.value.coerceAtLeast(1f)
+        val canvasW = if (windowAspect > targetAspect) (maxHeight * targetAspect) else maxWidth
+        val canvasH = if (windowAspect > targetAspect) maxHeight else (maxWidth / targetAspect)
+        androidx.compose.foundation.layout.Box(
+            modifier = Modifier
+                .size(canvasW, canvasH)
+                // A hairline frame makes the deck's true play area obvious
+                // rather than looking like the app simply failed to fill.
+                .border(
+                    1.dp,
+                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                    androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+                )
+        ) {
         layout.widgets.filter { it.style.visible }.forEach { widget ->
             val frame = widget.frame.sanitized()
             // SECTION 4 — accessibility: interactive widgets never render
@@ -103,6 +126,7 @@ fun LayoutCanvas(
                     .offset(x = canvasW * frame.x, y = canvasH * frame.y)
                     .size(width = w, height = h)
             )
+        }
         }
     }
 }

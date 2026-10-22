@@ -52,6 +52,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
@@ -348,6 +349,9 @@ fun LayoutEditorScreen(
                 showGrid = showGrid,
                 modifier = Modifier
                     .weight(1f)
+                    .onSizeChanged {
+                        if (it.height > 0) viewModel.setCanvasAspect(it.width.toFloat() / it.height)
+                    }
                     .fillMaxWidth()
                     .padding(8.dp)
             )

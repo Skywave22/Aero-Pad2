@@ -450,6 +450,20 @@ class LayoutEditorViewModel @Inject constructor(
      * Persist to Room. Built-in profiles are saved as a NEW user copy
      * (templates stay pristine).
      */
+    /**
+     * Round 12 — remember the canvas shape the user is authoring on.
+     *
+     * Frames are normalised, so without this a deck built on a portrait phone
+     * stretched into the corners when the phone was turned sideways. The editor
+     * reports its measured aspect; saving stores it with the layout.
+     */
+    fun setCanvasAspect(aspect: Float) {
+        if (aspect.isNaN() || aspect <= 0.05f) return
+        val rounded = (aspect * 100f).toInt() / 100f
+        if (kotlin.math.abs(_layout.value.designAspect - rounded) < 0.01f) return
+        _layout.value = _layout.value.copy(designAspect = rounded)
+    }
+
     fun save() {
         viewModelScope.launch {
             runCatching {
