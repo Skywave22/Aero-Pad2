@@ -56,35 +56,117 @@ jobs:
       - name: Lint (fatal on error)
         run: ./gradlew lintDebug
 
-      - name: Assemble release
+      # ------------------------------------------------------------------
+      # Round 13 — release signing preflight.
+      #
+      # v3.6.0 builds were shipping signed with CN=Android Debug while the
+      # v3.4.0/v3.5.0 releases used the real AeroPad key, because this workflow
+      # silently falls back to debug signing when the keystore secret is
+      # absent — and then skipped publication, so nothing was released and
+      # nobody noticed. Now the run says so loudly, in the annotation and the
+      # job summary, instead of producing a quietly unusable "release".
+      # ------------------------------------------------------------------
+      - name: Check release signing
         env:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
           KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASS: ${{ secrets.KEY_PASS }}
         run: |
-          if [ -n "$KEYSTORE_B64" ]; then
-            # Release key lives ONLY in encrypted secrets — never in git,
-            # never in logs (secret values are masked by Actions).
-            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/aeropad-release.p12"
-            export RELEASE_KEYSTORE_FILE="$RUNNER_TEMP/aeropad-release.p12"
-            export RELEASE_KEYSTORE_PASSWORD="$KEYSTORE_PASS"
-            export RELEASE_KEY_ALIAS="$KEY_ALIAS"
-            export RELEASE_KEY_PASSWORD="$KEY_PASS"
-            ./gradlew assembleRelease
-            echo "SIGNED=true" >> "$GITHUB_ENV"
+          # Explicit ifs, not `[ -z ] && ...`: Actions runs bash with -e, so a
+          # false test as the last command of an && list fails the step.
+          MISSING=""
+          if [ -z "$KEYSTORE_B64" ]; then MISSING="$MISSING KEYSTORE_B64"; fi
+          if [ -z "$KEYSTORE_PASS" ]; then MISSING="$MISSING KEYSTORE_PASS"; fi
+          if [ -z "$KEY_ALIAS" ]; then MISSING="$MISSING KEY_ALIAS"; fi
+          if [ -z "$KEY_PASS" ]; then MISSING="$MISSING KEY_PASS"; fi
+
+          if [ -n "$MISSING" ]; then
+            echo "::error title=Release signing is NOT configured::Missing repository secrets:$MISSING. This build will be DEBUG-signed, cannot be installed over an existing AeroPad install, and will NOT be published. See docs/SIGNING.md."
+            {
+              echo "## :warning: Release signing is NOT configured"
+              echo ""
+              echo "Missing secrets: \`$MISSING\`"
+              echo ""
+              echo "This run produces a **DEBUG-signed** APK. It cannot be installed"
+              echo "over an existing AeroPad install and is not published as a release."
+              echo "See \`docs/SIGNING.md\`."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "SIGNED=false" >> "$GITHUB_ENV"
           else
-            echo "No keystore secrets - building with fallback (debug) signing"
-            ./gradlew assembleRelease
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/aeropad-release.p12"
+            echo "RELEASE_KEYSTORE_FILE=$RUNNER_TEMP/aeropad-release.p12" >> "$GITHUB_ENV"
+            echo "RELEASE_KEYSTORE_PASSWORD=$KEYSTORE_PASS" >> "$GITHUB_ENV"
+            echo "RELEASE_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
+            echo "RELEASE_KEY_PASSWORD=$KEY_PASS" >> "$GITHUB_ENV"
+            echo "SIGNED=true" >> "$GITHUB_ENV"
+            echo "## :white_check_mark: Release keystore present" >> "$GITHUB_STEP_SUMMARY"
           fi
 
-      # V2 A6 - APK size tracking (job summary each run).
-      - name: APK size report
+      - name: Assemble release
+        run: |
+          # When the keystore is present the debug fallback is a hard error,
+          # so a "signed" build can never quietly degrade.
+          if [ "$SIGNED" = "true" ]; then
+            export REQUIRE_RELEASE_SIGNING=1
+          fi
+          ./gradlew assembleRelease
+
+      # ------------------------------------------------------------------
+      # Round 13 — prove what actually signed the APK.
+      #
+      # The old gate trusted an env var; this reads the certificate out of the
+      # finished APK, publishes the fingerprint in the job summary, and fails
+      # if a build we believe is signed turns out to carry the debug key.
+      # ------------------------------------------------------------------
+      - name: Verify APK signature
         run: |
           APK=$(ls app/build/outputs/apk/release/*.apk | head -1)
-          SIZE=$(du -h "$APK" | cut -f1)
-          echo "## APK size: $SIZE" >> $GITHUB_STEP_SUMMARY
-          du -b "$APK"
+          BT=$(ls -d "$ANDROID_SDK_ROOT"/build-tools/* | sort -V | tail -1)
+          echo "APK: $APK"
+          "$BT/apksigner" verify --print-certs "$APK" | tee /tmp/certs.txt | head -12
+          CN=$("$BT/apksigner" verify --print-certs "$APK" | grep -m1 'certificate DN' || echo "NO SIGNATURE")
+          FP=$("$BT/apksigner" verify --print-certs "$APK" | grep -m1 'SHA-256 digest' || echo "-")
+          echo "SIGNER_CN=$CN" >> "$GITHUB_ENV"
+          {
+            echo "## Signature"
+            echo ""
+            echo '```'
+            echo "$CN"
+            echo "$FP"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$SIGNED" = "true" ] && echo "$CN" | grep -qi "Android Debug"; then
+            echo "::error::Build was expected to be release-signed but carries the DEBUG key."
+            exit 1
+          fi
+          if [ "$SIGNED" = "true" ] && echo "$CN" | grep -q "NO SIGNATURE"; then
+            echo "::error::Release APK is not signed at all."
+            exit 1
+          fi
+
+      # Round 13 — a debug-signed build must not be mistakable for a release.
+      # Asset names match the v3.4.0 wording (AeroPad-v<ver>-release.apk).
+      - name: Name the APK
+        run: |
+          VER=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          APK=$(ls app/build/outputs/apk/release/*.apk | head -1)
+          if [ "$SIGNED" = "true" ]; then
+            NEW="app/build/outputs/apk/release/AeroPad-v$VER-release.apk"
+          else
+            NEW="app/build/outputs/apk/release/AeroPad-v$VER-DEBUG-SIGNED.apk"
+          fi
+          mv "$APK" "$NEW"
+          echo "APK_PATH=$NEW" >> "$GITHUB_ENV"
+          echo "VERSION=$VER" >> "$GITHUB_ENV"
+          ls -la app/build/outputs/apk/release/
+
+      - name: APK size report
+        run: |
+          SIZE=$(du -h "$APK_PATH" | cut -f1)
+          echo "## APK size: $SIZE" >> "$GITHUB_STEP_SUMMARY"
+          du -b "$APK_PATH"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -92,13 +174,8 @@ jobs:
           name: aeropad-release
           path: app/build/outputs/apk/release/*.apk
 
-      - name: Resolve version
-        run: |
-          VER=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
-          echo "VERSION=$VER" >> "$GITHUB_ENV"
-
-      # Publish to GitHub Releases — only for properly signed builds, so a
-      # debug-signed fallback never lands on the public release page.
+      # Publish to GitHub Releases — only a genuinely release-signed APK, and
+      # only after the certificate check above has passed.
       - name: Publish GitHub Release
         if: env.SIGNED == 'true'
         uses: softprops/action-gh-release@v2
@@ -106,7 +183,8 @@ jobs:
           tag_name: v${{ env.VERSION }}
           name: AeroPad v${{ env.VERSION }}
           generate_release_notes: true
-          files: app/build/outputs/apk/release/*.apk
+          make_latest: true
+          files: ${{ env.APK_PATH }}
 
   # M8 — the Compose UI test existed but never ran anywhere. It needs an
   # emulator, which is slow and occasionally flaky, so this job is allowed

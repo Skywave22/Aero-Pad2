@@ -27,15 +27,39 @@ android {
     // Signing:
     //  - If RELEASE_KEYSTORE_FILE (+ passwords) are provided (CI secrets or
     //    local gradle.properties), the release APK is signed with the real
-    //    Play-Store key.
-    //  - Otherwise it falls back to the debug key so CI builds always
-    //    produce an installable APK without secrets.
+    //    AeroPad release key.
+    //  - Otherwise it falls back to the debug key so a build still produces
+    //    something installable without secrets.
+    //
+    // Round 13 — that silent fallback is exactly how "release" builds shipped
+    // signed with CN=Android Debug while the v3.4.0/v3.5.0 releases used the
+    // real key: a debug-signed update cannot be installed over an installed
+    // real-key build ("App not installed"), so the fallback has to be loud.
+    // Set REQUIRE_RELEASE_SIGNING=1 (CI does when the keystore secret exists)
+    // to turn the fallback into a hard error instead.
     // ------------------------------------------------------------------
     val keystorePath = System.getenv("RELEASE_KEYSTORE_FILE") ?: findProperty("RELEASE_KEYSTORE_FILE") as String?
     val keystorePassword = System.getenv("RELEASE_KEYSTORE_PASSWORD") ?: findProperty("RELEASE_KEYSTORE_PASSWORD") as String?
     val keyAliasName = System.getenv("RELEASE_KEY_ALIAS") ?: findProperty("RELEASE_KEY_ALIAS") as String?
     val keyPasswordValue = System.getenv("RELEASE_KEY_PASSWORD") ?: findProperty("RELEASE_KEY_PASSWORD") as String?
     val hasReleaseKeystore = !keystorePath.isNullOrBlank() && file(keystorePath!!).exists()
+    val requireReleaseSigning =
+        (System.getenv("REQUIRE_RELEASE_SIGNING")
+            ?: findProperty("REQUIRE_RELEASE_SIGNING")?.toString()) == "1"
+
+    if (requireReleaseSigning && !hasReleaseKeystore) {
+        throw GradleException(
+            """
+            |REQUIRE_RELEASE_SIGNING=1 but no release keystore was found.
+            |
+            |  looked for RELEASE_KEYSTORE_FILE = ${keystorePath ?: "(unset)"}
+            |
+            |A release build signed with the debug key cannot be installed over an
+            |existing AeroPad install (signature mismatch), and it must never be
+            |published. See docs/SIGNING.md.
+            """.trimMargin()
+        )
+    }
 
     signingConfigs {
         if (hasReleaseKeystore) {
@@ -59,6 +83,13 @@ android {
                 signingConfigs.getByName("release")
             } else {
                 signingConfigs.getByName("debug")
+            }
+            // A debug-signed "release" must be identifiable as such: the CI
+            // names the file, and the manifest records which key signed it.
+            if (!hasReleaseKeystore) {
+                manifestPlaceholders["aeropadSigning"] = "debug"
+            } else {
+                manifestPlaceholders["aeropadSigning"] = "release"
             }
             // Performance: R8 shrink/optimize/obfuscate + drop unused resources.
             isMinifyEnabled = true

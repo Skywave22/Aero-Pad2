@@ -56,6 +56,12 @@
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
+            <!-- Round 13 — records which key signed this build ("release" or
+                 "debug"), so an install can be checked with aapt2/apkanalyzer
+                 instead of guessing from the file name. -->
+            <meta-data
+                android:name="com.aeropad.remote.SIGNING"
+                android:value="${aeropadSigning}" />
         </activity>
 
         <!-- Foreground service keeping the HID link alive -->
