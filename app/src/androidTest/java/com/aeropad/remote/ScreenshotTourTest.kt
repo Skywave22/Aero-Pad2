@@ -385,6 +385,10 @@ class ScreenshotTourTest {
             shot("L05b-gamepad-play")
             back()
         }
+        // The play surface is launched from the builder, not from Home, so the
+        // dock's hubs are not where the tour left off. Return to Home before
+        // walking the hubs — otherwise they are silently skipped.
+        openByShortcut(null)
 
         // Top-level hubs, reached through the dock (no scrolling needed).
         val hubs = listOf("Layouts" to "L06-layouts", "Devices" to "L07-devices", "Settings" to "L08-settings")
