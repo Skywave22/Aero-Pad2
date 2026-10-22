@@ -151,6 +151,11 @@ jobs:
             ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace
             adb install -r -t app/build/outputs/apk/debug/app-debug.apk
             adb install -r -t app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+            # Match a real 6.5" phone in landscape (1600x720 px @ 2x = 800x360 dp).
+            # The default AVD is a tiny 320px-wide device, where landscape bugs
+            # look different from the ones users actually report.
+            adb shell wm size 1600x720 || true
+            adb shell wm density 320 || true
             # Only the screenshot tour: HomeScreenUiTest needs Compose idleness,
             # which this live-HID app never reaches.
             adb shell am instrument -w -e class com.aeropad.remote.ScreenshotTourTest com.aeropad.remote.test/com.aeropad.remote.HiltTestRunner | tee /tmp/inst.log || true

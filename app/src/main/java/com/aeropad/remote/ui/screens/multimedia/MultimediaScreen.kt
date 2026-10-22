@@ -58,7 +58,7 @@ fun MultimediaScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = com.aeropad.remote.ui.components.padArrangement(12.dp)
         ) {
             NotConnectedBanner(!isConnected)
 

@@ -150,6 +150,11 @@ fun GamepadScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .padding(16.dp)
+                .then(
+                    if (com.aeropad.remote.ui.components.isLandscape())
+                        Modifier.verticalScroll(rememberScrollState())
+                    else Modifier
+                )
         ) {
             NotConnectedBanner(!isConnected)
             Text(
@@ -163,7 +168,17 @@ fun GamepadScreen(
             )
             Spacer(Modifier.height(12.dp))
 
-            Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+            // Round 12 — on a real phone in landscape this weighted row was
+            // squeezed to ~40 dp: the sticks, d-pad and ABXY collapsed into
+            // slivers that looked like broken sliders. Landscape therefore gets
+            // a fixed, thumb-sized control deck inside a scrolling column;
+            // portrait keeps sharing the leftover height as before.
+            val landscapeDeck = com.aeropad.remote.ui.components.isLandscape()
+            Row(
+                modifier = if (landscapeDeck) Modifier.fillMaxWidth().height(210.dp)
+                else Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 // ---------- Left: stick + dpad ----------
                 Column(
                     modifier = Modifier.weight(1f),

@@ -1,5 +1,6 @@
 package com.aeropad.remote.ui.components
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -89,3 +90,16 @@ fun ReadableWidth(
         }
     }
 }
+
+/**
+ * Vertical arrangement for a stack of fixed-height rows.
+ *
+ * In portrait a pad screen fills the window, so rows stack from the top. In a
+ * ~360 dp-tall landscape window the same stack occupied the top half and left
+ * the bottom half of the screen empty — the app looked unfinished. Centring the
+ * stack keeps the buttons under the thumbs and the screen balanced.
+ */
+@Composable
+fun padArrangement(spacing: Dp = 12.dp): Arrangement.Vertical =
+    if (isLandscape()) Arrangement.spacedBy(spacing, Alignment.CenterVertically)
+    else Arrangement.spacedBy(spacing)

@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.PowerSettingsNew
+import androidx.compose.material.icons.rounded.TouchApp
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -72,7 +74,7 @@ fun AndroidControlScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = com.aeropad.remote.ui.components.padArrangement(12.dp)
         ) {
             NotConnectedBanner(!isConnected)
 
@@ -89,7 +91,7 @@ fun AndroidControlScreen(
                 }
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                KeyCard("⏻ Power", Modifier.weight(1f), 56.dp) {
+                KeyCard("Power", Modifier.weight(1f), 56.dp, icon = Icons.Rounded.PowerSettingsNew) {
                     haptic(); viewModel.systemTap(HidSystem.POWER)
                 }
             }
@@ -122,7 +124,7 @@ fun AndroidControlScreen(
 
             Section("Touch Screen")
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                KeyCard("👆 Touch Screen", Modifier.weight(1f), 64.dp, emphasized = true) {
+                KeyCard("Touch Screen", Modifier.weight(1f), 64.dp, emphasized = true, icon = Icons.Rounded.TouchApp) {
                     haptic(); onOpenTouch()
                 }
             }

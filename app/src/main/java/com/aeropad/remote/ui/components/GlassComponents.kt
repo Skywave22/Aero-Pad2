@@ -111,6 +111,12 @@ fun Modifier.cornerBrackets(
  */
 @Composable
 fun HintBar(text: String, modifier: Modifier = Modifier) {
+    // Round 12 — on a real 1600x720 phone the landscape window is ~360 dp tall
+    // and a control screen stacks an app bar, a not-connected banner, these
+    // tips and a chip row above the actual control. That left the trackpad
+    // 55 dp tall. The tips are the least valuable of the four and they are
+    // repeated in Help, so they step aside in landscape.
+    if (com.aeropad.remote.ui.components.isLandscape()) return
     Box(
         modifier = modifier
             .fillMaxWidth()

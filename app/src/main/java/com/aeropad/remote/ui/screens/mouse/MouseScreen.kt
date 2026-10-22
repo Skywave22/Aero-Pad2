@@ -288,45 +288,65 @@ ScrollableChipRow {
                 }
             }
 
-            Spacer(Modifier.height(12.dp))
+            // Landscape: click buttons live beside the pad, not under it.
+            if (com.aeropad.remote.ui.components.isLandscape()) {
+                Spacer(Modifier.width(12.dp))
+                MouseButtonsColumn(
+                    leftHanded = mouseSettings.leftHanded,
+                    haptic = haptic,
+                    onLeft = { viewModel.clickButton(MouseButton.LEFT) },
+                    onMiddle = { viewModel.clickButton(MouseButton.MIDDLE) },
+                    onRight = { viewModel.clickButton(MouseButton.RIGHT) },
+                    modifier = Modifier.fillMaxHeight().width(150.dp)
+                )
+            }
 
             // ---------- Mouse buttons ----------
-            Row(
-                // UI fix: heightIn(min=) instead of a fixed height so the
-                // button labels cannot be clipped at large font scales.
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 56.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // STITCH REDESIGN — the primary click is the accent (wide)
-                // button. In left-handed mode the two click buttons swap sides
-                // so the thumb lands on the primary one.
-                val leftFirst = !mouseSettings.leftHanded
-                if (leftFirst) {
-                    KeyCard("LEFT CLICK", modifier = Modifier.weight(2f), height = 56.dp, emphasized = true) {
-                        haptic(); viewModel.clickButton(MouseButton.LEFT)
+            //
+            // Round 12 — in landscape these buttons used to sit *below* the
+            // trackpad, so on a real 1600x720 phone the pad was 55 dp tall:
+            // a sliver you cannot aim with. Landscape puts the same buttons in
+            // a thumb column beside the pad instead, so the trackpad gets the
+            // full height of the window — the way a laptop pad is laid out.
+            val landscapeMouse = com.aeropad.remote.ui.components.isLandscape()
+            if (!landscapeMouse) {
+                Spacer(Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 56.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // STITCH REDESIGN — the primary click is the accent (wide)
+                    // button; in left-handed mode the clicks swap sides so the
+                    // thumb lands on the primary one.
+                    val leftFirst = !mouseSettings.leftHanded
+                    if (leftFirst) {
+                        KeyCard("LEFT CLICK", modifier = Modifier.weight(2f), height = 56.dp, emphasized = true) {
+                            haptic(); viewModel.clickButton(MouseButton.LEFT)
+                        }
+                    }
+                    KeyCard("MID", modifier = Modifier.weight(1f), height = 56.dp) {
+                        haptic(); viewModel.clickButton(MouseButton.MIDDLE)
+                    }
+                    if (leftFirst) {
+                        KeyCard("RIGHT CLICK", modifier = Modifier.weight(2f), height = 56.dp) {
+                            haptic(); viewModel.clickButton(MouseButton.RIGHT)
+                        }
+                    } else {
+                        KeyCard("RIGHT CLICK", modifier = Modifier.weight(2f), height = 56.dp, emphasized = true) {
+                            haptic(); viewModel.clickButton(MouseButton.RIGHT)
+                        }
+                        KeyCard("LEFT CLICK", modifier = Modifier.weight(2f), height = 56.dp) {
+                            haptic(); viewModel.clickButton(MouseButton.LEFT)
+                        }
                     }
                 }
-                KeyCard("MID", modifier = Modifier.weight(1f), height = 56.dp) {
-                    haptic(); viewModel.clickButton(MouseButton.MIDDLE)
-                }
-                if (leftFirst) {
-                    KeyCard("RIGHT CLICK", modifier = Modifier.weight(2f), height = 56.dp) {
-                        haptic(); viewModel.clickButton(MouseButton.RIGHT)
-                    }
-                } else {
-                    KeyCard("RIGHT CLICK", modifier = Modifier.weight(2f), height = 56.dp, emphasized = true) {
-                        haptic(); viewModel.clickButton(MouseButton.RIGHT)
-                    }
-                    KeyCard("LEFT CLICK", modifier = Modifier.weight(2f), height = 56.dp) {
-                        haptic(); viewModel.clickButton(MouseButton.LEFT)
-                    }
-                }
+                Spacer(Modifier.height(16.dp))
             }
-            Spacer(Modifier.height(16.dp))
         }
     }
+
 
     // P9.1 — In-screen Mouse Tuning bottom sheet.
     if (showTuningSheet) {
@@ -380,5 +400,34 @@ ScrollableChipRow {
 }
 
 /** SECTION 5 - 3D pad lift: frosted surface floats above background. */
+/**
+ * Round 12 — the three click buttons as a vertical thumb column.
+ *
+ * In landscape the pad needs every dp of height, so the buttons move beside it
+ * (exactly how a laptop trackpad and its buttons are arranged). The primary
+ * click is whichever side the thumb rests on, honouring left-handed mode.
+ */
+@Composable
+private fun MouseButtonsColumn(
+    leftHanded: Boolean,
+    haptic: () -> Unit,
+    onLeft: () -> Unit,
+    onMiddle: () -> Unit,
+    onRight: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        if (!leftHanded) {
+            KeyCard("LEFT CLICK", Modifier.weight(1f).fillMaxWidth(), emphasized = true) { haptic(); onLeft() }
+            KeyCard("MID", Modifier.weight(1f).fillMaxWidth()) { haptic(); onMiddle() }
+            KeyCard("RIGHT CLICK", Modifier.weight(1f).fillMaxWidth()) { haptic(); onRight() }
+        } else {
+            KeyCard("RIGHT CLICK", Modifier.weight(1f).fillMaxWidth(), emphasized = true) { haptic(); onRight() }
+            KeyCard("MID", Modifier.weight(1f).fillMaxWidth()) { haptic(); onMiddle() }
+            KeyCard("LEFT CLICK", Modifier.weight(1f).fillMaxWidth()) { haptic(); onLeft() }
+        }
+    }
+}
+
 private fun Modifier.shadow3DPad(): Modifier =
     this.graphicsLayer { shadowElevation = 8f * density }

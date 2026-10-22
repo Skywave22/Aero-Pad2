@@ -4,6 +4,7 @@ import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
@@ -75,6 +76,14 @@ fun KeyCard(
     height: androidx.compose.ui.unit.Dp = 48.dp,
     emphasized: Boolean = false,
     enabled: Boolean = true,
+    /**
+     * Round 12 — optional vector icon drawn beside the label.
+     *
+     * Labels used to embed symbols like "⏻ Power" (U+23FB). That codepoint is
+     * missing from many Android system fonts, so on a real device it rendered
+     * as a tofu box next to the word Power. A vector can never tofu.
+     */
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
     onClick: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -118,13 +127,28 @@ fun KeyCard(
             ),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            color = contentColor,
-            textAlign = TextAlign.Center,
+        androidx.compose.foundation.layout.Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
             modifier = Modifier.padding(horizontal = 4.dp)
-        )
+        ) {
+            if (icon != null) {
+                androidx.compose.material3.Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = contentColor,
+                    modifier = Modifier.size(20.dp)
+                )
+                androidx.compose.foundation.layout.Spacer(Modifier.size(6.dp))
+            }
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                color = contentColor,
+                textAlign = TextAlign.Center,
+                maxLines = 1
+            )
+        }
     }
 }
 
