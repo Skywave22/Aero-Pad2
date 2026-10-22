@@ -66,10 +66,17 @@ class ScreenshotTourTest {
         scenario.close()
     }
 
-    /** The first-run overlay covers everything; skip it if present. */
+    /**
+     * The first-run overlay covers everything; skip it if present.
+     *
+     * Round 12 — on a fresh CI install the overlay appears slightly after the
+     * activity settles, and the old non-waiting lookup ran too early: every
+     * screenshot came out as a picture of the onboarding card. It now waits,
+     * and [shot] calls it again so a late overlay cannot ruin a capture.
+     */
     private fun dismissOnboarding() {
-        val skip = device.findObject(By.text("Skip"))
-        if (skip != null) {
+        repeat(2) {
+            val skip = device.wait(Until.findObject(By.text("Skip")), 1500) ?: return
             skip.click()
             device.waitForIdle()
             Thread.sleep(500)
@@ -77,6 +84,8 @@ class ScreenshotTourTest {
     }
 
     private fun shot(name: String) {
+        // A late first-run overlay must never end up in a screenshot.
+        if (device.findObject(By.text("Pair once, control everything")) != null) dismissOnboarding()
         device.waitForIdle()
         Thread.sleep(700) // let the screen transition animation finish
         device.takeScreenshot(File(outDir, "$name.png"))
@@ -224,6 +233,7 @@ class ScreenshotTourTest {
 
     @Test
     fun captureEveryTopLevelScreen() {
+        dismissOnboarding()
         shot("01-home-top")
         scrollDown(1)
         shot("02-home-scrolled")
@@ -338,6 +348,7 @@ class ScreenshotTourTest {
      */
     @Test
     fun captureEveryTopLevelScreenLandscape() {
+        dismissOnboarding()
         device.setOrientationLeft()
         Thread.sleep(1500)
         device.waitForIdle()
