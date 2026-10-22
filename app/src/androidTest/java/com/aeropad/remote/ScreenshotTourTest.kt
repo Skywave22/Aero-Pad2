@@ -373,6 +373,19 @@ class ScreenshotTourTest {
         }
         openByShortcut(null)
 
+        // Gamepad Builder -> the actual gamepad play surface. This is the
+        // screen whose sticks collapsed into slivers in landscape, so it must
+        // be in the tour, not just its builder.
+        openByShortcut(com.aeropad.remote.domain.ShortcutActions.OPEN_GAMEPAD)
+        val play = device.wait(Until.findObject(By.desc("Play")), 3000)
+        if (play != null) {
+            play.click()
+            device.waitForIdle()
+            Thread.sleep(1200)
+            shot("L05b-gamepad-play")
+            back()
+        }
+
         // Top-level hubs, reached through the dock (no scrolling needed).
         val hubs = listOf("Layouts" to "L06-layouts", "Devices" to "L07-devices", "Settings" to "L08-settings")
         hubs.forEach { (hub, name) ->
