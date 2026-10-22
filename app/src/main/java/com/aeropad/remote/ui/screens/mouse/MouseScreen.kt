@@ -286,19 +286,23 @@ ScrollableChipRow {
                         }
                     }
                 }
-            }
 
-            // Landscape: click buttons live beside the pad, not under it.
-            if (com.aeropad.remote.ui.components.isLandscape()) {
-                Spacer(Modifier.width(12.dp))
-                MouseButtonsColumn(
-                    leftHanded = mouseSettings.leftHanded,
-                    haptic = haptic,
-                    onLeft = { viewModel.clickButton(MouseButton.LEFT) },
-                    onMiddle = { viewModel.clickButton(MouseButton.MIDDLE) },
-                    onRight = { viewModel.clickButton(MouseButton.RIGHT) },
-                    modifier = Modifier.fillMaxHeight().width(150.dp)
-                )
+                // Landscape: the click buttons sit beside the pad, so the
+                // trackpad gets the window's full height instead of the ~55 dp
+                // sliver it had when they were stacked underneath. This must be
+                // INSIDE the weighted Row: a fillMaxHeight() child of the outer
+                // Column consumes all the height and starves the pad to 0.
+                if (com.aeropad.remote.ui.components.isLandscape()) {
+                    Spacer(Modifier.width(12.dp))
+                    MouseButtonsColumn(
+                        leftHanded = mouseSettings.leftHanded,
+                        haptic = haptic,
+                        onLeft = { viewModel.clickButton(MouseButton.LEFT) },
+                        onMiddle = { viewModel.clickButton(MouseButton.MIDDLE) },
+                        onRight = { viewModel.clickButton(MouseButton.RIGHT) },
+                        modifier = Modifier.fillMaxHeight().width(150.dp)
+                    )
+                }
             }
 
             // ---------- Mouse buttons ----------
