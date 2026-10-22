@@ -8,6 +8,33 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+// Signing inputs must be resolved BEFORE android {} so defaultConfig can
+// record which key signs this build for every variant (a release-only
+// placeholder makes debug manifest merging fail).
+val keystorePath = System.getenv("RELEASE_KEYSTORE_FILE") ?: findProperty("RELEASE_KEYSTORE_FILE") as String?
+val keystorePassword = System.getenv("RELEASE_KEYSTORE_PASSWORD") ?: findProperty("RELEASE_KEYSTORE_PASSWORD") as String?
+val keyAliasName = System.getenv("RELEASE_KEY_ALIAS") ?: findProperty("RELEASE_KEY_ALIAS") as String?
+val keyPasswordValue = System.getenv("RELEASE_KEY_PASSWORD") ?: findProperty("RELEASE_KEY_PASSWORD") as String?
+val hasReleaseKeystore = !keystorePath.isNullOrBlank() && file(keystorePath!!).exists()
+val requireReleaseSigning =
+    (System.getenv("REQUIRE_RELEASE_SIGNING")
+        ?: findProperty("REQUIRE_RELEASE_SIGNING")?.toString()) == "1"
+
+if (requireReleaseSigning && !hasReleaseKeystore) {
+    throw GradleException(
+        """
+        |REQUIRE_RELEASE_SIGNING=1 but no release keystore was found.
+        |
+        |  looked for RELEASE_KEYSTORE_FILE = ${keystorePath ?: "(unset)"}
+        |
+        |A release build signed with the debug key cannot be installed over an
+        |existing AeroPad install (signature mismatch), and it must never be
+        |published. See docs/SIGNING.md.
+        """.trimMargin()
+    )
+}
+
+
 android {
     namespace = "com.aeropad.remote"
     compileSdk = 35
@@ -18,6 +45,10 @@ android {
         targetSdk = 35
         versionCode = 360
         versionName = "3.6.0"
+
+        // Round 13 — which key signed THIS build, for every variant. Read it
+        // back with: aapt2 dump xmltree --file AndroidManifest.xml app.apk
+        manifestPlaceholders["aeropadSigning"] = if (hasReleaseKeystore) "release" else "debug"
 
         testInstrumentationRunner = "com.aeropad.remote.HiltTestRunner"
         vectorDrawables { useSupportLibrary = true }
@@ -38,29 +69,6 @@ android {
     // Set REQUIRE_RELEASE_SIGNING=1 (CI does when the keystore secret exists)
     // to turn the fallback into a hard error instead.
     // ------------------------------------------------------------------
-    val keystorePath = System.getenv("RELEASE_KEYSTORE_FILE") ?: findProperty("RELEASE_KEYSTORE_FILE") as String?
-    val keystorePassword = System.getenv("RELEASE_KEYSTORE_PASSWORD") ?: findProperty("RELEASE_KEYSTORE_PASSWORD") as String?
-    val keyAliasName = System.getenv("RELEASE_KEY_ALIAS") ?: findProperty("RELEASE_KEY_ALIAS") as String?
-    val keyPasswordValue = System.getenv("RELEASE_KEY_PASSWORD") ?: findProperty("RELEASE_KEY_PASSWORD") as String?
-    val hasReleaseKeystore = !keystorePath.isNullOrBlank() && file(keystorePath!!).exists()
-    val requireReleaseSigning =
-        (System.getenv("REQUIRE_RELEASE_SIGNING")
-            ?: findProperty("REQUIRE_RELEASE_SIGNING")?.toString()) == "1"
-
-    if (requireReleaseSigning && !hasReleaseKeystore) {
-        throw GradleException(
-            """
-            |REQUIRE_RELEASE_SIGNING=1 but no release keystore was found.
-            |
-            |  looked for RELEASE_KEYSTORE_FILE = ${keystorePath ?: "(unset)"}
-            |
-            |A release build signed with the debug key cannot be installed over an
-            |existing AeroPad install (signature mismatch), and it must never be
-            |published. See docs/SIGNING.md.
-            """.trimMargin()
-        )
-    }
-
     signingConfigs {
         if (hasReleaseKeystore) {
             create("release") {
@@ -83,13 +91,6 @@ android {
                 signingConfigs.getByName("release")
             } else {
                 signingConfigs.getByName("debug")
-            }
-            // A debug-signed "release" must be identifiable as such: the CI
-            // names the file, and the manifest records which key signed it.
-            if (!hasReleaseKeystore) {
-                manifestPlaceholders["aeropadSigning"] = "debug"
-            } else {
-                manifestPlaceholders["aeropadSigning"] = "release"
             }
             // Performance: R8 shrink/optimize/obfuscate + drop unused resources.
             isMinifyEnabled = true
