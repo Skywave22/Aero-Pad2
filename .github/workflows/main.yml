@@ -253,6 +253,10 @@ jobs:
             # Only the screenshot tour: HomeScreenUiTest needs Compose idleness,
             # which this live-HID app never reaches.
             adb shell am instrument -w -e class com.aeropad.remote.ScreenshotTourTest com.aeropad.remote.test/com.aeropad.remote.HiltTestRunner | tee /tmp/inst.log || true
+            # Round 14 — feature audit: every screen, every tappable control,
+            # both orientations. Reports findings instead of failing so one
+            # broken screen cannot hide the other twenty-two.
+            adb shell am instrument -w -e class com.aeropad.remote.FeatureAuditTest com.aeropad.remote.test/com.aeropad.remote.HiltTestRunner | tee /tmp/audit.log || true
             grep -E "OK|FAILURES|Tests run" /tmp/inst.log | tail -5 || true
             echo "---- files written by the test ----"
             adb shell run-as com.aeropad.remote ls -la files/tour || true
@@ -265,6 +269,12 @@ jobs:
             # a silently skipped screen (an unreachable tap) is invisible in the
             # screenshots alone.
             cp /tmp/inst.log ui-screenshots/instrumentation.log || true
+            cp /tmp/audit.log ui-screenshots/audit.log || true
+            adb exec-out run-as com.aeropad.remote tar cf - files/audit > /tmp/audit.tar || true
+            tar xf /tmp/audit.tar -C ui-screenshots && echo "audit extracted" || true
+            find ui-screenshots -path '*audit*' -name '*.png' -exec mv {} ui-screenshots/ \; || true
+            echo "---- findings ----"
+            cat ui-screenshots/files/audit/findings.txt 2>/dev/null || echo "(no findings file)"
             ls -la ui-screenshots
 
       - name: Upload UI screenshots

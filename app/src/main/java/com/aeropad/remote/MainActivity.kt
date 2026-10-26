@@ -29,6 +29,12 @@ import com.aeropad.remote.viewmodel.SettingsViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 /**
+ * Round 14 — audit hook: a debug build can be launched straight onto any route
+ * via `am start --es com.aeropad.remote.EXTRA_ROUTE <route>`.
+ */
+private const val EXTRA_ROUTE = "com.aeropad.remote.EXTRA_ROUTE"
+
+/**
  * Single-activity host. Applies live app settings:
  *  - appearance (Light / Dark / Follow system — the ONLY appearance choice)
  *  - keep screen on
@@ -133,9 +139,19 @@ class MainActivity : ComponentActivity() {
                     ThemedBackground {
                         // Launcher shortcuts: the intent action picks the
                         // start screen (pure mapping, HOME default).
+                        // Round 14 - automated audit hook. Debug builds accept an explicit
+                        // route extra so a test harness can drive every screen directly:
+                        //   adb shell am start -n com.aeropad.remote/.MainActivity \
+                        //     --es com.aeropad.remote.EXTRA_ROUTE settings
+                        // Release builds ignore the extra entirely.
+                        val auditedRoute = if (com.aeropad.remote.BuildConfig.DEBUG) {
+                            intent?.getStringExtra(EXTRA_ROUTE)
+                        } else {
+                            null
+                        }
                         AeroPadApp(
-                            startRoute =
-                                com.aeropad.remote.domain.ShortcutActions.routeFor(intent?.action)
+                            startRoute = auditedRoute
+                                ?: com.aeropad.remote.domain.ShortcutActions.routeFor(intent?.action)
                         )
                     }
                 }
