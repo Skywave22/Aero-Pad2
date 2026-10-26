@@ -150,8 +150,10 @@ class MainActivity : ComponentActivity() {
                             null
                         }
                         AeroPadApp(
-                            startRoute = auditedRoute
-                                ?: com.aeropad.remote.domain.ShortcutActions.routeFor(intent?.action)
+                            startRoute = com.aeropad.remote.domain.RouteGuard.sanitize(
+                                auditedRoute
+                                    ?: com.aeropad.remote.domain.ShortcutActions.routeFor(intent?.action)
+                            )
                         )
                     }
                 }

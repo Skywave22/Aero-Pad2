@@ -215,7 +215,10 @@ fun AeroPadApp(
         slideOutHorizontally(tween(280)) { it / 5 }
     NavHost(
         navController = navController,
-        startDestination = startRoute,
+        // Round 14 — never hand the NavHost a destination that is not a direct
+        // child of the graph: doing so throws IllegalArgumentException and takes
+        // the app down before it draws (found by the feature audit).
+        startDestination = com.aeropad.remote.domain.RouteGuard.sanitize(startRoute),
         // UI fix — keyboard (IME) insets. The activity runs edge-to-edge and no
         // screen called imePadding(), so opening the on-screen keyboard covered
         // the text field on all 11 screens that have one (Keyboard, Text & Clips,
