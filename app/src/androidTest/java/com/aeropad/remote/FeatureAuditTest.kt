@@ -1,6 +1,8 @@
 package com.aeropad.remote
 
 import androidx.test.core.app.ActivityScenario
+import dagger.hilt.android.testing.HiltAndroidRule
+import dagger.hilt.android.testing.HiltAndroidTest
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.After
@@ -28,8 +30,17 @@ import java.io.File
  * The test itself never fails on a finding: a broken screen must not hide the
  * other 22. Everything is reported so it can be triaged and fixed.
  */
+@HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
 class FeatureAuditTest {
+
+    /**
+     * Required by the Hilt test runner: without it every Activity launch dies
+     * with "The component was not created", which is exactly what the first
+     * audit run reported.
+     */
+    @get:org.junit.Rule
+    val hiltRule = HiltAndroidRule(this)
 
     private lateinit var device: androidx.test.uiautomator.UiDevice
     private lateinit var scenario: ActivityScenario<MainActivity>
@@ -62,6 +73,7 @@ class FeatureAuditTest {
             mkdirs()
             listFiles()?.forEach { it.delete() }
         }
+        hiltRule.inject()
         scenario = ActivityScenario.launch(MainActivity::class.java)
         device.waitForIdle()
         Thread.sleep(1500)
