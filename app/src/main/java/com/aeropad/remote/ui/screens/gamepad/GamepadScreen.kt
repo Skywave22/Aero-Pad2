@@ -301,26 +301,80 @@ fun GamepadScreen(
                 }
             }
             if (landscapePad) {
+                // Landscape is wide and short. Stacking the stick above the
+                // d-pad needs ~270 dp of height that a 270 dp window does not
+                // have once the banner is drawn, so landscape lays the
+                // controller out ACROSS the screen instead: L2 + d-pad, the
+                // stick, ABXY with L1/R1, then R2. Everything is on screen and
+                // thumb-sized; nothing is clipped or scaled.
                 androidx.compose.foundation.layout.BoxWithConstraints(
                     modifier = Modifier.fillMaxWidth().weight(1f)
                 ) {
-                    // 40 dp menu row + 64 dp triggers + two 8 dp gaps.
-                    val deck = (maxHeight - 120.dp).coerceAtLeast(150.dp)
-                    val face = ((deck - 40.dp) / 4).coerceIn(28.dp, 56.dp)
-                    val stick = (deck * 0.42f).coerceIn(72.dp, 140.dp)
-                    val dpad = ((deck - stick - 12.dp) / 3).coerceIn(22.dp, 44.dp)
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        padContent(
-                            PadMetrics(
-                                deck = deck,
-                                face = face,
-                                stick = stick,
-                                dpad = dpad
+                    val bottomRow = 40.dp
+                    val pad = (maxHeight - bottomRow - 8.dp).coerceIn(96.dp, 220.dp)
+                    val face = ((pad - 12.dp) / 4).coerceIn(24.dp, 56.dp)
+                    val dpad = ((pad - 8.dp) / 3).coerceIn(22.dp, 44.dp)
+                    val stick = (pad * 0.92f).coerceIn(70.dp, 140.dp)
+                    val trigger = (pad / 2).coerceIn(40.dp, 92.dp)
+
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().height(pad),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                TriggerPad("L2", height = trigger) { v -> viewModel.onTrigger(right = false, v) }
+                                Spacer(Modifier.height(6.dp))
+                                DpadCluster(
+                                    onPress = { dir -> haptic(); viewModel.onDpad(dir) },
+                                    onRelease = { viewModel.onDpad(DpadDirection.NONE) },
+                                    keySize = dpad
+                                )
+                            }
+                            Spacer(Modifier.weight(0.5f))
+                            VirtualStick(
+                                onMove = { x, y -> viewModel.onStick(left = true, rawX = x, rawY = y) },
+                                onRelease = { viewModel.onStick(left = true, rawX = 0f, rawY = 0f) },
+                                baseSize = stick
                             )
-                        )
+                            Spacer(Modifier.weight(0.5f))
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    FaceButton("L1", size = face) { pressed -> viewModel.onGamepadButton(GamepadButton.L1, pressed); if (pressed) haptic() }
+                                    FaceButton("R1", size = face) { pressed -> viewModel.onGamepadButton(GamepadButton.R1, pressed); if (pressed) haptic() }
+                                }
+                                FaceButton("Y", size = face, tint = Color(0xFFF5A623)) { pressed -> viewModel.onGamepadButton(GamepadButton.Y, pressed); if (pressed) haptic() }
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    FaceButton("X", size = face, tint = Color(0xFF2F6BFF)) { pressed -> viewModel.onGamepadButton(GamepadButton.X, pressed); if (pressed) haptic() }
+                                    FaceButton("B", size = face, tint = Color(0xFFE74C3C)) { pressed -> viewModel.onGamepadButton(GamepadButton.B, pressed); if (pressed) haptic() }
+                                }
+                                FaceButton("A", size = face, tint = Color(0xFF2ECC71)) { pressed -> viewModel.onGamepadButton(GamepadButton.A, pressed); if (pressed) haptic() }
+                            }
+                            Spacer(Modifier.weight(0.5f))
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                TriggerPad("R2", height = trigger) { v -> viewModel.onTrigger(right = true, v) }
+                                Spacer(Modifier.height(6.dp))
+                                AssistChip(onClick = { showPro = true }, label = { Text("Pro") })
+                            }
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth().height(bottomRow),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            KeyCard("Select", Modifier.weight(1f)) { haptic(); scope.launch { pressAndRelease(viewModel, GamepadButton.SELECT) } }
+                            KeyCard("Home", Modifier.weight(1f)) { haptic(); scope.launch { pressAndRelease(viewModel, GamepadButton.HOME) } }
+                            KeyCard("Start", Modifier.weight(1f)) { haptic(); scope.launch { pressAndRelease(viewModel, GamepadButton.START) } }
+                        }
                     }
                 }
             } else {
@@ -609,11 +663,15 @@ private fun DpadKey(
  * (no 8dp drag touch-slop delay!) while tracking vertical position for analog pressure.
  */
 @Composable
-private fun TriggerPad(label: String, onValue: (Float) -> Unit) {
+private fun TriggerPad(
+    label: String,
+    height: androidx.compose.ui.unit.Dp = 92.dp,
+    onValue: (Float) -> Unit
+) {
     var value by remember { mutableStateOf(0f) }
     Box(
         modifier = Modifier
-            .size(width = 64.dp, height = 92.dp)
+            .size(width = 64.dp, height = height)
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .semantics(mergeDescendants = true) {
