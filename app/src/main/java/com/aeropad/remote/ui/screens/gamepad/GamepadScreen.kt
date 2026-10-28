@@ -264,9 +264,17 @@ fun GamepadScreen(
                 ) {
                     val natural = 380.dp
                     val shrink = (maxHeight / natural).coerceIn(0.5f, 1f)
+                    // graphicsLayer only transforms the DRAW pass, so the
+                    // column still claimed all 380 dp and was clipped by the
+                    // window edge (the first attempt at this did exactly that).
+                    // The wrapper therefore reports the SCALED height, and the
+                    // origin is pinned to the top so the scaled content ends
+                    // exactly at the wrapper's bottom edge.
                     androidx.compose.foundation.layout.Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(natural * shrink)
+                            .align(Alignment.Center)
                     ) {
                         Column(
                             modifier = Modifier
@@ -275,6 +283,8 @@ fun GamepadScreen(
                                 .graphicsLayer {
                                     scaleX = shrink
                                     scaleY = shrink
+                                    transformOrigin =
+                                        androidx.compose.ui.graphics.TransformOrigin(0.5f, 0f)
                                 },
                             content = padContent
                         )
