@@ -310,12 +310,17 @@ fun GamepadScreen(
                 androidx.compose.foundation.layout.BoxWithConstraints(
                     modifier = Modifier.fillMaxWidth().weight(1f)
                 ) {
-                    val bottomRow = 40.dp
-                    val pad = (maxHeight - bottomRow - 8.dp).coerceIn(96.dp, 220.dp)
-                    val face = ((pad - 12.dp) / 4).coerceIn(24.dp, 56.dp)
-                    val dpad = ((pad - 8.dp) / 3).coerceIn(22.dp, 44.dp)
-                    val stick = (pad * 0.92f).coerceIn(70.dp, 140.dp)
-                    val trigger = (pad / 2).coerceIn(40.dp, 92.dp)
+                    // Every cluster is sized from the row height, and the row
+                    // height leaves room for the menu row plus a little slack,
+                    // so nothing can spill past the bottom edge. The right
+                    // column has 5 rows (L1/R1 + Y + X/B + A + spacing) and the
+                    // left column is a trigger above a 3-row d-pad.
+                    val bottomRow = 36.dp
+                    val pad = (maxHeight - bottomRow - 12.dp).coerceIn(90.dp, 220.dp)
+                    val face = ((pad - 18.dp) / 5).coerceIn(22.dp, 56.dp)
+                    val trigger = (pad * 0.36f).coerceIn(32.dp, 92.dp)
+                    val dpad = ((pad - trigger - 20.dp) / 3).coerceIn(18.dp, 44.dp)
+                    val stick = (pad * 0.9f).coerceIn(64.dp, 140.dp)
 
                     Column(modifier = Modifier.fillMaxSize()) {
                         Row(
