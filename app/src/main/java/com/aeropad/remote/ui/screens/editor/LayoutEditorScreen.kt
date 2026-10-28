@@ -32,6 +32,7 @@ import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Grid4x4
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.DashboardCustomize
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material3.AssistChip
@@ -525,6 +526,40 @@ private fun EditorCanvas(
         val canvasH = maxHeight
         val canvasWpx = constraints.maxWidth.toFloat()
         val canvasHpx = constraints.maxHeight.toFloat()
+
+        // Round 14 — a brand-new layout was a large empty grey box with no
+        // hint of what to do. The toolbar says "Add: Button" in 12 dp type,
+        // which is not an instruction. An empty state now names the two things
+        // that actually matter and gets out of the way as soon as a widget
+        // exists.
+        if (layout.widgets.isEmpty() && !previewMode) {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    Icons.Rounded.DashboardCustomize,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.65f),
+                    modifier = Modifier.size(48.dp)
+                )
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    "Empty layout",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "Add a control with the buttons above — Button, Trackpad, " +
+                        "Scroll, Joystick, Slider or D-pad. Drag it anywhere; the " +
+                        "magnet chip toggles snapping to the grid.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            }
+        }
 
         // SECTION 2 — grid overlay: one Canvas draw, no layout cost.
         if (showGrid && !previewMode && layout.gridSize > 0f) {
