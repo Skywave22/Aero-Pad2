@@ -189,7 +189,11 @@ ScrollableChipRow(modifier = Modifier.padding(vertical = 6.dp)) {
                                 style = MaterialTheme.typography.titleSmall,
                                 color = MaterialTheme.colorScheme.primary
                             )
-                            ScrollableChipRow {
+                            // Round 14 — three long chips in a scrolling row meant
+                            // "Paste on PC (Ctrl+V)" was always half off-screen
+                            // ("Paste >"), which reads as a rendering bug rather
+                            // than as "scroll me". Three full-width buttons instead.
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 AssistChip(
                                     onClick = {
                                         haptic()
@@ -201,7 +205,7 @@ ScrollableChipRow(modifier = Modifier.padding(vertical = 6.dp)) {
                                             viewModel.type(toSend)
                                         }
                                     },
-                                    label = { Text("⬆ Push phone clipboard to PC") }
+                                    label = { Text("⬆ Send this phone's clipboard to the PC") }
                                 )
                                 AssistChip(
                                     onClick = {

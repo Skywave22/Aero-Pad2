@@ -214,10 +214,9 @@ private fun ProfileList(onBack: () -> Unit, viewModel: GamepadBuilderViewModel) 
                 )
             }
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
+                // Round 14 — a bare horizontalScroll cut the last tag off with no
+                // hint that more existed ("Pla..." for Platformer).
+                com.aeropad.remote.ui.components.ScrollableChipRow {
                     FilterChip(
                         selected = tagFilter == null,
                         onClick = { viewModel.setTagFilter(null) },
@@ -251,9 +250,8 @@ private fun ProfileList(onBack: () -> Unit, viewModel: GamepadBuilderViewModel) 
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.primary
                         )
-                        Row(
-                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(vertical = 6.dp),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        com.aeropad.remote.ui.components.ScrollableChipRow(
+                            modifier = Modifier.padding(vertical = 6.dp)
                         ) {
                             recents.forEach { rp ->
                                 AssistChip(
