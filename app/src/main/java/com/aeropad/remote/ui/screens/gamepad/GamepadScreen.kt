@@ -123,10 +123,15 @@ fun GamepadScreen(
         onDispose { viewModel.resetGamepad() }
     }
 
+    // Round 14 — landscape a 64 dp app bar + a 50 dp banner left the pad ~156 dp
+    // of usable height, which clipped the A button and both triggers. Chrome
+    // goes before the controller: landscape drops the app bar entirely and
+    // floats a small back chip in its place.
+    val fullBleedPad = com.aeropad.remote.ui.components.isLandscape()
     Scaffold(
         containerColor = androidx.compose.ui.graphics.Color.Transparent,
         topBar = {
-            TopAppBar(
+            if (!fullBleedPad) TopAppBar(
                 title = { Text("Gamepad") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -149,13 +154,36 @@ fun GamepadScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .padding(if (fullBleedPad) 8.dp else 16.dp)
                 .then(
                     if (com.aeropad.remote.ui.components.isLandscape())
                         Modifier.verticalScroll(rememberScrollState())
                     else Modifier
                 )
         ) {
+            if (fullBleedPad) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onBack, modifier = Modifier.size(36.dp)) {
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                    }
+                    Text(
+                        "Gamepad",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                    Spacer(Modifier.weight(1f))
+                    if (onOpenBuilder != null) {
+                        AssistChip(
+                            onClick = onOpenBuilder,
+                            label = { Text("Builder") }
+                        )
+                    }
+                }
+            }
+
             NotConnectedBanner(!isConnected)
             // Round 14 — in landscape this line competed with the pad for a
             // ~270 dp tall window; the mode is also shown in Settings, so it is
@@ -268,7 +296,7 @@ fun GamepadScreen(
                     modifier = Modifier.fillMaxWidth().weight(1f)
                 ) {
                     val natural = 450.dp
-                    val shrink = (maxHeight / natural).coerceIn(0.45f, 1f)
+                    val shrink = (maxHeight / natural).coerceIn(0.30f, 1f)
                     // graphicsLayer only transforms the DRAW pass, so the
                     // column still claimed all 380 dp and was clipped by the
                     // window edge (the first attempt at this did exactly that).
