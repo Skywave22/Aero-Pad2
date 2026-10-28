@@ -155,11 +155,12 @@ fun GamepadScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .padding(if (fullBleedPad) 8.dp else 16.dp)
-                .then(
-                    if (com.aeropad.remote.ui.components.isLandscape())
-                        Modifier.verticalScroll(rememberScrollState())
-                    else Modifier
-                )
+                // Round 14 - must NOT scroll here. A vertically scrollable
+                // Column is measured with unbounded height, so the pad's
+                // weight(1f) had nothing to resolve against and every cluster
+                // inside was clipped into slivers (A became a green sliver, the
+                // d-pad lost three arrows) regardless of scale factor. The
+                // block is scaled to fit the window instead.
         ) {
             if (fullBleedPad) {
                 Row(
