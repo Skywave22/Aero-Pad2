@@ -89,44 +89,12 @@ fun FullKeyboardScreen(
                     }
                 },
                 actions = {
-                    // V2 MATRIX 7 — FN layer (latched). Only shown when the
-                    // layout actually defines an overlay.
-                    if (layout.fnOverlay.isNotEmpty()) {
-                        val fnOn by viewModel.fnActive.collectAsStateWithLifecycle()
-                        FilterChip(
-                            selected = fnOn,
-                            onClick = { viewModel.toggleFn() },
-                            label = { Text("FN") }
-                        )
-                        Spacer(Modifier.size(6.dp))
-                    }
-                    FilterChip(
-                        selected = !fullMode,
-                        onClick = { viewModel.setFullMode(false) },
-                        label = { Text("Compact") }
-                    )
-                    Spacer(Modifier.size(6.dp))
-                    FilterChip(
-                        selected = fullMode,
-                        onClick = { viewModel.setFullMode(true) },
-                        label = { Text("Full") }
-                    )
-                    // V2 M7 b2 — one-handed: OFF → RIGHT → LEFT → OFF.
-                    val oneHand by viewModel.oneHanded.collectAsStateWithLifecycle()
-                    Spacer(Modifier.size(6.dp))
-                    FilterChip(
-                        selected = oneHand != com.aeropad.remote.data.keyboard.OneHandedMode.OFF,
-                        onClick = { viewModel.cycleOneHanded() },
-                        label = {
-                            Text(
-                                when (oneHand) {
-                                    com.aeropad.remote.data.keyboard.OneHandedMode.OFF -> "1-hand"
-                                    com.aeropad.remote.data.keyboard.OneHandedMode.RIGHT -> "1-hand →"
-                                    com.aeropad.remote.data.keyboard.OneHandedMode.LEFT -> "← 1-hand"
-                                }
-                            )
-                        }
-                    )
+                    // Round 14 — the app bar used to hold FN, Compact, Full,
+                    // 1-hand AND the edit button. On a 360 dp screen the title
+                    // "Full Keyboard" was squeezed to "FN" and the back arrow
+                    // looked like part of a chip. Mode switches now live in a
+                    // row inside the keyboard (below), which also puts them
+                    // nearer the keys; the app bar keeps only the title.
                     IconButton(onClick = { viewModel.toggleEditMode() }) {
                         Icon(
                             Icons.Rounded.Edit,
@@ -147,6 +115,47 @@ fun FullKeyboardScreen(
                 .padding(horizontal = 8.dp)
                 .verticalScroll(rememberScrollState())
         ) {
+            // Round 14 — mode switches moved here from the crowded app bar,
+            // which had squeezed the title down to "FN".
+            run {
+                val fnOn by viewModel.fnActive.collectAsStateWithLifecycle()
+                val oneHand by viewModel.oneHanded.collectAsStateWithLifecycle()
+                com.aeropad.remote.ui.components.ScrollableChipRow(
+                    modifier = Modifier.padding(vertical = 4.dp)
+                ) {
+                    if (layout.fnOverlay.isNotEmpty()) {
+                        FilterChip(
+                            selected = fnOn,
+                            onClick = { viewModel.toggleFn() },
+                            label = { Text("FN") }
+                        )
+                    }
+                    FilterChip(
+                        selected = !fullMode,
+                        onClick = { viewModel.setFullMode(false) },
+                        label = { Text("Compact") }
+                    )
+                    FilterChip(
+                        selected = fullMode,
+                        onClick = { viewModel.setFullMode(true) },
+                        label = { Text("Full") }
+                    )
+                    FilterChip(
+                        selected = oneHand != com.aeropad.remote.data.keyboard.OneHandedMode.OFF,
+                        onClick = { viewModel.cycleOneHanded() },
+                        label = {
+                            Text(
+                                when (oneHand) {
+                                    com.aeropad.remote.data.keyboard.OneHandedMode.OFF -> "1-hand"
+                                    com.aeropad.remote.data.keyboard.OneHandedMode.RIGHT -> "1-hand right"
+                                    com.aeropad.remote.data.keyboard.OneHandedMode.LEFT -> "1-hand left"
+                                }
+                            )
+                        }
+                    )
+                }
+            }
+
             NotConnectedBanner(!isConnected)
             // Round 11 — in landscape a phone window is only ~190 dp tall and
             // the board needs every one of those dp for keys: the hint bar cost

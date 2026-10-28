@@ -272,16 +272,21 @@ ScrollableChipRow {
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(Modifier.height(6.dp))
+                            // Round 14 — this label was rotated -90 degrees
+                            // AFTER layout, so it was measured at the strip's
+                            // 56 dp width and then overflowed sideways: the
+                            // screenshot showed "SCROLL" printing straight
+                            // through the arrow icon. Un-rotated at labelSmall
+                            // it fits the strip, so no rotation is needed.
                             Text(
                                 text = "SCROLL",
-                                style = (if (spec.monoFont) MaterialTheme.typography.labelLarge.copy(fontFamily = FontFamily.Monospace)
-                                else MaterialTheme.typography.labelLarge).copy(
+                                style = MaterialTheme.typography.labelSmall.copy(
                                     letterSpacing = androidx.compose.ui.unit.TextUnit(
-                                        1.5f, androidx.compose.ui.unit.TextUnitType.Sp)
+                                        0.5f, androidx.compose.ui.unit.TextUnitType.Sp)
                                 ),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
-                                modifier = Modifier.rotate(-90f)
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
                             )
                         }
                     }

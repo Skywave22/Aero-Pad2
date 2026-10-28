@@ -257,6 +257,9 @@ jobs:
             # both orientations. Reports findings instead of failing so one
             # broken screen cannot hide the other twenty-two.
             adb shell am instrument -w -e class com.aeropad.remote.FeatureAuditTest com.aeropad.remote.test/com.aeropad.remote.HiltTestRunner | tee /tmp/audit.log || true
+            # collect the audit's own evidence folder independently of the test
+            # process exiting cleanly
+            sleep 2
             grep -E "OK|FAILURES|Tests run" /tmp/inst.log | tail -5 || true
             echo "---- files written by the test ----"
             adb shell run-as com.aeropad.remote ls -la files/tour || true

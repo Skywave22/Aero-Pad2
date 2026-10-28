@@ -100,11 +100,19 @@ fun TouchControlScreen(
             NotConnectedBanner(!isConnected)
 
             if (!extended) {
+                // Round 14 — in landscape this two-line paragraph plus the
+                // footer note squeezed the actual touch surface down to about
+                // 70 dp: a full-width pad the height of a button. Prose now
+                // collapses to one short line when the window is short.
+                val compact = com.aeropad.remote.ui.components.isLandscape()
                 Text(
-                    text = "Extended HID reports are OFF (Settings → Behavior). " +
+                    text = if (compact) "Extended HID reports OFF — enable in Settings → Behavior."
+                    else "Extended HID reports are OFF (Settings → Behavior). " +
                         "Enable them to register the touch digitizer on the host.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = if (compact) 1 else 3,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
             }
 
@@ -174,12 +182,19 @@ fun TouchControlScreen(
                 }
             }
 
+            // Same reason as above: in landscape the footer note cost the pad a
+            // third of its height, so it is capped to one line there.
+            val footerCompact = com.aeropad.remote.ui.components.isLandscape()
             Text(
-                text = "Your finger position maps directly onto the host screen — " +
+                text = if (footerCompact)
+                    "Finger position maps onto the host — tap, drag, release."
+                else "Your finger position maps directly onto the host screen — " +
                     "tap to touch, drag to swipe, release to lift. Works on hosts that " +
                     "accept HID touch input (Android hosts, Windows); others ignore it.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = if (footerCompact) 1 else 3,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
             Spacer(Modifier.height(8.dp))
         }

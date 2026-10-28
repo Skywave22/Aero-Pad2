@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -54,48 +56,64 @@ fun ScrollableChipRow(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .horizontalScroll(scroll)
-                    .drawWithContent {
-                        drawContent()
-                        val w = 20.dp.toPx()
-                        if (canScrollBack) {
-                            drawRect(
-                                brush = Brush.horizontalGradient(
-                                    listOf(fadeColor, fadeColor.copy(alpha = 0f)),
-                                    startX = 0f,
-                                    endX = w
-                                ),
-                                size = Size(w, size.height),
-                                topLeft = Offset.Zero
-                            )
-                        }
-                        if (canScrollFwd) {
-                            drawRect(
-                                brush = Brush.horizontalGradient(
-                                    listOf(fadeColor.copy(alpha = 0f), fadeColor),
-                                    startX = size.width - w,
-                                    endX = size.width
-                                ),
-                                size = Size(w, size.height),
-                                topLeft = Offset(size.width - w, 0f)
-                            )
-                        }
-                    }
-                    .padding(end = if (canScrollFwd) 12.dp else 0.dp),
+                    .horizontalScroll(scroll),
                 horizontalArrangement = horizontalArrangement,
-                verticalAlignment = Alignment.CenterVertically,
-                content = content
-            )
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                content()
+                // Round 14 — a real spacer, not padding. The chevron used to sit
+                // on top of the last chip (screenshots showed "Paste on PC
+                // (Ctrl+V)" cut to "Paste", "Full" cut to "Fu", Photoshop deck
+                // cut to "Bler"). With the spacer the final chip can always be
+                // scrolled clear of the chevron.
+                if (canScrollFwd) Spacer(Modifier.width(CHEVRON_SLOT))
+            }
+            // The fades are anchored to the VIEWPORT, not to the scrolling
+            // content: drawn inside the scroll they drifted with the chips and
+            // could sit over a fully visible one.
+            if (canScrollBack || canScrollFwd) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .drawWithContent {
+                            drawContent()
+                            val w = 16.dp.toPx()
+                            if (canScrollBack) {
+                                drawRect(
+                                    brush = Brush.horizontalGradient(
+                                        listOf(fadeColor, fadeColor.copy(alpha = 0f)),
+                                        startX = 0f,
+                                        endX = w
+                                    ),
+                                    size = Size(w, size.height),
+                                    topLeft = Offset.Zero
+                                )
+                            }
+                            if (canScrollFwd) {
+                                drawRect(
+                                    brush = Brush.horizontalGradient(
+                                        listOf(fadeColor.copy(alpha = 0f), fadeColor),
+                                        startX = size.width - w,
+                                        endX = size.width
+                                    ),
+                                    size = Size(w, size.height),
+                                    topLeft = Offset(size.width - w, 0f)
+                                )
+                            }
+                        }
+                )
+            }
         }
         if (canScrollFwd) {
             Icon(
                 imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
                 contentDescription = "More options — scroll the row sideways",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .padding(start = 2.dp)
-                    .size(20.dp)
+                modifier = Modifier.size(CHEVRON_SLOT)
             )
         }
     }
 }
+
+/** Width reserved for the chevron so chips never render underneath it. */
+private val CHEVRON_SLOT = 20.dp

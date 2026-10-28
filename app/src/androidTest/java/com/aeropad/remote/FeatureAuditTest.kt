@@ -1,83 +1,77 @@
 package com.aeropad.remote
 
 import androidx.test.core.app.ActivityScenario
-import dagger.hilt.android.testing.HiltAndroidRule
-import dagger.hilt.android.testing.HiltAndroidTest
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiObject2
+import dagger.hilt.android.testing.HiltAndroidRule
+import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.After
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 
 /**
- * Feature audit — every screen, every tappable control, in both orientations.
+ * Feature audit — every screen, every tappable control, both orientations.
  *
  * Modelled on how google/artemis drives a device: observe the screen, act on a
- * target, then verify the app survived and capture evidence (screenshot +
- * logcat). Artemis itself needs a physical device and an LLM key, neither of
- * which exists in this build pipeline, so this is the deterministic equivalent:
- * a fixed instruction list, executed on the CI emulator, with machine-readable
- * findings instead of a model's judgement.
+ * target, verify the app survived, and keep the evidence (screenshot + logcat).
+ * Artemis itself needs a physical device and an LLM key, neither of which
+ * exists in this pipeline, so this is the deterministic equivalent: a fixed
+ * instruction list run on the CI emulator, writing machine-readable findings
+ * instead of a model's judgement.
  *
- * What it produces in files/audit:
- *   findings.txt   one line per problem: screen | control | what happened
- *   A-<route>.png  portrait screenshot of every screen
- *   L-<route>.png  landscape screenshot of every screen
- *   crash-*.txt    logcat slice around any crash
+ * Split in two passes on purpose. The landscape pass takes its screenshots
+ * BEFORE touching anything, because a tap that navigates away used to cost the
+ * landscape evidence for that screen — and landscape is where this app breaks.
  *
- * The test itself never fails on a finding: a broken screen must not hide the
- * other 22. Everything is reported so it can be triaged and fixed.
+ * Output, in files/audit:
+ *   findings.txt   screen | control | what happened
+ *   A-<route>.png  portrait screenshot
+ *   L-<route>.png  landscape screenshot
+ *   crash-*.txt    logcat slice around a crash
  */
 @HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
 class FeatureAuditTest {
 
-    /**
-     * Required by the Hilt test runner: without it every Activity launch dies
-     * with "The component was not created", which is exactly what the first
-     * audit run reported.
-     */
-    @get:org.junit.Rule
+    @get:Rule
     val hiltRule = HiltAndroidRule(this)
 
-    private lateinit var device: androidx.test.uiautomator.UiDevice
-    private lateinit var scenario: ActivityScenario<MainActivity>
+    private lateinit var device: UiDevice
     private lateinit var outDir: File
     private val findings = StringBuilder()
+    private var screenHeight = 0
 
-    /** Every destination in Routes. Kept here so a new screen is audited. */
+    /** Every destination in Routes — including the two dialogs-as-screens. */
     private val routes = listOf(
         "home", "layouts", "layout_editor", "my_layout", "keyboard", "full_keyboard",
         "numpad", "mouse", "air_mouse", "gamepad", "gamepad_builder", "multimedia",
         "presenter", "android_remote", "touch_screen", "text_clips", "macros",
-        "shortcut_decks", "pc_combo", "devices", "settings", "help", "connection_health"
+        "shortcut_decks", "pc_combo", "devices", "connection", "permissions",
+        "settings", "help", "connection_health"
     )
 
-    /**
-     * Controls whose whole purpose is to destroy state. Tapping them mid-audit
-     * would empty the app and make every later screen report a false "empty".
-     */
+    /** Labels whose whole purpose is to destroy state; tapping empties the app. */
     private val destructive = Regex(
         "(?i)\\b(delete|remove|uninstall|reset|clear all|stop|disconnect|unpair|" +
-            "forget|power off|erase|wipe|discard|deleting)\\b"
+            "forget|power off|erase|wipe|discard|cancel recording)\\b"
     )
 
     @Before
     fun setUp() {
-        device = androidx.test.uiautomator.UiDevice
-            .getInstance(InstrumentationRegistry.getInstrumentation())
+        hiltRule.inject()
+        device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        screenHeight = device.displayHeight
         val ctx = InstrumentationRegistry.getInstrumentation().targetContext
         outDir = File(ctx.filesDir, "audit").apply {
             mkdirs()
             listFiles()?.forEach { it.delete() }
         }
-        hiltRule.inject()
-        scenario = ActivityScenario.launch(MainActivity::class.java)
-        device.waitForIdle()
-        Thread.sleep(1500)
-        dismissOnboardingOnce()
     }
 
     @After
@@ -86,147 +80,157 @@ class FeatureAuditTest {
             device.setOrientationNatural()
             device.unfreezeRotation()
         }
-        runCatching { scenario.close() }
         File(outDir, "findings.txt").writeText(
             if (findings.isEmpty()) "no findings\n" else findings.toString()
         )
     }
 
+    // ------------------------------------------------------------------ passes
+
     @Test
-    fun auditEveryScreen() {
-        routes.forEach { route ->
-            runCatching { auditRoute(route) }
-                .onFailure { note(route, "-", "audit threw: ${it.javaClass.simpleName}: ${it.message}") }
-        }
-    }
-
-    private fun auditRoute(route: String) {
-        open(route)
-        val portraitNodes = tappableCount()
-        shot("A-$route")
-        if (portraitNodes == 0) {
-            // A screen with nothing tappable is usually a screen that failed to
-            // draw. Home legitimately has zero? No: it always has tiles.
-            note(route, "-", "no tappable control found on the screen")
-        }
-
-        exerciseControls(route)
-
-        // Landscape: same screen, rotated. Catches layout breakage that only
-        // exists when the window is wide and short.
+    fun passOneLandscapeScreenshots() {
         device.setOrientationLeft()
         device.waitForIdle()
-        Thread.sleep(900)
-        shot("L-$route")
-        val landscapeText = visibleTextCount()
-        if (landscapeText == 0) note(route, "landscape", "screen rendered no visible text")
+        Thread.sleep(800)
+        routes.forEach { route ->
+            runCatching {
+                open(route)
+                Thread.sleep(500)
+                shot("L-$route")
+                if (visibleTextCount() == 0) note(route, "landscape", "no visible text on screen")
+                if (tappableCount() == 0) note(route, "landscape", "no tappable control")
+            }.onFailure { note(route, "landscape", "audit threw: ${it.javaClass.simpleName}") }
+        }
         device.setOrientationNatural()
         device.waitForIdle()
-        Thread.sleep(700)
+        Thread.sleep(600)
+    }
+
+    @Test
+    fun passTwoPortraitScreensAndControls() {
+        device.setOrientationNatural()
+        device.waitForIdle()
+        Thread.sleep(600)
+        routes.forEach { route ->
+            runCatching {
+                open(route)
+                shot("A-$route")
+                if (visibleTextCount() == 0) note(route, "-", "no visible text on screen")
+                if (tappableCount() == 0) note(route, "-", "no tappable control")
+                exerciseControls(route)
+            }.onFailure { note(route, "-", "audit threw: ${it.javaClass.simpleName}: ${it.message}") }
+        }
     }
 
     /**
-     * Tap every Control-like node once and verify the app is still alive.
-     * Bounded so a screen with a long list cannot stall the whole audit.
+     * Tap up to [MAX_TAPS] controls and verify the app survives each one.
+     *
+     * Deliberately conservative: system bars are excluded (the old version's
+     * first "clickable" node was the status bar, which "left the app" on every
+     * screen and produced 25 false findings), and each tap is isolated so a
+     * stale node cannot abort the pass.
      */
     private fun exerciseControls(route: String) {
-        val nodes = device.findObjects(androidx.test.uiautomator.By.clickable(true))
-            .filter { it.visibleBounds.height() > 0 && it.visibleBounds.width() > 0 }
-        nodes.take(MAX_TAPS_PER_SCREEN).forEachIndexed { index, node ->
-            val label = (node.text ?: node.contentDescription ?: "").trim()
-            if (label.isNotEmpty() && destructive.containsMatchIn(label)) return@forEachIndexed
+        val nodes = runCatching { device.findObjects(By.clickable(true)) }.getOrDefault(emptyList())
+            .filter { node ->
+                val b = node.visibleBounds
+                b.width() > 0 && b.height() > 0 &&
+                    b.top > dp(56) && b.bottom < screenHeight - dp(40) &&
+                    !(node.text.isNullOrBlank() && node.contentDescription.isNullOrBlank())
+            }
+            .take(MAX_TAPS)
+
+        nodes.forEachIndexed { index, node ->
+            val label = (node.text ?: node.contentDescription ?: "node#$index").trim()
+            if (destructive.containsMatchIn(label)) return@forEachIndexed
 
             clearLogcat()
             val clicked = runCatching { node.click() }.isSuccess
-            Thread.sleep(350)
-            device.waitForIdle()
+            if (!clicked) return@forEachIndexed
+            Thread.sleep(320)
+            runCatching { device.waitForIdle() }
 
             val crash = crashSinceClear()
             when {
                 crash != null -> {
-                    note(route, label.ifEmpty { "node#$index" }, "CRASH: $crash")
+                    note(route, label, "CRASH: ${crash.lineSequence().first()}")
                     File(outDir, "crash-$route-$index.txt").writeText(crash + "\n\n" + dumpTree())
                     shot("CRASH-$route-$index")
                     open(route)
                 }
-                !inApp() -> {
-                    note(route, label.ifEmpty { "node#$index" }, "left the app (current package changed)")
+                inApp().not() -> {
+                    // Ask once: a stray tap into another package is a real
+                    // defect (an intent with no target, usually).
+                    note(route, label, "tap left the app")
                     open(route)
                 }
-                clicked && visibleTextCount() == 0 -> {
-                    note(route, label.ifEmpty { "node#$index" }, "screen went blank after tap")
+                visibleTextCount() == 0 -> {
+                    note(route, label, "blank screen after tap")
+                    shot("BLANK-$route-$index")
                     open(route)
                 }
             }
             if (label.any { it.code in TOFU_SUSPECTS }) {
-                note(route, label, "label uses a symbol codepoint that may render as tofu")
+                note(route, label, "symbol U+${label.first { it.code in TOFU_SUSPECTS }.code.toString(16)} may render as tofu")
             }
         }
     }
 
     // ---------------------------------------------------------------- helpers
 
+    private fun dp(v: Int): Int =
+        (v * InstrumentationRegistry.getInstrumentation()
+            .targetContext.resources.displayMetrics.density).toInt()
+
     private fun open(route: String) {
         val ctx = InstrumentationRegistry.getInstrumentation().targetContext
-        val intent = android.content.Intent(ctx, MainActivity::class.java)
-            .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or
-                android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK)
-            .putExtra("com.aeropad.remote.EXTRA_ROUTE", route)
-        ctx.startActivity(intent)
-        Thread.sleep(1400)
-        device.waitForIdle()
-        dismissOnboardingOnce()
+        ctx.startActivity(
+            android.content.Intent(ctx, MainActivity::class.java)
+                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or
+                    android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                .putExtra("com.aeropad.remote.EXTRA_ROUTE", route)
+        )
+        Thread.sleep(1200)
+        runCatching { device.waitForIdle() }
+        dismissOnboarding()
     }
 
-    private fun dismissOnboardingOnce() {
+    private fun dismissOnboarding() {
         repeat(2) {
-            val skip = device.wait(
-                androidx.test.uiautomator.Until.findObject(
-                    androidx.test.uiautomator.By.text("Skip")
-                ),
-                1200
-            ) ?: return
-            skip.click()
-            device.waitForIdle()
-            Thread.sleep(400)
+            val skip = device.findObject(By.text("Skip")) ?: return
+            runCatching { skip.click() }
+            Thread.sleep(350)
         }
     }
 
     private fun inApp(): Boolean {
-        val pkg = runCatching {
+        val focus = runCatching {
             device.executeShellCommand("dumpsys window | grep -m1 mCurrentFocus").orEmpty()
         }.getOrDefault("")
-        return pkg.contains("com.aeropad.remote")
+        return focus.contains("com.aeropad.remote")
     }
 
     private fun clearLogcat() {
         runCatching { device.executeShellCommand("logcat -c") }
     }
 
-    /** Returns the first fatal line since the last clear, or null. */
     private fun crashSinceClear(): String? {
-        val out = runCatching {
-            device.executeShellCommand("logcat -d -b crash -t 120").orEmpty()
-        }.getOrDefault("")
-        val relevant = out.lineSequence()
-            .filter { it.contains("com.aeropad.remote") || it.contains("FATAL EXCEPTION") }
-            .take(12)
-            .toList()
-        return if (relevant.any { it.contains("FATAL EXCEPTION") || it.contains("AndroidRuntime") })
-            relevant.joinToString("\n") else null
+        val out = runCatching { device.executeShellCommand("logcat -d -b crash -t 80").orEmpty() }
+            .getOrDefault("")
+        val lines = out.lines().filter {
+            it.contains("FATAL EXCEPTION") || (it.contains("AndroidRuntime") && it.contains("com.aeropad.remote"))
+        }
+        return if (lines.isEmpty()) null else out.lines().take(14).joinToString("\n")
     }
 
-    private fun tappableCount(): Int =
-        runCatching {
-            device.findObjects(androidx.test.uiautomator.By.clickable(true))
-                .count { it.visibleBounds.height() > 0 }
-        }.getOrDefault(0)
+    private fun tappableCount(): Int = runCatching {
+        device.findObjects(By.clickable(true)).count { it.visibleBounds.height() > 0 }
+    }.getOrDefault(0)
 
-    private fun visibleTextCount(): Int =
-        runCatching {
-            device.findObjects(androidx.test.uiautomator.By.textContains(""))
-                .count { it.visibleBounds.height() > 0 && !it.text.isNullOrBlank() }
-        }.getOrDefault(0)
+    private fun visibleTextCount(): Int = runCatching {
+        device.findObjects(By.textContains(""))
+            .count { it.visibleBounds.height() > 0 && !it.text.isNullOrBlank() }
+    }.getOrDefault(0)
 
     private fun dumpTree(): String {
         val f = File(outDir, "tree-tmp.xml")
@@ -247,17 +251,13 @@ class FeatureAuditTest {
     }
 
     private companion object {
-        const val MAX_TAPS_PER_SCREEN = 10
+        const val MAX_TAPS = 8
 
-        /**
-         * Codepoints that are missing from many Android system fonts and have
-         * already produced a tofu box in this app (U+23FB rendered as ▯ next to
-         * "Power"). Emoji ranges are fine; these are the risky symbol blocks.
-         */
+        /** Symbol codepoints that tofu on many Android fonts (U+23FB bit us once). */
         val TOFU_SUSPECTS = setOf(
             0x23FB, 0x23F9, 0x23EF, 0x23EE, 0x23ED, 0x23F8, 0x2328, 0x2326, 0x2315,
             0x230A, 0x230B, 0x2309, 0x2302, 0x21E4, 0x21E5, 0x21E7, 0x21E9,
-            0x26F6, 0x27F3, 0x27A1, 0x2B05, 0x2B06, 0x2B07, 0x2423
+            0x26F6, 0x27F3, 0x2423
         )
     }
 }

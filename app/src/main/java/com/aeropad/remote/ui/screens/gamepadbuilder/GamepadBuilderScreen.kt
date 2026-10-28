@@ -57,6 +57,9 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -267,6 +270,16 @@ private fun ProfileList(onBack: () -> Unit, viewModel: GamepadBuilderViewModel) 
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
+                    // Round 14 — this row used to carry SIX IconButtons
+                    // (favorite, play, edit, duplicate, export, delete). On a
+                    // 360 dp screen that left the title column about 10 dp, so
+                    // every gamepad rendered as "Cas / ual / Lay / out" stacked
+                    // one syllable per line - the worst-looking screen in the
+                    // app. Play stays inline (it is the primary action) and the
+                    // rest collapse into one overflow menu.
+                    val fav = com.aeropad.remote.domain.CsvListCodec.contains(
+                        appSettings.favoriteGamepads, profile.id.toString())
+                    var menuOpen by remember { mutableStateOf(false) }
                     Row(
                         modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -274,41 +287,69 @@ private fun ProfileList(onBack: () -> Unit, viewModel: GamepadBuilderViewModel) 
                         Icon(Icons.Rounded.SportsEsports, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.size(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(profile.spec.name, style = MaterialTheme.typography.titleMedium)
                             Text(
-                                "${profile.spec.controls.size} controls" +
+                                profile.spec.name,
+                                style = MaterialTheme.typography.titleMedium,
+                                maxLines = 2,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = "${profile.spec.controls.size} controls" +
                                     (if (profile.spec.tags.isNotEmpty()) "  •  " + profile.spec.tags.joinToString(", ") else "") +
                                     (if (profile.isBuiltIn) "  •  template" else ""),
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 2,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                             )
                         }
-                        // ADV S3 — favorite pin (favorites sort to top).
-                        val fav = com.aeropad.remote.domain.CsvListCodec.contains(
-                            appSettings.favoriteGamepads, profile.id.toString())
-                        IconButton(onClick = { viewModel.toggleFavorite(profile.id) }) {
+                        if (fav) {
                             Icon(
-                                if (fav) Icons.Rounded.Star else Icons.Rounded.StarBorder,
-                                contentDescription = if (fav) "Unfavorite" else "Favorite",
-                                tint = if (fav) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.onSurfaceVariant
+                                Icons.Rounded.Star,
+                                contentDescription = "Favorite",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 4.dp).size(16.dp)
                             )
                         }
                         IconButton(onClick = { viewModel.play(profile.id) }) {
                             Icon(Icons.Rounded.PlayArrow, contentDescription = "Play", tint = MaterialTheme.colorScheme.primary)
                         }
-                        IconButton(onClick = { viewModel.edit(profile) }) {
-                            Icon(Icons.Rounded.Edit, contentDescription = "Edit")
-                        }
-                        IconButton(onClick = { viewModel.duplicate(profile.id) }) {
-                            Icon(Icons.Rounded.ContentCopy, contentDescription = "Duplicate")
-                        }
-                        IconButton(onClick = { viewModel.requestExport(profile.id) }) {
-                            Icon(Icons.Rounded.FileUpload, contentDescription = "Export")
-                        }
-                        if (!profile.isBuiltIn) {
-                            IconButton(onClick = { viewModel.delete(profile.id) }) {
-                                Icon(Icons.Rounded.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
+                        Box {
+                            IconButton(onClick = { menuOpen = true }) {
+                                Icon(Icons.Rounded.MoreVert, contentDescription = "More actions")
+                            }
+                            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                                DropdownMenuItem(
+                                    text = { Text(if (fav) "Remove from favorites" else "Add to favorites") },
+                                    leadingIcon = {
+                                        Icon(if (fav) Icons.Rounded.Star else Icons.Rounded.StarBorder, contentDescription = null)
+                                    },
+                                    onClick = { menuOpen = false; viewModel.toggleFavorite(profile.id) }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Edit") },
+                                    leadingIcon = { Icon(Icons.Rounded.Edit, contentDescription = null) },
+                                    onClick = { menuOpen = false; viewModel.edit(profile) }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Duplicate") },
+                                    leadingIcon = { Icon(Icons.Rounded.ContentCopy, contentDescription = null) },
+                                    onClick = { menuOpen = false; viewModel.duplicate(profile.id) }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Export") },
+                                    leadingIcon = { Icon(Icons.Rounded.FileUpload, contentDescription = null) },
+                                    onClick = { menuOpen = false; viewModel.requestExport(profile.id) }
+                                )
+                                if (!profile.isBuiltIn) {
+                                    DropdownMenuItem(
+                                        text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                                        leadingIcon = {
+                                            Icon(Icons.Rounded.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                                        },
+                                        onClick = { menuOpen = false; viewModel.delete(profile.id) }
+                                    )
+                                }
                             }
                         }
                     }

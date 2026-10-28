@@ -26,6 +26,7 @@ import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.FiberManualRecord
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.PlaylistPlay
 import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.Stop
@@ -244,7 +245,9 @@ fun MacrosScreen(
                         ) {
                             Icon(Icons.Rounded.FiberManualRecord, contentDescription = null, modifier = Modifier.size(14.dp))
                             Spacer(Modifier.size(4.dp))
-                            Text(if (spec.monoFont) "RECORD" else "● Record")
+                            // Round 14 — the row already draws a FiberManualRecord icon; the label
+                            // also started with "●", so the button read "● • Record".
+                            Text(if (spec.monoFont) "RECORD" else "Record")
                         }
                     }
                 }
@@ -272,6 +275,39 @@ fun MacrosScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
+                }
+            }
+            // Round 14 — with no macros this screen was a long empty page with a
+            // floating + button and no explanation. A first-run empty state says
+            // what a macro is and offers the two ways to make one.
+            if (macros.isEmpty()) {
+                item {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(top = 32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            Icons.Rounded.PlaylistPlay,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(44.dp)
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            "No macros yet",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            "Record a sequence of keys on the next screen, or build one " +
+                                "step by step with +. Macros can be bound to any button " +
+                                "you place in the Layout editor.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        )
+                    }
                 }
             }
             items(macros, key = { it.id }) { macro ->

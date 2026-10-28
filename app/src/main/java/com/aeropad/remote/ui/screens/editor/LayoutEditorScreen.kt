@@ -38,6 +38,9 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -103,13 +106,28 @@ fun LayoutEditorScreen(
         containerColor = androidx.compose.ui.graphics.Color.Transparent,
         topBar = {
             TopAppBar(
-                title = { Text(layout.name + if (dirty) " •" else "", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
+                // One line is enough now that only two actions compete for the
+                // bar, but ellipsis stays so a very long name cannot overflow.
+                title = {
+                    Text(
+                        layout.name + if (dirty) " •" else "",
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
+                    // Round 14 — this app bar carried FIVE 48 dp action
+                    // buttons, which left the layout name about 40 dp wide:
+                    // every layout rendered as "Ne..." so you could not tell
+                    // which one you were editing. Undo stays (it is the one
+                    // action used constantly, and long-press still opens the
+                    // history), everything else moves into a menu.
+                    var actionsOpen by remember { mutableStateOf(false) }
                     Box(
                         modifier = Modifier
                             .size(48.dp)
@@ -128,27 +146,37 @@ fun LayoutEditorScreen(
                             else LocalContentColor.current.copy(alpha = 0.38f)
                         )
                     }
-                    // SECTION 2 — redo
-                    IconButton(onClick = { viewModel.redo() }, enabled = canRedo && !previewMode) {
-                        Icon(Icons.AutoMirrored.Rounded.Redo, contentDescription = "Redo")
-                    }
-                    // SECTION 2 — grid overlay toggle
-                    IconButton(onClick = { viewModel.toggleGrid() }, enabled = !previewMode) {
-                        Icon(
-                            Icons.Rounded.Grid4x4,
-                            contentDescription = if (showGrid) "Hide grid" else "Show grid",
-                            tint = if (showGrid) MaterialTheme.colorScheme.primary
-                            else LocalContentColor.current
-                        )
-                    }
-                    IconButton(onClick = { viewModel.togglePreview() }) {
-                        Icon(
-                            if (previewMode) Icons.Rounded.Edit else Icons.Rounded.PlayArrow,
-                            contentDescription = if (previewMode) "Edit mode" else "Preview mode"
-                        )
-                    }
                     IconButton(onClick = { viewModel.save() }) {
                         Icon(Icons.Rounded.Save, contentDescription = "Save")
+                    }
+                    Box {
+                        IconButton(onClick = { actionsOpen = true }) {
+                            Icon(Icons.Rounded.MoreVert, contentDescription = "More editor actions")
+                        }
+                        DropdownMenu(expanded = actionsOpen, onDismissRequest = { actionsOpen = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Redo") },
+                                enabled = canRedo && !previewMode,
+                                leadingIcon = { Icon(Icons.AutoMirrored.Rounded.Redo, contentDescription = null) },
+                                onClick = { actionsOpen = false; viewModel.redo() }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(if (showGrid) "Hide grid" else "Show grid") },
+                                enabled = !previewMode,
+                                leadingIcon = { Icon(Icons.Rounded.Grid4x4, contentDescription = null) },
+                                onClick = { actionsOpen = false; viewModel.toggleGrid() }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(if (previewMode) "Back to editing" else "Preview") },
+                                leadingIcon = {
+                                    Icon(
+                                        if (previewMode) Icons.Rounded.Edit else Icons.Rounded.PlayArrow,
+                                        contentDescription = null
+                                    )
+                                },
+                                onClick = { actionsOpen = false; viewModel.togglePreview() }
+                            )
+                        }
                     }
                 }
             )
