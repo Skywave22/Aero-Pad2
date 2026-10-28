@@ -156,18 +156,26 @@ fun KeyCard(
 @Composable
 fun NotConnectedBanner(visible: Boolean) {
     if (!visible) return
+    // Round 14 — on a landscape phone the two-line sentence took about 60 dp
+    // of a ~270 dp window, which is the difference between a complete gamepad
+    // and a clipped one. Short landscape wording, single line, smaller padding;
+    // the full sentence stays in portrait where there is room for it.
+    val compact = com.aeropad.remote.ui.components.isLandscape()
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 8.dp),
+            .padding(bottom = if (compact) 4.dp else 8.dp),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
     ) {
         Text(
-            text = "Not connected — controls are inactive. Open Connect to pair.",
+            text = if (compact) "Not connected — open Connect to pair."
+            else "Not connected — controls are inactive. Open Connect to pair.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onErrorContainer,
-            modifier = Modifier.padding(12.dp)
+            maxLines = if (compact) 1 else 3,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = if (compact) 6.dp else 12.dp)
         )
     }
 }

@@ -188,7 +188,12 @@ fun GamepadScreen(
             val padContent: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit = {
                 val landscapeDeck = com.aeropad.remote.ui.components.isLandscape()
                 Row(
-                    modifier = if (landscapeDeck) Modifier.fillMaxWidth().height(210.dp)
+                    // Round 14 — 210 dp was shorter than the right-hand column
+                    // it has to contain (L1/R1 + Y + X/B + A at 64 dp), so the
+                    // A button was clipped inside the row. 290 dp fits the
+                    // whole cluster; the wrapper above then scales the whole
+                    // block down to the window.
+                    modifier = if (landscapeDeck) Modifier.fillMaxWidth().height(290.dp)
                     else Modifier.weight(1f),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -262,8 +267,8 @@ fun GamepadScreen(
                 androidx.compose.foundation.layout.BoxWithConstraints(
                     modifier = Modifier.fillMaxWidth().weight(1f)
                 ) {
-                    val natural = 380.dp
-                    val shrink = (maxHeight / natural).coerceIn(0.5f, 1f)
+                    val natural = 450.dp
+                    val shrink = (maxHeight / natural).coerceIn(0.45f, 1f)
                     // graphicsLayer only transforms the DRAW pass, so the
                     // column still claimed all 380 dp and was clipped by the
                     // window edge (the first attempt at this did exactly that).
