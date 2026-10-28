@@ -88,26 +88,8 @@ class FeatureAuditTest {
     // ------------------------------------------------------------------ passes
 
     @Test
-    fun passOneLandscapeScreenshots() {
-        device.setOrientationLeft()
-        device.waitForIdle()
-        Thread.sleep(800)
-        routes.forEach { route ->
-            runCatching {
-                open(route)
-                Thread.sleep(500)
-                shot("L-$route")
-                if (visibleTextCount() == 0) note(route, "landscape", "no visible text on screen")
-                if (tappableCount() == 0) note(route, "landscape", "no tappable control")
-            }.onFailure { note(route, "landscape", "audit threw: ${it.javaClass.simpleName}") }
-        }
-        device.setOrientationNatural()
-        device.waitForIdle()
-        Thread.sleep(600)
-    }
-
-    @Test
-    fun passTwoPortraitScreensAndControls() {
+    fun auditEveryScreen() {
+        // Portrait first: screenshots, then control probing.
         device.setOrientationNatural()
         device.waitForIdle()
         Thread.sleep(600)
@@ -120,6 +102,21 @@ class FeatureAuditTest {
                 exerciseControls(route)
             }.onFailure { note(route, "-", "audit threw: ${it.javaClass.simpleName}: ${it.message}") }
         }
+
+        // Landscape last, screenshots only: a tap that navigates away would
+        // otherwise cost that screen its landscape evidence.
+        device.setOrientationLeft()
+        device.waitForIdle()
+        Thread.sleep(800)
+        routes.forEach { route ->
+            runCatching {
+                open(route)
+                Thread.sleep(400)
+                shot("L-$route")
+                if (visibleTextCount() == 0) note(route, "landscape", "no visible text on screen")
+            }.onFailure { note(route, "landscape", "audit threw: ${it.javaClass.simpleName}") }
+        }
+        device.setOrientationNatural()
     }
 
     /**
@@ -239,10 +236,11 @@ class FeatureAuditTest {
     }
 
     private fun shot(name: String) {
-        runCatching {
+        val ok = runCatching {
             device.waitForIdle()
             device.takeScreenshot(File(outDir, "$name.png"))
-        }
+        }.isSuccess
+        if (!ok) note(name, "screenshot", "could not capture (harness problem, not an app defect)")
     }
 
     private fun note(screen: String, control: String, what: String) {
