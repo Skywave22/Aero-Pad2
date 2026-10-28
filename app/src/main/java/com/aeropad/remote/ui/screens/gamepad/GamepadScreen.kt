@@ -214,7 +214,13 @@ fun GamepadScreen(
             // reached (the Column does not scroll). The rows are now one block
             // that is scaled uniformly to the height that actually exists, so
             // nothing is ever clipped and the controller keeps its proportions.
-            val padContent: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit = {
+            // Sizes are derived from the height that actually exists rather
+            // than shrinking a fixed block: a transformed block is still
+            // laid out at its natural size and gets clipped by whatever
+            // contains it, which is what produced a green sliver for A and a
+            // d-pad missing its bottom arrow.
+            @Composable
+            fun padContent(m: PadMetrics) {
                 val landscapeDeck = com.aeropad.remote.ui.components.isLandscape()
                 Row(
                     // Round 14 — 210 dp was shorter than the right-hand column
@@ -222,7 +228,7 @@ fun GamepadScreen(
                     // A button was clipped inside the row. 290 dp fits the
                     // whole cluster; the wrapper above then scales the whole
                     // block down to the window.
-                    modifier = if (landscapeDeck) Modifier.fillMaxWidth().height(290.dp)
+                    modifier = if (landscapeDeck) Modifier.fillMaxWidth().height(m.deck)
                     else Modifier.weight(1f),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -234,11 +240,13 @@ fun GamepadScreen(
                     ) {
                         VirtualStick(
                             onMove = { x, y -> viewModel.onStick(left = true, rawX = x, rawY = y) },
-                            onRelease = { viewModel.onStick(left = true, rawX = 0f, rawY = 0f) }
+                            onRelease = { viewModel.onStick(left = true, rawX = 0f, rawY = 0f) },
+                            baseSize = m.stick
                         )
                         DpadCluster(
                             onPress = { dir -> haptic(); viewModel.onDpad(dir) },
-                            onRelease = { viewModel.onDpad(DpadDirection.NONE) }
+                            onRelease = { viewModel.onDpad(DpadDirection.NONE) },
+                            keySize = m.dpad
                         )
                     }
 
@@ -249,17 +257,17 @@ fun GamepadScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            FaceButton("L1") { pressed -> viewModel.onGamepadButton(GamepadButton.L1, pressed); if (pressed) haptic() }
-                            FaceButton("R1") { pressed -> viewModel.onGamepadButton(GamepadButton.R1, pressed); if (pressed) haptic() }
+                            FaceButton("L1", size = m.face) { pressed -> viewModel.onGamepadButton(GamepadButton.L1, pressed); if (pressed) haptic() }
+                            FaceButton("R1", size = m.face) { pressed -> viewModel.onGamepadButton(GamepadButton.R1, pressed); if (pressed) haptic() }
                         }
                         // ABXY diamond — classic controller colors (Y amber,
                         // X blue, B red, A green) with 3D gel shading.
-                        FaceButton("Y", tint = Color(0xFFF5A623)) { pressed -> viewModel.onGamepadButton(GamepadButton.Y, pressed); if (pressed) haptic() }
+                        FaceButton("Y", size = m.face, tint = Color(0xFFF5A623)) { pressed -> viewModel.onGamepadButton(GamepadButton.Y, pressed); if (pressed) haptic() }
                         Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                            FaceButton("X", tint = Color(0xFF2F6BFF)) { pressed -> viewModel.onGamepadButton(GamepadButton.X, pressed); if (pressed) haptic() }
-                            FaceButton("B", tint = Color(0xFFE74C3C)) { pressed -> viewModel.onGamepadButton(GamepadButton.B, pressed); if (pressed) haptic() }
+                            FaceButton("X", size = m.face, tint = Color(0xFF2F6BFF)) { pressed -> viewModel.onGamepadButton(GamepadButton.X, pressed); if (pressed) haptic() }
+                            FaceButton("B", size = m.face, tint = Color(0xFFE74C3C)) { pressed -> viewModel.onGamepadButton(GamepadButton.B, pressed); if (pressed) haptic() }
                         }
-                        FaceButton("A", tint = Color(0xFF2ECC71)) { pressed -> viewModel.onGamepadButton(GamepadButton.A, pressed); if (pressed) haptic() }
+                        FaceButton("A", size = m.face, tint = Color(0xFF2ECC71)) { pressed -> viewModel.onGamepadButton(GamepadButton.A, pressed); if (pressed) haptic() }
                     }
                 }
 
@@ -296,36 +304,27 @@ fun GamepadScreen(
                 androidx.compose.foundation.layout.BoxWithConstraints(
                     modifier = Modifier.fillMaxWidth().weight(1f)
                 ) {
-                    val natural = 450.dp
-                    val shrink = (maxHeight / natural).coerceIn(0.30f, 1f)
-                    // graphicsLayer only transforms the DRAW pass, so the
-                    // column still claimed all 380 dp and was clipped by the
-                    // window edge (the first attempt at this did exactly that).
-                    // The wrapper therefore reports the SCALED height, and the
-                    // origin is pinned to the top so the scaled content ends
-                    // exactly at the wrapper's bottom edge.
+                    // 40 dp menu row + 64 dp triggers + two 8 dp gaps.
+                    val deck = (maxHeight - 120.dp).coerceAtLeast(150.dp)
+                    val face = ((deck - 18.dp) / 4).coerceIn(30.dp, 56.dp)
+                    val stick = (deck * 0.42f).coerceIn(72.dp, 140.dp)
+                    val dpad = ((deck - stick - 12.dp) / 3).coerceIn(22.dp, 44.dp)
                     androidx.compose.foundation.layout.Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(natural * shrink)
-                            .align(Alignment.Center)
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(natural)
-                                .graphicsLayer {
-                                    scaleX = shrink
-                                    scaleY = shrink
-                                    transformOrigin =
-                                        androidx.compose.ui.graphics.TransformOrigin(0.5f, 0f)
-                                },
-                            content = padContent
+                        padContent(
+                            PadMetrics(
+                                deck = deck,
+                                face = face,
+                                stick = stick,
+                                dpad = dpad
+                            )
                         )
                     }
                 }
             } else {
-                padContent()
+                padContent(PadMetrics())
             }
         }
     }
@@ -358,10 +357,10 @@ private suspend fun pressAndRelease(viewModel: RemoteControlViewModel, button: G
 @Composable
 private fun VirtualStick(
     onMove: (Float, Float) -> Unit,
-    onRelease: () -> Unit
+    onRelease: () -> Unit,
+    baseSize: androidx.compose.ui.unit.Dp = 140.dp
 ) {
-    val baseSize = 140.dp
-    val knobSize = 52.dp
+    val knobSize = baseSize * 0.37f
     val density = LocalDensity.current
     val radiusPx = with(density) { (baseSize - knobSize).toPx() / 2f }
     var knob by remember { mutableStateOf(Offset.Zero) }
@@ -434,6 +433,7 @@ private fun VirtualStick(
 private fun FaceButton(
     label: String,
     tint: Color? = null,
+    size: androidx.compose.ui.unit.Dp = 56.dp,
     onPress: (Boolean) -> Unit
 ) {
     var pressed by remember { mutableStateOf(false) }
@@ -460,7 +460,7 @@ private fun FaceButton(
 
     Box(
         modifier = Modifier
-            .size(56.dp)
+            .size(size)
             .semantics(mergeDescendants = true) {
                 contentDescription = "$label button"
                 role = Role.Button
@@ -517,20 +517,25 @@ private fun FaceButton(
 @Composable
 private fun DpadCluster(
     onPress: (DpadDirection) -> Unit,
-    onRelease: () -> Unit
+    onRelease: () -> Unit,
+    keySize: androidx.compose.ui.unit.Dp = 44.dp
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        DpadKey("▲") { pressed -> if (pressed) onPress(DpadDirection.UP) else onRelease() }
-        Row(horizontalArrangement = Arrangement.spacedBy(46.dp)) {
-            DpadKey("◀") { pressed -> if (pressed) onPress(DpadDirection.LEFT) else onRelease() }
-            DpadKey("▶") { pressed -> if (pressed) onPress(DpadDirection.RIGHT) else onRelease() }
+        DpadKey("▲", keySize) { pressed -> if (pressed) onPress(DpadDirection.UP) else onRelease() }
+        Row(horizontalArrangement = Arrangement.spacedBy(keySize + 2.dp)) {
+            DpadKey("◀", keySize) { pressed -> if (pressed) onPress(DpadDirection.LEFT) else onRelease() }
+            DpadKey("▶", keySize) { pressed -> if (pressed) onPress(DpadDirection.RIGHT) else onRelease() }
         }
-        DpadKey("▼") { pressed -> if (pressed) onPress(DpadDirection.DOWN) else onRelease() }
+        DpadKey("▼", keySize) { pressed -> if (pressed) onPress(DpadDirection.DOWN) else onRelease() }
     }
 }
 
 @Composable
-private fun DpadKey(label: String, onPressChange: (Boolean) -> Unit) {
+private fun DpadKey(
+    label: String,
+    size: androidx.compose.ui.unit.Dp = 44.dp,
+    onPressChange: (Boolean) -> Unit
+) {
     var pressed by remember { mutableStateOf(false) }
     val sink by animateFloatAsState(
         targetValue = if (pressed) 1f else 0f,
@@ -547,7 +552,7 @@ private fun DpadKey(label: String, onPressChange: (Boolean) -> Unit) {
     }
     Box(
         modifier = Modifier
-            .size(44.dp)
+            .size(size)
             .semantics(mergeDescendants = true) {
                 contentDescription = dirDesc
                 role = Role.Button
@@ -794,3 +799,14 @@ private fun ProDialog(
         confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } }
     )
 }
+
+/**
+ * Control sizes for the gamepad. Portrait uses the designed sizes; landscape
+ * derives them from the window so the whole controller always fits.
+ */
+private data class PadMetrics(
+    val deck: androidx.compose.ui.unit.Dp = 380.dp,
+    val face: androidx.compose.ui.unit.Dp = 56.dp,
+    val stick: androidx.compose.ui.unit.Dp = 140.dp,
+    val dpad: androidx.compose.ui.unit.Dp = 44.dp
+)
