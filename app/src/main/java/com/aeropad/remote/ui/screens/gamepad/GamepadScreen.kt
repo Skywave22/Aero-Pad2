@@ -220,7 +220,7 @@ fun GamepadScreen(
             // contains it, which is what produced a green sliver for A and a
             // d-pad missing its bottom arrow.
             @Composable
-            fun padContent(m: PadMetrics) {
+            fun androidx.compose.foundation.layout.ColumnScope.padContent(m: PadMetrics) {
                 val landscapeDeck = com.aeropad.remote.ui.components.isLandscape()
                 Row(
                     // Round 14 — 210 dp was shorter than the right-hand column
@@ -306,12 +306,12 @@ fun GamepadScreen(
                 ) {
                     // 40 dp menu row + 64 dp triggers + two 8 dp gaps.
                     val deck = (maxHeight - 120.dp).coerceAtLeast(150.dp)
-                    val face = ((deck - 18.dp) / 4).coerceIn(30.dp, 56.dp)
+                    val face = ((deck - 40.dp) / 4).coerceIn(28.dp, 56.dp)
                     val stick = (deck * 0.42f).coerceIn(72.dp, 140.dp)
                     val dpad = ((deck - stick - 12.dp) / 3).coerceIn(22.dp, 44.dp)
-                    androidx.compose.foundation.layout.Box(
+                    Column(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        verticalArrangement = Arrangement.Center
                     ) {
                         padContent(
                             PadMetrics(
@@ -324,7 +324,9 @@ fun GamepadScreen(
                     }
                 }
             } else {
-                padContent(PadMetrics())
+                Column(modifier = Modifier.weight(1f)) {
+                    padContent(PadMetrics())
+                }
             }
         }
     }
