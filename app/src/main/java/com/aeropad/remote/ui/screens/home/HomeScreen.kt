@@ -13,6 +13,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -216,7 +219,13 @@ fun HomeScreen(
                     start = 16.dp,
                     end = 16.dp,
                     top = 8.dp,
-                    bottom = com.aeropad.remote.ui.components.DockMetrics.contentInset()
+                    // Round 14 — contentInset() covers the dock pill but not
+                    // the system navigation bar beneath it, so the last tile
+                    // row peeked through the strip under the pill. Add the
+                    // real inset instead of guessing another magic number.
+                    bottom = com.aeropad.remote.ui.components.DockMetrics.contentInset() +
+                        androidx.compose.foundation.layout.WindowInsets.navigationBars
+                            .asPaddingValues().calculateBottomPadding()
                 ),
                 modifier = Modifier.fillMaxSize()
             ) {

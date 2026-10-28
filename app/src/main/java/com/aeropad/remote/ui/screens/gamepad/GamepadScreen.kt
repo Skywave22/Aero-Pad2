@@ -157,92 +157,131 @@ fun GamepadScreen(
                 )
         ) {
             NotConnectedBanner(!isConnected)
-            Text(
-                text = "Mode: " + when (gamepadSettings.mappingMode) {
-                    GamepadMappingMode.HID_GAMEPAD -> "HID gamepad"
-                    GamepadMappingMode.KEYBOARD_FALLBACK -> "Keyboard fallback"
-                    GamepadMappingMode.MOUSE_KEYBOARD -> "Mouse + keyboard"
-                } + " (change in Settings)",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(Modifier.height(12.dp))
+            // Round 14 — in landscape this line competed with the pad for a
+            // ~270 dp tall window; the mode is also shown in Settings, so it is
+            // portrait-only now.
+            val landscapePad = com.aeropad.remote.ui.components.isLandscape()
+            if (!landscapePad) {
+                Text(
+                    text = "Mode: " + when (gamepadSettings.mappingMode) {
+                        GamepadMappingMode.HID_GAMEPAD -> "HID gamepad"
+                        GamepadMappingMode.KEYBOARD_FALLBACK -> "Keyboard fallback"
+                        GamepadMappingMode.MOUSE_KEYBOARD -> "Mouse + keyboard"
+                    } + " (change in Settings)",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(12.dp))
+            }
 
             // Round 12 — on a real phone in landscape this weighted row was
             // squeezed to ~40 dp: the sticks, d-pad and ABXY collapsed into
             // slivers that looked like broken sliders. Landscape therefore gets
             // a fixed, thumb-sized control deck inside a scrolling column;
             // portrait keeps sharing the leftover height as before.
-            val landscapeDeck = com.aeropad.remote.ui.components.isLandscape()
-            Row(
-                modifier = if (landscapeDeck) Modifier.fillMaxWidth().height(210.dp)
-                else Modifier.weight(1f),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // ---------- Left: stick + dpad ----------
-                Column(
-                    modifier = Modifier.weight(1f),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(20.dp)
+            // Round 14 — this pad is ~380 dp of content in a ~270 dp landscape
+            // window, so the bottom of the ABXY cluster, both analog triggers
+            // and Select/Home/Start sat below the screen edge and could not be
+            // reached (the Column does not scroll). The rows are now one block
+            // that is scaled uniformly to the height that actually exists, so
+            // nothing is ever clipped and the controller keeps its proportions.
+            val padContent: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit = {
+                val landscapeDeck = com.aeropad.remote.ui.components.isLandscape()
+                Row(
+                    modifier = if (landscapeDeck) Modifier.fillMaxWidth().height(210.dp)
+                    else Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    VirtualStick(
-                        onMove = { x, y -> viewModel.onStick(left = true, rawX = x, rawY = y) },
-                        onRelease = { viewModel.onStick(left = true, rawX = 0f, rawY = 0f) }
-                    )
-                    DpadCluster(
-                        onPress = { dir -> haptic(); viewModel.onDpad(dir) },
-                        onRelease = { viewModel.onDpad(DpadDirection.NONE) }
-                    )
+                    // ---------- Left: stick + dpad ----------
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(20.dp)
+                    ) {
+                        VirtualStick(
+                            onMove = { x, y -> viewModel.onStick(left = true, rawX = x, rawY = y) },
+                            onRelease = { viewModel.onStick(left = true, rawX = 0f, rawY = 0f) }
+                        )
+                        DpadCluster(
+                            onPress = { dir -> haptic(); viewModel.onDpad(dir) },
+                            onRelease = { viewModel.onDpad(DpadDirection.NONE) }
+                        )
+                    }
+
+                    // ---------- Right: ABXY + shoulders ----------
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            FaceButton("L1") { pressed -> viewModel.onGamepadButton(GamepadButton.L1, pressed); if (pressed) haptic() }
+                            FaceButton("R1") { pressed -> viewModel.onGamepadButton(GamepadButton.R1, pressed); if (pressed) haptic() }
+                        }
+                        // ABXY diamond — classic controller colors (Y amber,
+                        // X blue, B red, A green) with 3D gel shading.
+                        FaceButton("Y", tint = Color(0xFFF5A623)) { pressed -> viewModel.onGamepadButton(GamepadButton.Y, pressed); if (pressed) haptic() }
+                        Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                            FaceButton("X", tint = Color(0xFF2F6BFF)) { pressed -> viewModel.onGamepadButton(GamepadButton.X, pressed); if (pressed) haptic() }
+                            FaceButton("B", tint = Color(0xFFE74C3C)) { pressed -> viewModel.onGamepadButton(GamepadButton.B, pressed); if (pressed) haptic() }
+                        }
+                        FaceButton("A", tint = Color(0xFF2ECC71)) { pressed -> viewModel.onGamepadButton(GamepadButton.A, pressed); if (pressed) haptic() }
+                    }
                 }
 
-                // ---------- Right: ABXY + shoulders ----------
-                Column(
-                    modifier = Modifier.weight(1f),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                // ---------- Round 7 — Pro: analog triggers + pro panel ----------
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        FaceButton("L1") { pressed -> viewModel.onGamepadButton(GamepadButton.L1, pressed); if (pressed) haptic() }
-                        FaceButton("R1") { pressed -> viewModel.onGamepadButton(GamepadButton.R1, pressed); if (pressed) haptic() }
-                    }
-                    // ABXY diamond — classic controller colors (Y amber,
-                    // X blue, B red, A green) with 3D gel shading.
-                    FaceButton("Y", tint = Color(0xFFF5A623)) { pressed -> viewModel.onGamepadButton(GamepadButton.Y, pressed); if (pressed) haptic() }
-                    Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                        FaceButton("X", tint = Color(0xFF2F6BFF)) { pressed -> viewModel.onGamepadButton(GamepadButton.X, pressed); if (pressed) haptic() }
-                        FaceButton("B", tint = Color(0xFFE74C3C)) { pressed -> viewModel.onGamepadButton(GamepadButton.B, pressed); if (pressed) haptic() }
-                    }
-                    FaceButton("A", tint = Color(0xFF2ECC71)) { pressed -> viewModel.onGamepadButton(GamepadButton.A, pressed); if (pressed) haptic() }
+                    TriggerPad("L2") { v -> viewModel.onTrigger(right = false, v) }
+                    AssistChip(onClick = { showPro = true }, label = { Text("⚙ Pro") })
+                    TriggerPad("R2") { v -> viewModel.onTrigger(right = true, v) }
+                }
+
+                // ---------- Bottom: menu buttons ----------
+                Row(
+                    // UI fix: was a fixed .height(48.dp) Row, which CLIPPED the
+                    // Select/Home/Start labels once the user raised the system
+                    // font size. heightIn(min=) keeps the touch target while
+                    // letting the row grow with the text.
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    KeyCard("Select", Modifier.weight(1f)) { haptic(); scope.launch { pressAndRelease(viewModel, GamepadButton.SELECT) } }
+                    KeyCard("Home", Modifier.weight(1f)) { haptic(); scope.launch { pressAndRelease(viewModel, GamepadButton.HOME) } }
+                    KeyCard("Start", Modifier.weight(1f)) { haptic(); scope.launch { pressAndRelease(viewModel, GamepadButton.START) } }
                 }
             }
-
-            // ---------- Round 7 — Pro: analog triggers + pro panel ----------
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                TriggerPad("L2") { v -> viewModel.onTrigger(right = false, v) }
-                AssistChip(onClick = { showPro = true }, label = { Text("⚙ Pro") })
-                TriggerPad("R2") { v -> viewModel.onTrigger(right = true, v) }
-            }
-
-            // ---------- Bottom: menu buttons ----------
-            Row(
-                // UI fix: was a fixed .height(48.dp) Row, which CLIPPED the
-                // Select/Home/Start labels once the user raised the system
-                // font size. heightIn(min=) keeps the touch target while
-                // letting the row grow with the text.
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 48.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                KeyCard("Select", Modifier.weight(1f)) { haptic(); scope.launch { pressAndRelease(viewModel, GamepadButton.SELECT) } }
-                KeyCard("Home", Modifier.weight(1f)) { haptic(); scope.launch { pressAndRelease(viewModel, GamepadButton.HOME) } }
-                KeyCard("Start", Modifier.weight(1f)) { haptic(); scope.launch { pressAndRelease(viewModel, GamepadButton.START) } }
+            if (landscapePad) {
+                androidx.compose.foundation.layout.BoxWithConstraints(
+                    modifier = Modifier.fillMaxWidth().weight(1f)
+                ) {
+                    val natural = 380.dp
+                    val shrink = (maxHeight / natural).coerceIn(0.5f, 1f)
+                    androidx.compose.foundation.layout.Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(natural)
+                                .graphicsLayer {
+                                    scaleX = shrink
+                                    scaleY = shrink
+                                },
+                            content = padContent
+                        )
+                    }
+                }
+            } else {
+                padContent()
             }
         }
     }
