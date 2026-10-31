@@ -25,7 +25,7 @@ suspend fun PointerInputScope.detectTwoFingerTap(onTap: () -> Unit) {
         var start: Offset = down.position
         var maxPointers = 1
         var maxMoved = 0f
-        var moved = false
+        var moved: Boolean
 
         do {
             val event = awaitPointerEvent()

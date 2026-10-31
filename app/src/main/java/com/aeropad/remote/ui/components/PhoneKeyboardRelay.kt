@@ -12,7 +12,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Send
-import androidx.compose.material.icons.rounded.Backspace
+import androidx.compose.material.icons.automirrored.rounded.Backspace
 import androidx.compose.material.icons.rounded.Keyboard
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Icon
@@ -118,7 +118,7 @@ fun PhoneKeyboardRelay(
                     lastSent = text
                 }
             }) {
-                Icon(Icons.Rounded.Backspace, contentDescription = "Backspace on the host")
+                Icon(Icons.AutoMirrored.Rounded.Backspace, contentDescription = "Backspace on the host")
             }
             IconButton(onClick = {
                 onEnter()

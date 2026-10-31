@@ -36,7 +36,7 @@ val keyAliasName = System.getenv("RELEASE_KEY_ALIAS")
 val keyPasswordValue = System.getenv("RELEASE_KEY_PASSWORD")
     ?: findProperty("RELEASE_KEY_PASSWORD") as String?
     ?: repoKeystoreProps.getProperty("keyPassword")
-val hasReleaseKeystore = !keystorePath.isNullOrBlank() && file(keystorePath!!).exists()
+val hasReleaseKeystore = !keystorePath.isNullOrBlank() && file(keystorePath).exists()
 val requireReleaseSigning =
     (System.getenv("REQUIRE_RELEASE_SIGNING")
         ?: findProperty("REQUIRE_RELEASE_SIGNING")?.toString()) == "1"
@@ -97,7 +97,7 @@ android {
                 storePassword = keystorePassword
                 keyAlias = keyAliasName
                 keyPassword = keyPasswordValue
-                storeType = if (keystorePath!!.endsWith(".p12") || keystorePath.endsWith(".pfx")) {
+                storeType = if (keystorePath.endsWith(".p12") || keystorePath.endsWith(".pfx")) {
                     "pkcs12"
                 } else {
                     "jks"

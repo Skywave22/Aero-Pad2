@@ -287,7 +287,7 @@ private fun PressableControl(
             .then(
                 if (pressed && (control.pressedStyle.borderWidth ?: 0) > 0)
                     Modifier.border(
-                        control.pressedStyle.borderWidth!!.dp,
+                        (control.pressedStyle.borderWidth ?: 0).dp,
                         (control.pressedStyle.borderColor ?: 0xFFFFFFFF)
                             .toComposeColor(),
                         shape

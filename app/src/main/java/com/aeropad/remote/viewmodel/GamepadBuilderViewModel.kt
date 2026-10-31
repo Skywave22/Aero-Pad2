@@ -1063,10 +1063,13 @@ class GamepadBuilderViewModel @Inject constructor(
 
     fun toggleFavorite(id: Long) {
         viewModelScope.launch {
-            val cur = appSettings.value
-            settingsStore.updateApp(cur.copy(
-                favoriteGamepads = com.aeropad.remote.domain.CsvListCodec.toggle(cur.favoriteGamepads, id.toString())
-            ))
+            // Round 16 — transform the stored value, not a stale flow snapshot.
+            settingsStore.mutateApp { cur ->
+                cur.copy(
+                    favoriteGamepads = com.aeropad.remote.domain.CsvListCodec
+                        .toggle(cur.favoriteGamepads, id.toString())
+                )
+            }
         }
     }
 
@@ -1075,10 +1078,12 @@ class GamepadBuilderViewModel @Inject constructor(
 
     private fun recordRecent(id: Long) {
         viewModelScope.launch {
-            val cur = appSettings.value
-            settingsStore.updateApp(cur.copy(
-                recentGamepads = com.aeropad.remote.domain.CsvListCodec.push(cur.recentGamepads, id.toString())
-            ))
+            settingsStore.mutateApp { cur ->
+                cur.copy(
+                    recentGamepads = com.aeropad.remote.domain.CsvListCodec
+                        .push(cur.recentGamepads, id.toString())
+                )
+            }
         }
     }
 

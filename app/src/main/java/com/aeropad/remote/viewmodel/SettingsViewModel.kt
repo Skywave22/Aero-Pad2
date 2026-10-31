@@ -134,11 +134,11 @@ class SettingsViewModel @Inject constructor(
     // a fresh KeyboardSettings() — the old code silently reset every other
     // keyboard field to defaults (latent data-loss bug as fields grow).
     fun setShowTextInputBar(value: Boolean) =
-        viewModelScope.launch { store.updateKeyboard(keyboard.value.copy(showTextInputBar = value).sanitized()) }
+        viewModelScope.launch { store.mutateKeyboard { it.copy(showTextInputBar = value).sanitized() } }
 
     /** L2 — configurable key press-to-release delay in milliseconds (5..100ms). */
     fun setKeyTapDelayMs(value: Int) =
-        viewModelScope.launch { store.updateKeyboard(keyboard.value.copy(keyTapDelayMs = value).sanitized()) }
+        viewModelScope.launch { store.mutateKeyboard { it.copy(keyTapDelayMs = value).sanitized() } }
 
     /** A4 — apply per-host tuning overrides when a host connects. */
     fun applyHostTuning(
@@ -176,12 +176,16 @@ class SettingsViewModel @Inject constructor(
 
     // ------------------------------------------------------------------
 
+    // Round 16 — mutate, not overwrite. The transform is applied to the value
+    // stored at write time, so two quick toggles can no longer cancel each
+    // other out (the old code wrote a whole snapshot taken before the first
+    // write landed).
     private fun updateApp(transform: (AppSettings) -> AppSettings) =
-        viewModelScope.launch { store.updateApp(transform(app.value)) }
+        viewModelScope.launch { store.mutateApp(transform) }
 
     private fun updateMouse(transform: (MouseSettings) -> MouseSettings) =
-        viewModelScope.launch { store.updateMouse(transform(mouse.value)) }
+        viewModelScope.launch { store.mutateMouse(transform) }
 
     private fun updateGamepad(transform: (GamepadSettings) -> GamepadSettings) =
-        viewModelScope.launch { store.updateGamepad(transform(gamepad.value)) }
+        viewModelScope.launch { store.mutateGamepad(transform) }
 }

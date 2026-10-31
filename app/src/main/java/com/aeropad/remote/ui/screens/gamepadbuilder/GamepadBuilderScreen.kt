@@ -880,8 +880,9 @@ private fun GamepadEditor(viewModel: GamepadBuilderViewModel) {
                 // alignment guides, all one lightweight Canvas draw.
                 val grip by viewModel.heatmapGrip.collectAsStateWithLifecycle()
                 val gridSize = spec.gridSize
-                val dragGuides = if (selectedId != null && !previewMode)
-                    viewModel.alignmentGuides(selectedId!!) else null
+                val dragGuides = selectedId
+                    ?.takeIf { !previewMode }
+                    ?.let { viewModel.alignmentGuides(it) }
                 val guideColor = MaterialTheme.colorScheme.primary
                 // V2 MATRIX 5 — min-touch-target audit: red dashed outline on
                 // controls smaller than 48dp (real Material/WCAG guidance,

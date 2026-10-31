@@ -135,6 +135,11 @@ class HidService : Service() {
     }
 
     override fun onDestroy() {
+        // Round 16 — the runner was started in onCreate and never stopped, so
+        // connect/disconnect triggers kept firing after the service died. The
+        // runner guards double-start, but the lifetime claim in its comment
+        // ("alive exactly as long as the HID link") was only true one way.
+        runCatching { hostTriggers.stop() }
         serviceScope.cancel()
         Timber.i("HidService destroyed")
         super.onDestroy()
@@ -146,14 +151,12 @@ class HidService : Service() {
 
     private fun startInForeground(notification: Notification): Boolean {
         return runCatching {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                startForeground(
-                    NOTIFICATION_ID, notification,
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
-                )
-            } else {
-                startForeground(NOTIFICATION_ID, notification)
-            }
+            // minSdk is 29 (Q), so the typed overload is always available —
+            // the old SDK_INT branch could never take its else path.
+            startForeground(
+                NOTIFICATION_ID, notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
+            )
             true
         }.getOrElse { e ->
             Timber.e(e, "startForeground failed; stopping service gracefully")
@@ -164,10 +167,14 @@ class HidService : Service() {
 
     private fun createChannel() {
         val manager = getSystemService(NotificationManager::class.java) ?: return
+        // Round 16 — these five strings already existed (translated into
+        // Arabic, Spanish, Hindi, Indonesian and Urdu) and were never used:
+        // the whole notification was hardcoded English. This is the first
+        // screen a user sees outside the app, so it is worth localising.
         val channel = NotificationChannel(
-            CHANNEL_ID, "HID connection",
+            CHANNEL_ID, getString(R.string.notif_channel_name),
             NotificationManager.IMPORTANCE_LOW // silent, no sound/vibration
-        ).apply { description = "Shows the Bluetooth remote connection status" }
+        ).apply { description = getString(R.string.notif_channel_desc) }
         runCatching { manager.createNotificationChannel(channel) }
     }
 
@@ -188,16 +195,20 @@ class HidService : Service() {
         )
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(getString(R.string.app_name))
+            .setContentTitle(getString(R.string.notif_title))
             .setContentText(text)
             .setContentIntent(contentIntent)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
         // Round 7 — Quick Connect: act without opening the app.
         if (currentState is HidConnectionState.Connected) {
-            builder.addAction(0, "Disconnect", serviceAction(ACTION_DISCONNECT, 2))
+            builder.addAction(
+                0, getString(R.string.notif_action_stop), serviceAction(ACTION_DISCONNECT, 2)
+            )
         } else {
-            builder.addAction(0, "Reconnect", serviceAction(ACTION_RECONNECT, 1))
+            builder.addAction(
+                0, getString(R.string.notif_action_connect), serviceAction(ACTION_RECONNECT, 1)
+            )
         }
         return builder.build()
     }
@@ -211,7 +222,7 @@ class HidService : Service() {
         is HidConnectionState.Connected -> "Connected to ${state.device.name}"
         is HidConnectionState.Connecting -> "Connecting to ${state.device.name}…"
         is HidConnectionState.Initializing -> "Initializing…"
-        is HidConnectionState.Idle -> "Ready — waiting for a host"
+        is HidConnectionState.Idle -> getString(R.string.notif_text_idle)
         is HidConnectionState.BluetoothDisabled -> "Bluetooth is off"
         is HidConnectionState.PermissionMissing -> "Permissions needed"
         is HidConnectionState.HidUnsupported -> "HID not supported on this phone"

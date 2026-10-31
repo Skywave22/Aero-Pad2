@@ -74,7 +74,6 @@ fun KeyboardScreen(
     val uiNotice by viewModel.uiNotice.collectAsStateWithLifecycle()
     val haptic = rememberHaptic(vibration)
     val snackbarHostState = remember { SnackbarHostState() }
-    var text by remember { mutableStateOf("") }
     var showVoiceSheet by remember { mutableStateOf(false) }   // ADV S4
     var showTuningSheet by remember { mutableStateOf(false) }  // P9.2
 

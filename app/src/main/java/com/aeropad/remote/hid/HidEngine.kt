@@ -602,14 +602,18 @@ class HidEngine @Inject constructor(
             addAction(android.content.Intent.ACTION_SCREEN_ON)
             addAction(android.content.Intent.ACTION_USER_PRESENT)
         }
+        // Round 16 — ContextCompat handles the API 33+ "flags are mandatory"
+        // rule and the pre-33 overloads in one call. The hand-rolled
+        // try/recover chain before this compiled to an API-33-only method
+        // reference and depended on NoSuchMethodError being swallowed.
         btReceiverRegistered = runCatching {
-            context.registerReceiver(btStateReceiver, filter)
-            true
-        }.recoverCatching {
-            // API 33+ explicit-flag variant for completeness.
-            context.registerReceiver(btStateReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
-            true
-        }.getOrDefault(false)
+            androidx.core.content.ContextCompat.registerReceiver(
+                context,
+                btStateReceiver,
+                filter,
+                androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+        }.isSuccess
         if (!btReceiverRegistered) Timber.w("could not register BT state receiver")
     }
 
@@ -746,7 +750,13 @@ class HidEngine @Inject constructor(
                     HidDescriptors.REPORT_ID_CONSUMER -> HidReportBuilder.consumerRelease()
                     HidDescriptors.REPORT_ID_SYSTEM -> HidReportBuilder.systemRelease()
                     HidDescriptors.REPORT_ID_GAMEPAD ->
-                        ReportPool.gamepadInto(GamepadSnapshot(), extendedReports)
+                        // Fresh array, not the pooled buffer: this is a control
+                        // channel reply, and nothing should hand the shared
+                        // report buffer to the framework.
+                        HidReportBuilder.gamepad(GamepadSnapshot())
+                    HidDescriptors.REPORT_ID_TOUCH ->
+                        if (!extendedReports) ByteArray(0)
+                        else HidReportBuilder.touch(contact = false, x = 0, y = 0)
                     else -> ByteArray(0)
                 }
                 hd.replyReport(device, type, id, payload)
@@ -857,7 +867,6 @@ class HidEngine @Inject constructor(
                         attempt = reconnectAttempts,
                         random = kotlin.random.Random.nextFloat()
                     )
-                    val fast = reconnectPolicy.isFastPhase(reconnectAttempts)
                     _reconnectStatus.value = reconnectAttempts to
                         RECONNECT_MAX_ATTEMPTS
                     _reconnectNextAtMs.value = System.currentTimeMillis() + delayMs

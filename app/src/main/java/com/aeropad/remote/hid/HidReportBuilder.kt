@@ -85,11 +85,16 @@ object HidReportBuilder {
     }
 
     /**
-     * Gamepad report layout: btnLo, btnHi, hat, lx, ly, rx, ry.
-     * Axes arrive as -1.0..1.0 floats and are mapped to unsigned 0..255
-     * centered at 128 (matches descriptor Logical 0..255).
-     * Hat: 0 = released/neutral is encoded as 0x08? No — we use 0=N..7=NW and
-     * 8 = neutral per our descriptor (Logical Max 8).
+     * Gamepad report layout (9 bytes, matches [HidDescriptors.GAMEPAD]):
+     * btnLo, btnHi, hat, lx, ly, rx, ry, lt, rt.
+     *
+     * Axes arrive as -1.0..1.0 floats and map to unsigned 0..255 centered at
+     * 128 (the descriptor declares Logical 0..255). Triggers are 0..1 → 0..255.
+     * Hat uses 0..7 for the eight directions (0 = north, clockwise) and 8 for
+     * neutral, which is why the descriptor declares Logical Max 8.
+     *
+     * The 7-byte legacy report (no triggers) is
+     * [com.aeropad.remote.hid.ReportPool.gamepadInto]`(extended = false)`.
      */
     fun gamepad(snapshot: GamepadSnapshot): ByteArray {
         val buttons = snapshot.buttons and 0xFFFF

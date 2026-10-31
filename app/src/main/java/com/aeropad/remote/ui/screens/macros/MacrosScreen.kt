@@ -26,7 +26,7 @@ import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.FiberManualRecord
 import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.PlaylistPlay
+import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
 import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.Stop
@@ -287,7 +287,7 @@ fun MacrosScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Icon(
-                            Icons.Rounded.PlaylistPlay,
+                            Icons.AutoMirrored.Rounded.PlaylistPlay,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(44.dp)

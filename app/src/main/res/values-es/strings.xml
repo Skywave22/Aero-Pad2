@@ -7,6 +7,7 @@
     <string name="notif_title">AeroPad activo</string>
     <string name="notif_text_idle">Listo para controlar tu PC</string>
     <string name="notif_action_stop">Desconectar</string>
+    <string name="notif_action_connect">Reconectar</string>
 
     <!-- App shortcuts -->
     <string name="shortcut_keyboard">Teclado</string>

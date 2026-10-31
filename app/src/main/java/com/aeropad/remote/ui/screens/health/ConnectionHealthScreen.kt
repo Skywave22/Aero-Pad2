@@ -165,9 +165,14 @@ fun ConnectionHealthScreen(
                             val nextAt by viewModel.reconnectNextAtMs.collectAsStateWithLifecycle()
                             var secondsLeft by remember { mutableStateOf(0L) }
                             LaunchedEffect(nextAt) {
-                                while (nextAt != null) {
-                                    secondsLeft = ((nextAt!! - System.currentTimeMillis()) / 1000)
-                                        .coerceAtLeast(0)
+                                // Snapshot state is re-read on every access, so
+                                // `nextAt!!` could observe null between the
+                                // loop check and its use and NPE the screen.
+                                while (true) {
+                                    val target = nextAt ?: break
+                                    secondsLeft =
+                                        ((target - System.currentTimeMillis()) / 1000)
+                                            .coerceAtLeast(0)
                                     kotlinx.coroutines.delay(1000)
                                 }
                             }

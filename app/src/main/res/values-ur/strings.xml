@@ -7,6 +7,7 @@
     <string name="notif_title">ایرو پیڈ فعال ہے</string>
     <string name="notif_text_idle">آپ کے پی سی کو کنٹرول کرنے کے لیے تیار ہے</string>
     <string name="notif_action_stop">منقطع کریں</string>
+    <string name="notif_action_connect">دوبارہ جوڑیں</string>
 
     <!-- App shortcuts -->
     <string name="shortcut_keyboard">کی بورڈ</string>

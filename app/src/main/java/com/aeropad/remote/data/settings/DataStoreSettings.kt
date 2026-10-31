@@ -104,7 +104,11 @@ class DataStoreSettings @Inject constructor(
     // Reads
     // ------------------------------------------------------------------
 
-    override val appSettings: Flow<AppSettings> = safePrefs.map { p ->
+    override val appSettings: Flow<AppSettings> = safePrefs.map { p -> appFrom(p) }
+
+    /** Preferences → AppSettings. Pure; used by both the read flow and the
+     *  in-transaction mutate path. */
+    private fun appFrom(p: androidx.datastore.preferences.core.Preferences): AppSettings =
         AppSettings(
             theme = p[Keys.THEME].toEnum(ThemeMode.SYSTEM),
             fullscreenMode = p[Keys.FULLSCREEN] ?: false,
@@ -128,9 +132,10 @@ class DataStoreSettings @Inject constructor(
             powerProfile = p[Keys.POWER_PROFILE].toEnum(PowerProfile.BALANCED),
             accentColor = p[Keys.ACCENT_COLOR] ?: "BLUE"
         )
-    }
 
-    override val mouseSettings: Flow<MouseSettings> = safePrefs.map { p ->
+    override val mouseSettings: Flow<MouseSettings> = safePrefs.map { p -> mouseFrom(p) }
+
+    private fun mouseFrom(p: androidx.datastore.preferences.core.Preferences): MouseSettings =
         MouseSettings(
             sensitivity = p[Keys.M_SENSITIVITY] ?: 75,
             scrollSpeed = p[Keys.M_SCROLL] ?: 55,
@@ -140,16 +145,18 @@ class DataStoreSettings @Inject constructor(
             penMode = p[Keys.M_PEN] ?: false,
             leftHanded = p[Keys.M_LEFT_HANDED] ?: false
         ).sanitized()
-    }
 
-    override val keyboardSettings: Flow<KeyboardSettings> = safePrefs.map { p ->
+    override val keyboardSettings: Flow<KeyboardSettings> = safePrefs.map { p -> keyboardFrom(p) }
+
+    private fun keyboardFrom(p: androidx.datastore.preferences.core.Preferences): KeyboardSettings =
         KeyboardSettings(
             showTextInputBar = p[Keys.K_TEXT_BAR] ?: true,
             keyTapDelayMs = p[Keys.K_TAP_DELAY_MS] ?: 12
         ).sanitized()
-    }
 
-    override val gamepadSettings: Flow<GamepadSettings> = safePrefs.map { p ->
+    override val gamepadSettings: Flow<GamepadSettings> = safePrefs.map { p -> gamepadFrom(p) }
+
+    private fun gamepadFrom(p: androidx.datastore.preferences.core.Preferences): GamepadSettings =
         GamepadSettings(
             mappingMode = p[Keys.G_MODE].toEnum(GamepadMappingMode.HID_GAMEPAD),
             joystickSensitivity = p[Keys.G_SENSITIVITY] ?: 70,
@@ -160,14 +167,51 @@ class DataStoreSettings @Inject constructor(
             gyroSensitivity = p[Keys.G_GYRO_SENS] ?: 50,
             tiltSensitivity = p[Keys.G_TILT_SENS] ?: 50
         ).sanitized()
-    }
 
     // ------------------------------------------------------------------
     // Writes (sanitize first, never store junk)
     // ------------------------------------------------------------------
 
+    /**
+     * Round 16 — read-modify-write INSIDE the DataStore transaction.
+     *
+     * The previous `updateApp(settings)` wrote every key from a caller-held
+     * snapshot. Two settings changed inside one DataStore round-trip (two
+     * switches tapped quickly, or a slider drag racing a toggle) both started
+     * from the same value and the second write reverted the first. Applying
+     * the transform to the freshly-read preferences makes each write
+     * linearizable.
+     */
+    override suspend fun mutateApp(transform: (AppSettings) -> AppSettings) =
+        mutateWith(toApp = ::appFrom, write = ::writeApp, transform = transform)
+
+    override suspend fun mutateMouse(transform: (MouseSettings) -> MouseSettings) =
+        mutateWith(toApp = ::mouseFrom, write = ::writeMouse, transform = transform)
+
+    override suspend fun mutateKeyboard(transform: (KeyboardSettings) -> KeyboardSettings) =
+        mutateWith(toApp = ::keyboardFrom, write = ::writeKeyboard, transform = transform)
+
+    override suspend fun mutateGamepad(transform: (GamepadSettings) -> GamepadSettings) =
+        mutateWith(toApp = ::gamepadFrom, write = ::writeGamepad, transform = transform)
+
+    private suspend fun <T> mutateWith(
+        toApp: (androidx.datastore.preferences.core.Preferences) -> T,
+        write: (androidx.datastore.preferences.core.MutablePreferences, T) -> Unit,
+        transform: (T) -> T
+    ) {
+        runCatching {
+            context.settingsDataStore.edit { prefs ->
+                write(prefs, transform(toApp(prefs)))
+            }
+        }.onFailure { Timber.e(it, "settings mutate failed") }
+    }
+
     override suspend fun updateApp(settings: AppSettings) {
-        safeEdit { p ->
+        safeEdit { p -> writeApp(p, settings) }
+    }
+
+    private fun writeApp(p: androidx.datastore.preferences.core.MutablePreferences, settings: AppSettings) {
+        run {
             p[Keys.THEME] = settings.theme.name
             p[Keys.FULLSCREEN] = settings.fullscreenMode
             p[Keys.KEEP_SCREEN_ON] = settings.keepScreenOn
@@ -193,8 +237,15 @@ class DataStoreSettings @Inject constructor(
     }
 
     override suspend fun updateMouse(settings: MouseSettings) {
+        safeEdit { p -> writeMouse(p, settings) }
+    }
+
+    private fun writeMouse(
+        p: androidx.datastore.preferences.core.MutablePreferences,
+        settings: MouseSettings
+    ) {
         val s = settings.sanitized()
-        safeEdit { p ->
+        run {
             p[Keys.M_SENSITIVITY] = s.sensitivity
             p[Keys.M_SCROLL] = s.scrollSpeed
             p[Keys.M_SMOOTHING] = s.movementSmoothing
@@ -206,16 +257,30 @@ class DataStoreSettings @Inject constructor(
     }
 
     override suspend fun updateKeyboard(settings: KeyboardSettings) {
+        safeEdit { p -> writeKeyboard(p, settings) }
+    }
+
+    private fun writeKeyboard(
+        p: androidx.datastore.preferences.core.MutablePreferences,
+        settings: KeyboardSettings
+    ) {
         val s = settings.sanitized()
-        safeEdit { p ->
+        run {
             p[Keys.K_TEXT_BAR] = s.showTextInputBar
             p[Keys.K_TAP_DELAY_MS] = s.keyTapDelayMs
         }
     }
 
     override suspend fun updateGamepad(settings: GamepadSettings) {
+        safeEdit { p -> writeGamepad(p, settings) }
+    }
+
+    private fun writeGamepad(
+        p: androidx.datastore.preferences.core.MutablePreferences,
+        settings: GamepadSettings
+    ) {
         val s = settings.sanitized()
-        safeEdit { p ->
+        run {
             p[Keys.G_MODE] = s.mappingMode.name
             p[Keys.G_SENSITIVITY] = s.joystickSensitivity
             p[Keys.G_DEADZONE] = s.deadZone
