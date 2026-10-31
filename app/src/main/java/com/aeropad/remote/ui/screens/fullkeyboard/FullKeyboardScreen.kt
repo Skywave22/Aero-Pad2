@@ -37,6 +37,8 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -57,6 +59,7 @@ import com.aeropad.remote.model.HidModifiers
 import com.aeropad.remote.model.keyboard.KeySpec
 import com.aeropad.remote.ui.components.HintBar
 import com.aeropad.remote.ui.components.NotConnectedBanner
+import com.aeropad.remote.ui.components.ScrollableChipRow
 import com.aeropad.remote.ui.components.rememberHaptic
 import com.aeropad.remote.viewmodel.FullKeyboardViewModel
 
@@ -229,6 +232,58 @@ fun FullKeyboardScreen(
                 }
             }
 
+            // ---------- Round 15: modifiers, caps and symbols ----------
+            // The board is the only screen with letters, and it had no way to
+            // produce Ctrl+/Shift+/Alt+ or any symbol. Every modifier is a
+            // latch chip here, the Caps state is drawn, and ?123 swaps in the
+            // symbol layer.
+            val mods by viewModel.modifiers.collectAsStateWithLifecycle()
+            var symbolLayer by remember { mutableStateOf(false) }
+            ScrollableChipRow(modifier = Modifier.padding(vertical = 4.dp)) {
+                com.aeropad.remote.domain.KeyboardModifierState.CHIPS.forEach { (label, bit) ->
+                    FilterChip(
+                        selected = mods.isOn(bit),
+                        onClick = { haptic(); viewModel.toggleModifier(bit) },
+                        label = {
+                            Text(if (mods.isLocked(bit)) "$label locked" else label)
+                        }
+                    )
+                }
+                // Caps lives here as well as on the keycap: the keycap is at
+                // the far left of the number row, which is a long reach in
+                // landscape, and it is the control people were hunting for.
+                FilterChip(
+                    selected = mods.capsLock,
+                    onClick = { haptic(); viewModel.toggleCaps() },
+                    label = { Text(if (mods.capsLock) "CAPS on" else "Caps") }
+                )
+                FilterChip(
+                    selected = symbolLayer,
+                    onClick = { haptic(); symbolLayer = !symbolLayer },
+                    label = { Text(if (symbolLayer) "abc" else "?123") }
+                )
+                if (mods.anyActive) {
+                    AssistChip(
+                        onClick = { haptic(); viewModel.clearModifiers() },
+                        label = { Text("Clear") }
+                    )
+                }
+            }
+            // Persistent status line: the single biggest confusion reported was
+            // "I press Caps and the letters never change".
+            Text(
+                text = when {
+                    mods.capsLock && mods.mask != 0 -> "CAPS LOCK on  •  modifier latched"
+                    mods.capsLock -> "CAPS LOCK on — letters will be capitals"
+                    mods.mask != 0 -> "Modifier latched: applies to the next key"
+                    else -> "Letters are lower case — tap Caps or Shift for capitals"
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = if (mods.anyActive) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+
             // ---------- The board ----------
             // V2 MATRIX 7 — FN active: keys with an overlay entry render
             // their FN binding's label (real what-you-see-is-what-you-send).
@@ -243,8 +298,9 @@ fun FullKeyboardScreen(
                 com.aeropad.remote.data.keyboard.OneHandedMode.RIGHT -> Alignment.End
                 else -> Alignment.CenterHorizontally
             }
-            layout.rows.forEachIndexed { rowIndex, row ->
-                if (!fullMode && rowIndex in layout.compactHiddenRows) return@forEachIndexed
+            val boardRows = if (symbolLayer) layout.symbolRows else layout.rows
+            boardRows.forEachIndexed { rowIndex, row ->
+                if (!symbolLayer && !fullMode && rowIndex in layout.compactHiddenRows) return@forEachIndexed
                 Row(
                     modifier = Modifier
                         .fillMaxWidth(boardWidthFraction)
@@ -254,15 +310,29 @@ fun FullKeyboardScreen(
                 ) {
                     row.forEach { key ->
                         val shown = layout.effectiveKey(key, fnOnBoard)
+                        // Length-1 alphabetic labels follow the real case that
+                        // will be typed, so Caps and Shift are visible on the
+                        // board itself rather than only in a settings toggle.
+                        val cased = if (!symbolLayer && key.label.length == 1 &&
+                            key.label[0].isLetter()
+                        ) {
+                            key.copy(
+                                label = if (mods.effectivelyShifted) key.label.uppercase()
+                                else key.label.lowercase()
+                            )
+                        } else key
                         KeyCap(
                             // Label/color from the effective key; width stays
                             // the BASE key's (board geometry never shifts).
-                            key = shown.copy(widthWeight = key.widthWeight),
+                            key = shown.copy(
+                                widthWeight = key.widthWeight,
+                                label = if (shown === key) cased.label else shown.label
+                            ),
                             editMode = editMode,
                             highlight = fnOnBoard && shown !== key,
                             modifier = Modifier.weight(key.widthWeight),
                             compact = compactBoard,
-                            onTap = { haptic(); viewModel.tap(key) },
+                            onTap = { haptic(); viewModel.tap(if (symbolLayer) key else cased) },
                             onLongPress = { haptic(); viewModel.longPress(key) }
                         )
                     }

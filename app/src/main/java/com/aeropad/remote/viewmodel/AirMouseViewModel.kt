@@ -54,6 +54,7 @@ class AirMouseViewModel @Inject constructor(
     val axisLock: StateFlow<AxisLock> = _axisLock.asStateFlow()
 
     private var streamJob: Job? = null
+    private var lastFlushMs = 0L
 
     fun setSensitivity(value: Int) {
         _sensitivity.value = value.coerceIn(0, 100)
@@ -79,15 +80,49 @@ class AirMouseViewModel @Inject constructor(
 
     private fun start() {
         core.recenter()
+        core.resetBias()
+        // Round 15 — gyros report at 100-400 Hz, but a Bluetooth HID link is
+        // happiest around 60 reports/s. Sending one per sample queued reports
+        // faster than the radio could drain them, which is what made the air
+        // mouse feel laggy under movement. Samples are integrated as they
+        // arrive and flushed at a steady cadence.
+        var pendingX = 0f
+        var pendingY = 0f
         streamJob = sensors.gyro()
             .onEach { sample ->
                 // Device held like a pointer: yaw = rotation about Y axis,
                 // pitch = about X axis.
-                val (dx, dy) = core.step(gyroYaw = sample.y, gyroPitch = sample.x)
-                if (dx != 0 || dy != 0) sendAction(HidAction.MouseMove(dx, dy))
+                val (dx, dy) = core.step(
+                    gyroYaw = sample.y,
+                    gyroPitch = sample.x,
+                    timestampNs = sample.timestampNs
+                )
+                pendingX += dx
+                pendingY += dy
+                val now = android.os.SystemClock.elapsedRealtime()
+                if (now - lastFlushMs >= FLUSH_INTERVAL_MS) {
+                    lastFlushMs = now
+                    val fx = pendingX.toInt()
+                    val fy = pendingY.toInt()
+                    if (fx != 0 || fy != 0) {
+                        pendingX -= fx
+                        pendingY -= fy
+                        sendAction(
+                            HidAction.MouseMove(
+                                fx.coerceIn(-127, 127),
+                                fy.coerceIn(-127, 127)
+                            )
+                        )
+                    }
+                }
             }
             .catch { /* sensor stream errors are non-fatal */ }
             .launchIn(viewModelScope)
+    }
+
+    private companion object {
+        /** ~60 reports per second is both smooth and kind to the radio. */
+        const val FLUSH_INTERVAL_MS = 16L
     }
 
     private fun stop() {
@@ -96,7 +131,16 @@ class AirMouseViewModel @Inject constructor(
     }
 
     /** Calibration: reset center point / accumulated smoothing. */
-    fun recenter() = core.recenter()
+    /**
+     * Puts the pointer back on the "front" of the phone AND relearns the gyro
+     * bias. Holding Recenter is the calibration gesture: point the phone at the
+     * screen, tap once, and the drift that built up while it lay on the sofa
+     * is gone.
+     */
+    fun recenter() {
+        core.recenter()
+        core.resetBias()
+    }
 
     fun click(button: MouseButton) = sendAction(HidAction.MouseClick(button))
 

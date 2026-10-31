@@ -66,12 +66,6 @@ data class KeyboardLayoutSpec(
      *  no FN layer (legacy layouts load identically). */
     val fnOverlay: Map<String, KeySpec> = emptyMap()
 ) {
-    companion object {
-        const val FAVORITES_MAX = 12
-        const val KEYS_PER_ROW_MAX = 20
-        const val FN_OVERLAY_MAX = 40
-    }
-
     fun sanitized(): KeyboardLayoutSpec = copy(
         rows = rows.map { row -> row.take(KEYS_PER_ROW_MAX).map { it.sanitized() } },
         favorites = favorites.take(FAVORITES_MAX).map { it.sanitized() },
@@ -85,6 +79,77 @@ data class KeyboardLayoutSpec(
     /** V2 MATRIX 7 — pure FN resolution: the key a tap should ACT as. */
     fun effectiveKey(key: KeySpec, fnActive: Boolean): KeySpec =
         if (fnActive) fnOverlay[key.id] ?: key else key
+
+    /**
+     * Round 15 — the symbol layer.
+     *
+     * Reported from a real device: "cannot enter Symbol using Keyboard". The
+     * default board had no secondary bindings at all (`secondaryKeyCode` was
+     * null on every key), so long-press did nothing, and there was no way to
+     * reach ! @ # $ % ^ & * ( ) _ + { } | : " < > ? ~ from the board.
+     *
+     * Derived rather than stored, so an upgraded install gets symbols without
+     * migrating anything, and so the layer keeps working after the user has
+     * resized or recoloured their keys.
+     */
+    val symbolRows: List<List<KeySpec>>
+        get() = SYMBOL_ROWS
+
+    companion object {
+        const val FAVORITES_MAX = 12
+        const val KEYS_PER_ROW_MAX = 20
+        const val FN_OVERLAY_MAX = 40
+
+        /** Printed symbols, in the order a US keyboard produces them. */
+        val SYMBOL_ROWS: List<List<KeySpec>> = listOf(
+            listOf(
+                symbolKey("s-tilde", "~", HidKeys.GRAVE),
+                symbolKey("s-bang", "!", HidKeys.NUM_1),
+                symbolKey("s-at", "@", HidKeys.NUM_2),
+                symbolKey("s-hash", "#", HidKeys.NUM_3),
+                symbolKey("s-dollar", "$", HidKeys.NUM_4),
+                symbolKey("s-pct", "%", HidKeys.NUM_5),
+                symbolKey("s-caret", "^", HidKeys.NUM_6),
+                symbolKey("s-amp", "&", HidKeys.NUM_7),
+                symbolKey("s-star", "*", HidKeys.NUM_8),
+                symbolKey("s-paren-l", "(", HidKeys.NUM_9),
+                symbolKey("s-paren-r", ")", HidKeys.NUM_0)
+            ),
+            listOf(
+                symbolKey("s-minus", "_", HidKeys.MINUS),
+                symbolKey("s-plus", "+", HidKeys.EQUAL),
+                symbolKey("s-lbracket", "{", HidKeys.LEFT_BRACKET),
+                symbolKey("s-rbracket", "}", HidKeys.RIGHT_BRACKET),
+                symbolKey("s-pipe", "|", HidKeys.BACKSLASH),
+                symbolKey("s-colon", ":", HidKeys.SEMICOLON),
+                symbolKey("s-quote", "\"", HidKeys.QUOTE),
+                symbolKey("s-question", "?", HidKeys.SLASH)
+            ),
+            listOf(
+                symbolKey("s-lt", "<", HidKeys.COMMA),
+                symbolKey("s-gt", ">", HidKeys.PERIOD),
+                symbolKey("s-comma", ",", HidKeys.COMMA),
+                symbolKey("s-period", ".", HidKeys.PERIOD),
+                symbolKey("s-semi", ";", HidKeys.SEMICOLON),
+                symbolKey("s-apos", "'", HidKeys.QUOTE),
+                symbolKey("s-slash", "/", HidKeys.SLASH),
+                symbolKey("s-eq", "=", HidKeys.EQUAL),
+                symbolKey("s-dash", "-", HidKeys.MINUS),
+                symbolKey("s-backslash", "\\", HidKeys.BACKSLASH),
+                symbolKey("s-bksp", "⌫", HidKeys.BACKSPACE, w = 1.6f)
+            )
+        )
+
+        /** A symbol key: always sent WITH Shift, which is how a US layout makes it. */
+        private fun symbolKey(id: String, label: String, code: Byte, w: Float = 1f) =
+            KeySpec(
+                id = id,
+                label = label,
+                keyCode = code,
+                modifiers = HidModifiers.LEFT_SHIFT,
+                widthWeight = w
+            )
+    }
 }
 
 /** Factory for the built-in boards. */
@@ -93,6 +158,23 @@ object DefaultKeyboards {
     private fun k(
         id: String, label: String, code: Byte, mods: Byte = 0, w: Float = 1f
     ) = KeySpec(id = id, label = label, keyCode = code, modifiers = mods, widthWeight = w)
+
+    /** Round 15 — a key with a long-press symbol, mirroring a US layout. */
+    private fun ks(
+        id: String,
+        label: String,
+        code: Byte,
+        sym: String,
+        symCode: Byte
+    ) = KeySpec(
+        id = id,
+        label = label,
+        keyCode = code,
+        secondaryKeyCode = symCode,
+        secondaryModifiers = HidModifiers.LEFT_SHIFT,
+        secondaryLabel = sym,
+        widthWeight = 1f
+    )
 
     /**
      * Full PC board: F-row, number row, QWERTY, modifiers, nav cluster + arrows.
@@ -112,13 +194,19 @@ object DefaultKeyboards {
             ),
             // 1: number row
             listOf(
-                k("grave", "`", HidKeys.GRAVE),
-                k("1", "1", HidKeys.NUM_1), k("2", "2", HidKeys.NUM_2),
-                k("3", "3", HidKeys.NUM_3), k("4", "4", HidKeys.NUM_4),
-                k("5", "5", HidKeys.NUM_5), k("6", "6", HidKeys.NUM_6),
-                k("7", "7", HidKeys.NUM_7), k("8", "8", HidKeys.NUM_8),
-                k("9", "9", HidKeys.NUM_9), k("0", "0", HidKeys.NUM_0),
-                k("minus", "-", HidKeys.MINUS), k("equal", "=", HidKeys.EQUAL),
+                ks("grave", "`", HidKeys.GRAVE, "~", HidKeys.GRAVE),
+                ks("1", "1", HidKeys.NUM_1, "!", HidKeys.NUM_1),
+                ks("2", "2", HidKeys.NUM_2, "@", HidKeys.NUM_2),
+                ks("3", "3", HidKeys.NUM_3, "#", HidKeys.NUM_3),
+                ks("4", "4", HidKeys.NUM_4, "$", HidKeys.NUM_4),
+                ks("5", "5", HidKeys.NUM_5, "%", HidKeys.NUM_5),
+                ks("6", "6", HidKeys.NUM_6, "^", HidKeys.NUM_6),
+                ks("7", "7", HidKeys.NUM_7, "&", HidKeys.NUM_7),
+                ks("8", "8", HidKeys.NUM_8, "*", HidKeys.NUM_8),
+                ks("9", "9", HidKeys.NUM_9, "(", HidKeys.NUM_9),
+                ks("0", "0", HidKeys.NUM_0, ")", HidKeys.NUM_0),
+                ks("minus", "-", HidKeys.MINUS, "_", HidKeys.MINUS),
+                ks("equal", "=", HidKeys.EQUAL, "+", HidKeys.EQUAL),
                 k("bksp", "⌫", HidKeys.BACKSPACE, w = 1.8f)
             ),
             // 2: QWERTY
@@ -128,8 +216,14 @@ object DefaultKeyboards {
                 k("r", "R", HidKeys.R), k("t", "T", HidKeys.T), k("y", "Y", HidKeys.Y),
                 k("u", "U", HidKeys.U), k("i", "I", HidKeys.I), k("o", "O", HidKeys.O),
                 k("p", "P", HidKeys.P),
-                k("lbr", "[", HidKeys.LEFT_BRACKET), k("rbr", "]", HidKeys.RIGHT_BRACKET),
-                k("bslash", "\\", HidKeys.BACKSLASH, w = 1.3f)
+                ks("lbr", "[", HidKeys.LEFT_BRACKET, "{", HidKeys.LEFT_BRACKET),
+                ks("rbr", "]", HidKeys.RIGHT_BRACKET, "}", HidKeys.RIGHT_BRACKET),
+                KeySpec(
+                    id = "bslash", label = "\\", keyCode = HidKeys.BACKSLASH,
+                    secondaryKeyCode = HidKeys.BACKSLASH,
+                    secondaryModifiers = HidModifiers.LEFT_SHIFT,
+                    secondaryLabel = "|", widthWeight = 1.3f
+                )
             ),
             // 3: home row
             listOf(
@@ -137,7 +231,8 @@ object DefaultKeyboards {
                 k("a", "A", HidKeys.A), k("s", "S", HidKeys.S), k("d", "D", HidKeys.D),
                 k("f", "F", HidKeys.F), k("g", "G", HidKeys.G), k("h", "H", HidKeys.H),
                 k("j", "J", HidKeys.J), k("k", "K", HidKeys.K), k("l", "L", HidKeys.L),
-                k("semi", ";", HidKeys.SEMICOLON), k("quote", "'", HidKeys.QUOTE),
+                ks("semi", ";", HidKeys.SEMICOLON, ":", HidKeys.SEMICOLON),
+                ks("quote", "'", HidKeys.QUOTE, "\"", HidKeys.QUOTE),
                 k("enter", "Enter ⏎", HidKeys.ENTER, w = 2.1f)
             ),
             // 4: shift row
@@ -146,8 +241,9 @@ object DefaultKeyboards {
                 k("z", "Z", HidKeys.Z), k("x", "X", HidKeys.X), k("c", "C", HidKeys.C),
                 k("v", "V", HidKeys.V), k("b", "B", HidKeys.B), k("n", "N", HidKeys.N),
                 k("m", "M", HidKeys.M),
-                k("comma", ",", HidKeys.COMMA), k("period", ".", HidKeys.PERIOD),
-                k("slash", "/", HidKeys.SLASH),
+                ks("comma", ",", HidKeys.COMMA, "<", HidKeys.COMMA),
+                ks("period", ".", HidKeys.PERIOD, ">", HidKeys.PERIOD),
+                ks("slash", "/", HidKeys.SLASH, "?", HidKeys.SLASH),
                 KeySpec("rshift", "Shift", HidKeys.NONE, HidModifiers.RIGHT_SHIFT, widthWeight = 2.3f)
             ),
             // 5: bottom modifiers

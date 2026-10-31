@@ -26,6 +26,7 @@ import javax.inject.Inject
 @HiltViewModel
 class FullKeyboardViewModel @Inject constructor(
     private val store: KeyboardLayoutStore,
+    private val keyboardModifiers: com.aeropad.remote.domain.KeyboardModifierState,
     observeConnection: ObserveConnectionUseCase,
     private val sendAction: SendHidActionUseCase
 ) : ViewModel() {
@@ -79,27 +80,84 @@ class FullKeyboardViewModel @Inject constructor(
     // Input
     // ------------------------------------------------------------------
 
+    /** Latch/caps state for the board UI. */
+    val modifiers: kotlinx.coroutines.flow.StateFlow<
+        com.aeropad.remote.domain.KeyboardModifierState.Ui
+        > = keyboardModifiers.state
+
+    fun toggleModifier(mod: Byte) = keyboardModifiers.toggle(mod)
+    fun clearModifiers() = keyboardModifiers.clear()
+    fun toggleCaps() = keyboardModifiers.toggleCaps()
+
+    /**
+     * Round 15 — a modifier key on the board (Ctrl/Shift/Alt/Win have
+     * `keyCode == NONE` and a modifier bit) now LATCHES instead of tapping.
+     *
+     * It used to send `KeyTap(NONE, SHIFT)`: modifier down and released inside
+     * the same ~8 ms, so the host never saw a held modifier and Ctrl+ / Shift+ /
+     * Alt+ could not be produced from this board at all. Likewise Caps Lock now
+     * toggles a tracked state so the letters can show the case you will get.
+     */
     fun tap(key: KeySpec) {
         // V2 M7 — resolve through the FN overlay first (pure, unit-tested).
         val effective = layout.value.effectiveKey(key, _fnActive.value)
-        // V2 M7 b2 — binding priority: media usage > typeText > keycode.
         val usage = effective.consumerUsage
         val text = effective.typeText
+
+        // A bare modifier key: latch it.
+        if (usage == null && text.isNullOrEmpty() &&
+            effective.keyCode == com.aeropad.remote.model.HidKeys.NONE &&
+            effective.modifiers.toInt() != 0
+        ) {
+            keyboardModifiers.toggle(effective.modifiers)
+            return
+        }
+
+        // Caps: a local case switch, deliberately NOT the host's CAPS_LOCK.
+        //
+        // The host's caps state is unknowable from here: if it was already on
+        // (set on the host's own keyboard before pairing), sending CAPS_LOCK
+        // would turn it OFF while the board showed capitals — the exact
+        // "letters never change" confusion that was reported. Keeping the
+        // decision local means the board always draws the case you get: with
+        // Caps on, letter keys carry Shift; symbol and number keys do not.
+        if (usage == null && text.isNullOrEmpty() &&
+            effective.keyCode == com.aeropad.remote.model.HidKeys.CAPS_LOCK
+        ) {
+            keyboardModifiers.toggleCaps()
+            return
+        }
+
+        val latch = keyboardModifiers.mask
+        val isLetter = effective.label.length == 1 && effective.label[0].isLetter()
+        val capsShift = if (keyboardModifiers.capsLock && isLetter)
+            com.aeropad.remote.model.HidModifiers.LEFT_SHIFT.toInt() else 0
         when {
             usage != null -> sendAction(HidAction.MediaTap(usage))
             !text.isNullOrEmpty() -> sendAction(HidAction.TypeText(text))
-            else -> sendAction(HidAction.KeyTap(effective.keyCode, effective.modifiers))
+            else -> sendAction(
+                HidAction.KeyTap(
+                    effective.keyCode,
+                    ((effective.modifiers.toInt() or latch or capsShift) and 0xFF).toByte()
+                )
+            )
         }
+        if (latch != 0) keyboardModifiers.consume()
     }
 
-    /** Long-press: secondary function if bound; otherwise nothing. */
     fun longPress(key: KeySpec) {
         if (_editMode.value) {
             _editingKey.value = key
             return
         }
         val secondary = key.secondaryKeyCode ?: return
-        sendAction(HidAction.KeyTap(secondary, key.secondaryModifiers))
+        sendAction(
+            HidAction.KeyTap(
+                secondary,
+                ((key.secondaryModifiers.toInt() or keyboardModifiers.mask) and 0xFF).toByte()
+            )
+        )
+        if (keyboardModifiers.mask != 0) keyboardModifiers.consume()
     }
 
     // ------------------------------------------------------------------

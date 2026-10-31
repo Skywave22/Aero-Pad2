@@ -114,40 +114,30 @@ fun KeyboardScreen(
             NotConnectedBanner(!isConnected)
 
             // ---------- Text input bar ----------
+            // Round 15 — this was an OutlinedTextField plus a Send button: the
+            // phone keyboard never opened by itself and nothing reached the
+            // host until Send was pressed, so a TV search box or dialog could
+            // not be filled in. It streams every keystroke now (see
+            // PhoneKeyboardRelay) and still keeps a one-shot path for long
+            // strings, which is cheaper over HID than 200 keystrokes.
             if (keyboardSettings.showTextInputBar) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    OutlinedTextField(
-                        value = text,
-                        onValueChange = { text = it },
-                        modifier = Modifier.weight(1f),
-                        placeholder = { Text("Type here, send to PC…") },
-                        singleLine = true
-                    )
-                    // ADV S4 — voice-to-text entry point.
-                    IconButton(onClick = { showVoiceSheet = true }) {
-                        Icon(
-                            Icons.Rounded.Mic,
-                            contentDescription = "Voice input",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    IconButton(onClick = {
-                        haptic()
-                        viewModel.typeText(text)
-                        text = ""
-                    }) {
-                        Icon(
-                            Icons.AutoMirrored.Rounded.Send,
-                            contentDescription = "Send text",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
+                var autoOpen by remember { mutableStateOf(false) }
+                com.aeropad.remote.ui.components.PhoneKeyboardRelay(
+                    onType = { chunk -> viewModel.typeLive(chunk) },
+                    onBackspace = { viewModel.keyTap(HidKeys.BACKSPACE) },
+                    onEnter = { viewModel.keyTap(HidKeys.ENTER) },
+                    autoFocus = autoOpen
+                )
+                AssistChip(
+                    onClick = { haptic(); autoOpen = true },
+                    label = { Text("Open phone keyboard") },
+                    modifier = Modifier.padding(top = 4.dp)
+                )
                 // AEROPAD v1.0 #12 — sent-text history (tap to resend).
                 run {
                     val history by viewModel.sentHistory.collectAsStateWithLifecycle()
                     if (history.isNotEmpty()) {
-ScrollableChipRow {
+                        ScrollableChipRow {
                             history.forEach { item ->
                                 AssistChip(
                                     onClick = { haptic(); viewModel.typeText(item) },
@@ -237,7 +227,7 @@ ScrollableChipRow {
                             onClick = { haptic(); viewModel.toggleStickyModifier(mod) },
                             label = {
                                 Text(
-                                    if (stickyState.isLockedFor(mod)) "$label 🔒" else label
+                                    if (stickyState.isLocked(mod)) "$label 🔒" else label
                                 )
                             }
                         )

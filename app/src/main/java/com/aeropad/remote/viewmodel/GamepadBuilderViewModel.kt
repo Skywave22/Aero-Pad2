@@ -261,7 +261,7 @@ class GamepadBuilderViewModel @Inject constructor(
         motionCore.recenter(); aimX = 0f; aimY = 0f
         motionJob = sensors.gyro()
             .onEach { sample ->
-                val (dx, dy) = motionCore.step(gyroYaw = sample.y, gyroPitch = sample.x)
+                val (dx, dy) = motionCore.step(gyroYaw = sample.y, gyroPitch = sample.x, timestampNs = sample.timestampNs)
                 if (dx == 0 && dy == 0) return@onEach
                 // Integrate pixel-ish deltas into a -1..1 aim vector with decay.
                 aimX = (aimX + dx / 90f).coerceIn(-1f, 1f)

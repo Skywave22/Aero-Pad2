@@ -123,6 +123,7 @@ class RemoteControlViewModelConstructionTest {
         store = FakeStore()
         store.gamepad.value = GamepadSettings(mappingMode = gamepadMode)
         return RemoteControlViewModel(
+            keyboardModifiers = com.aeropad.remote.domain.KeyboardModifierState(),
             observeConnection = ObserveConnectionUseCase(controller),
             sendAction = SendHidActionUseCase(controller, MacroRecorder()),
             settingsStore = store,
