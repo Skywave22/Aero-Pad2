@@ -164,7 +164,10 @@ jobs:
           # fail here, not after users have installed an APK that cannot be
           # updated over the old one.
           EXPECTED="57D00E93A6358366D5FEC0EE97A37DC07E6417D9A9BE8F744FA51B189EA49CDB"
-          ACTUAL=$(echo "$FP" | grep -oE '[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){31}' | tr -d ':' | tr 'a-f' 'A-F')
+          # apksigner prints lowercase hex with no separators in current
+          # build-tools, older ones print uppercase colon-separated. Take the
+          # last field of the line and normalise both shapes.
+          ACTUAL=$(echo "$FP" | sed 's/.*digest:[[:space:]]*//' | tr -d ':[:space:]' | tr 'a-f' 'A-F')
           if [ "$ACTUAL" != "$EXPECTED" ]; then
             echo "::error title=Wrong signing certificate::Expected $EXPECTED, got ${ACTUAL:-none}"
             echo "## :x: Wrong signing certificate" >> "$GITHUB_STEP_SUMMARY"
