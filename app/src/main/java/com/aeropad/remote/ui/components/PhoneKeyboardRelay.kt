@@ -63,7 +63,7 @@ fun PhoneKeyboardRelay(
     onBackspace: () -> Unit,
     onEnter: () -> Unit,
     modifier: Modifier = Modifier,
-    placeholder: String = "Type here — it goes to your PC as you type",
+    placeholder: String = "Type here — goes to your PC",
     autoFocus: Boolean = false
 ) {
     var text by remember { mutableStateOf("") }

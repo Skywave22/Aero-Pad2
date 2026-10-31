@@ -217,7 +217,9 @@ fun FullKeyboardScreen(
                 }
             }
 
-            NotConnectedBanner(!isConnected)
+            // Landscape already carries the connection state in the header, and
+            // a 44 dp banner is a whole key row there.
+            if (!landscape) NotConnectedBanner(!isConnected)
 
             // Round 11 — in landscape a phone window is only ~190 dp tall and
             // the board needs every one of those dp for keys: the hint bar cost
@@ -451,13 +453,14 @@ private fun ModifierChips(
     onSymbols: () -> Unit,
     onClear: () -> Unit
 ) {
-    com.aeropad.remote.domain.KeyboardModifierState.CHIPS.forEach { (label, bit) ->
-        FilterChip(
-            selected = mods.isOn(bit),
-            onClick = { onToggleModifier(bit) },
-            label = { Text(if (mods.isLocked(bit)) "$label locked" else label) }
-        )
-    }
+    // Order matters: this row scrolls on a 360 dp phone, so the two controls
+    // people reach for most — the symbol layer and Caps — come first and are
+    // always on screen. The four latches follow.
+    FilterChip(
+        selected = symbolLayer,
+        onClick = onSymbols,
+        label = { Text(if (symbolLayer) "abc" else "?123") }
+    )
     // Caps lives here as well as on the keycap: the keycap sits at the far
     // left of the number row, and hunting for it was the reported problem.
     FilterChip(
@@ -465,11 +468,13 @@ private fun ModifierChips(
         onClick = onCaps,
         label = { Text(if (mods.capsLock) "CAPS on" else "Caps") }
     )
-    FilterChip(
-        selected = symbolLayer,
-        onClick = onSymbols,
-        label = { Text(if (symbolLayer) "abc" else "?123") }
-    )
+    com.aeropad.remote.domain.KeyboardModifierState.CHIPS.forEach { (label, bit) ->
+        FilterChip(
+            selected = mods.isOn(bit),
+            onClick = { onToggleModifier(bit) },
+            label = { Text(if (mods.isLocked(bit)) "$label locked" else label) }
+        )
+    }
     if (mods.anyActive) {
         AssistChip(onClick = onClear, label = { Text("Clear") })
     }
