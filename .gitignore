@@ -22,24 +22,15 @@ keystore.properties
 /keys/
 
 # ---------------------------------------------------------------------------
-# Round 13 — DELIBERATE exception: the AeroPad release key lives in the repo.
+# Round 17 — the release key is a repository SECRET, not a file here.
 #
-# Why: the GitHub secrets that used to hold it were removed after v3.5.0, so
-# every v3.6.0 build silently fell back to the Android DEBUG key and could not
-# be installed over an existing install. The token available to fix this cannot
-# write repository secrets, so the key ships with the build instead.
-#
-# This is a trade-off, not best practice: **this repository is public**, so
-# anyone holding this key can sign an APK claiming to be AeroPad. Install
-# AeroPad only from this repository's Releases page. To move the key back into
-# secrets, run `tools/release-signing.sh --keystore keys/release/aeropad-release.p12`
-# and then delete the files below — the build prefers secrets when they exist.
-# See keys/release/README.md and docs/SIGNING.md.
+# Rounds 13–16 kept it committed at keys/release/ because CI had no secret
+# access. That was a hole in a public repository: anyone could sign an APK
+# claiming to be AeroPad. The key now lives in repository secrets
+# (KEYSTORE_B64 / KEYSTORE_PASS / KEY_ALIAS / KEY_PASS) and the workflow
+# fails instead of falling back to the debug key. Nothing under /keys/ is
+# whitelisted any more — see docs/SIGNING.md.
 # ---------------------------------------------------------------------------
-!/keys/
-!/keys/release/
-!/keys/release/aeropad-release.p12
-!/keys/release/keystore.properties
 
 # Misc
 captures/

@@ -104,3 +104,47 @@ Back up the new keystore and password somewhere you will still have them in
   `release` or `debug`.
 - **Publication gated on the certificate check**, so a debug build can never
   reach the Releases page.
+
+---
+
+## Round 17 — the key is back in repository secrets (the committed copy is gone)
+
+From Round 17 the release keystore is **not in the repository**. It lives in
+four repository secrets and the workflow refuses to build without them:
+
+| Secret | Value |
+| --- | --- |
+| `KEYSTORE_B64` | `base64 -w0 aeropad-release.p12` |
+| `KEYSTORE_PASS` | store password |
+| `KEY_ALIAS` | `AEROPAD` |
+| `KEY_PASS` | key password |
+
+The APK is signed with this certificate, and **CI fails the run** if a build
+comes out with any other one:
+
+```
+Owner: CN=AeroPad, OU=Mobile, O=Skywave22, L=Bahawalpur, ST=Punjab, C=PK
+SHA-256: 57:D0:0E:93:A6:35:83:66:D5:FE:C0:EE:97:A3:7D:C0:7E:64:17:D9:A9:BE:8F:74:4F:A5:1B:18:9E:A4:9C:DB
+Valid until 2054, RSA 4096, alias AEROPAD
+```
+
+Note this is *not* the v3.4.0/v3.5.0 certificate above (`E9:65:…`). That key was
+lost, so it was regenerated in Round 13; every build from Round 13 onwards is
+signed with `57:D0:…`, which is why one uninstall was required when moving from
+v3.5.0. From v3.6.0 onward the certificate is stable and pinned in CI.
+
+**Rules that now hold:**
+
+1. No keystore, no `.jks`, no `.p12` and no `keystore.properties` is tracked by
+   git (`.gitignore` blocks all four, and nothing under `/keys/` is whitelisted).
+2. `./gradlew assembleRelease` reads `RELEASE_KEYSTORE_FILE`,
+   `RELEASE_KEYSTORE_PASSWORD`, `RELEASE_KEY_ALIAS`, `RELEASE_KEY_PASSWORD` from
+   the environment (or from Gradle properties for a local build).
+3. With `REQUIRE_RELEASE_SIGNING=1` — which CI always sets — a missing key is a
+   hard build failure, not a debug-signed APK.
+4. After packaging, CI reads the certificate out of the APK and compares it with
+   `57:D0:0E:…:9C:DB`. Anything else fails the job before publication.
+
+**Keeping a backup:** without this keystore you cannot ship an update to an
+existing install, ever. Keep an offline copy (password manager + a file) of
+`aeropad-release.p12` and its two passwords.

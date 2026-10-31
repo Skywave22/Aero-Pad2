@@ -66,65 +66,64 @@ jobs:
       # nobody noticed. Now the run says so loudly, in the annotation and the
       # job summary, instead of producing a quietly unusable "release".
       # ------------------------------------------------------------------
-      - name: Check release signing
+      # ------------------------------------------------------------------
+      # Round 17 — the release key lives ONLY in repository secrets.
+      #
+      # The keystore used to be committed at keys/release/ because CI had no
+      # secret access. In a public repository that means anyone can sign an
+      # APK that claims to be AeroPad. It is now a repository secret:
+      #   KEYSTORE_B64  base64 of aeropad-release.p12
+      #   KEYSTORE_PASS store password
+      #   KEY_ALIAS     AEROPAD
+      #   KEY_PASS      key password
+      #
+      # There is no silent fallback any more. If the secrets are missing the
+      # job stops here rather than publishing a debug-signed "release".
+      # ------------------------------------------------------------------
+      - name: Load release signing key
         env:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
           KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASS: ${{ secrets.KEY_PASS }}
         run: |
-          # Explicit ifs, not `[ -z ] && ...`: Actions runs bash with -e, so a
-          # false test as the last command of an && list fails the step.
           MISSING=""
           if [ -z "$KEYSTORE_B64" ]; then MISSING="$MISSING KEYSTORE_B64"; fi
           if [ -z "$KEYSTORE_PASS" ]; then MISSING="$MISSING KEYSTORE_PASS"; fi
           if [ -z "$KEY_ALIAS" ]; then MISSING="$MISSING KEY_ALIAS"; fi
           if [ -z "$KEY_PASS" ]; then MISSING="$MISSING KEY_PASS"; fi
-
-          # A key committed to the repo (keys/release/) also counts as signing
-          # material — see keys/release/README.md. Secrets win when present so
-          # the key can be rotated out of the repo later without touching CI.
-          if [ -f keys/release/keystore.properties ]; then
-            echo "Repo keystore found at keys/release/ (secrets, if any, take priority)."
-            HAVE_REPO_KEY=yes
-          else
-            HAVE_REPO_KEY=no
-          fi
-
-          if [ -n "$MISSING" ] && [ "$HAVE_REPO_KEY" = "no" ]; then
-            echo "::error title=Release signing is NOT configured::Missing repository secrets:$MISSING. This build will be DEBUG-signed, cannot be installed over an existing AeroPad install, and will NOT be published. See docs/SIGNING.md."
+          if [ -n "$MISSING" ]; then
+            echo "::error title=Release signing is NOT configured::Missing repository secrets:$MISSING"
             {
-              echo "## :warning: Release signing is NOT configured"
+              echo "## :x: Release signing is not configured"
               echo ""
               echo "Missing secrets: \`$MISSING\`"
               echo ""
-              echo "This run produces a **DEBUG-signed** APK. It cannot be installed"
-              echo "over an existing AeroPad install and is not published as a release."
-              echo "See \`docs/SIGNING.md\`."
+              echo "The build refuses to run: a debug-signed APK cannot be"
+              echo "installed over an existing AeroPad install, and publishing"
+              echo "one would break every user who updates."
             } >> "$GITHUB_STEP_SUMMARY"
-            echo "SIGNED=false" >> "$GITHUB_ENV"
-          elif [ "$HAVE_REPO_KEY" = "yes" ] && [ -n "$MISSING" ]; then
-            echo "## :white_check_mark: Release keystore present (committed at keys/release/)" >> "$GITHUB_STEP_SUMMARY"
-            echo "SIGNED=true" >> "$GITHUB_ENV"
-            echo "KEY_SOURCE=repo" >> "$GITHUB_ENV"
-          else
-            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/aeropad-release.p12"
-            echo "RELEASE_KEYSTORE_FILE=$RUNNER_TEMP/aeropad-release.p12" >> "$GITHUB_ENV"
-            echo "RELEASE_KEYSTORE_PASSWORD=$KEYSTORE_PASS" >> "$GITHUB_ENV"
-            echo "RELEASE_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
-            echo "RELEASE_KEY_PASSWORD=$KEY_PASS" >> "$GITHUB_ENV"
-            echo "SIGNED=true" >> "$GITHUB_ENV"
-            echo "## :white_check_mark: Release keystore present (repository secrets)" >> "$GITHUB_STEP_SUMMARY"
-            echo "KEY_SOURCE=secrets" >> "$GITHUB_ENV"
+            exit 1
           fi
+          umask 077
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/aeropad-release.p12"
+          # Prove the decoded key is the AeroPad key before trusting it.
+          KEY_SHA=$(sha256sum "$RUNNER_TEMP/aeropad-release.p12" | cut -d' ' -f1)
+          echo "RELEASE_KEYSTORE_FILE=$RUNNER_TEMP/aeropad-release.p12" >> "$GITHUB_ENV"
+          echo "RELEASE_KEYSTORE_PASSWORD=$KEYSTORE_PASS" >> "$GITHUB_ENV"
+          echo "RELEASE_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "RELEASE_KEY_PASSWORD=$KEY_PASS" >> "$GITHUB_ENV"
+          echo "SIGNED=true" >> "$GITHUB_ENV"
+          echo "KEY_SOURCE=secrets" >> "$GITHUB_ENV"
+          {
+            echo "## :white_check_mark: Release keystore loaded from repository secrets"
+            echo ""
+            echo "Keystore SHA-256: \`$KEY_SHA\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Assemble release
+      - name: Assemble release (release-signed, no debug fallback)
         run: |
-          # When the keystore is present the debug fallback is a hard error,
-          # so a "signed" build can never quietly degrade.
-          if [ "$SIGNED" = "true" ]; then
-            export REQUIRE_RELEASE_SIGNING=1
-          fi
+          export REQUIRE_RELEASE_SIGNING=1
           ./gradlew assembleRelease
 
       # ------------------------------------------------------------------
@@ -160,6 +159,20 @@ jobs:
             echo "::error::Release APK is not signed at all."
             exit 1
           fi
+
+          # Round 17 — pin the AeroPad certificate. A wrong or rotated key must
+          # fail here, not after users have installed an APK that cannot be
+          # updated over the old one.
+          EXPECTED="57D00E93A6358366D5FEC0EE97A37DC07E6417D9A9BE8F744FA51B189EA49CDB"
+          ACTUAL=$(echo "$FP" | grep -oE '[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){31}' | tr -d ':' | tr 'a-f' 'A-F')
+          if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "::error title=Wrong signing certificate::Expected $EXPECTED, got ${ACTUAL:-none}"
+            echo "## :x: Wrong signing certificate" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "Expected \`$EXPECTED\`, got \`${ACTUAL:-none}\`." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "Pinned certificate verified: $ACTUAL"
 
       # Round 13 — a debug-signed build must not be mistakable for a release.
       # Asset names match the v3.4.0 wording (AeroPad-v<ver>-release.apk).
