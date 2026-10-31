@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardActions
@@ -62,7 +63,7 @@ fun PhoneKeyboardRelay(
     onBackspace: () -> Unit,
     onEnter: () -> Unit,
     modifier: Modifier = Modifier,
-    placeholder: String = "Type with your phone keyboard…",
+    placeholder: String = "Type here — it goes to your PC as you type",
     autoFocus: Boolean = false
 ) {
     var text by remember { mutableStateOf("") }
@@ -127,22 +128,14 @@ fun PhoneKeyboardRelay(
                 Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = "Send Enter to the host")
             }
         }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                "Live: every character above goes to the host as you type.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(Modifier.width(4.dp))
-            TextButton(onClick = { keyboard?.show() }) {
-                Icon(Icons.Rounded.Keyboard, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(4.dp))
-                Text("Keyboard")
-            }
-        }
+        // One short line, no button: the "Open phone keyboard" chip below the
+        // field already raises the IME, and a second control here made the
+        // block taller than the keyboard it belongs to.
+        Text(
+            "Live — each character reaches the host as you type.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+        )
     }
 }

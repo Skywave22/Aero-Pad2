@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -81,10 +82,55 @@ fun FullKeyboardScreen(
     val editingKey by viewModel.editingKey.collectAsStateWithLifecycle()
     val haptic = rememberHaptic(true)
 
+    // Round 15 — landscape is the orientation people actually type in with the
+    // phone propped on a stand, and the board did not fit: five rows of ~56 dp
+    // under an app bar, a mode row, a banner, a favourites row, a modifier row
+    // and a status line left room for two and a half rows, so the rest of the
+    // keyboard was below the fold. Landscape now draws one slim header, ONE
+    // chip row, and then shares every remaining dp between the key rows.
+    val landscape = com.aeropad.remote.ui.components.isLandscape()
+    val mods by viewModel.modifiers.collectAsStateWithLifecycle()
+    var symbolLayer by remember { mutableStateOf(false) }
+
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
-            TopAppBar(
+            if (landscape) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp)
+                        .padding(horizontal = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                    }
+                    Text(
+                        "Full Keyboard",
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (!isConnected) {
+                        Text(
+                            "• Not connected",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                    IconButton(
+                        onClick = { viewModel.toggleEditMode() },
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            Icons.Rounded.Edit,
+                            contentDescription = "Edit keys",
+                            tint = if (editMode) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            } else TopAppBar(
                 title = { Text("Full Keyboard") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -110,13 +156,13 @@ fun FullKeyboardScreen(
             )
         }
     ) { padding ->
-        val compactBoard = com.aeropad.remote.ui.components.isLandscape()
+        val compactBoard = landscape
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 8.dp)
-                .verticalScroll(rememberScrollState())
+                .then(if (landscape) Modifier else Modifier.verticalScroll(rememberScrollState()))
         ) {
             // Round 14 — mode switches moved here from the crowded app bar,
             // which had squeezed the title down to "FN".
@@ -124,7 +170,7 @@ fun FullKeyboardScreen(
                 val fnOn by viewModel.fnActive.collectAsStateWithLifecycle()
                 val oneHand by viewModel.oneHanded.collectAsStateWithLifecycle()
                 com.aeropad.remote.ui.components.ScrollableChipRow(
-                    modifier = Modifier.padding(vertical = 4.dp)
+                    modifier = Modifier.padding(vertical = if (landscape) 2.dp else 4.dp)
                 ) {
                     if (layout.fnOverlay.isNotEmpty()) {
                         FilterChip(
@@ -156,10 +202,23 @@ fun FullKeyboardScreen(
                             )
                         }
                     )
+                    // Landscape: the modifiers travel in this same row, because
+                    // a second chip row costs a whole key row of height.
+                    if (landscape) {
+                        ModifierChips(
+                            mods = mods,
+                            symbolLayer = symbolLayer,
+                            onToggleModifier = { haptic(); viewModel.toggleModifier(it) },
+                            onCaps = { haptic(); viewModel.toggleCaps() },
+                            onSymbols = { haptic(); symbolLayer = !symbolLayer },
+                            onClear = { haptic(); viewModel.clearModifiers() }
+                        )
+                    }
                 }
             }
 
             NotConnectedBanner(!isConnected)
+
             // Round 11 — in landscape a phone window is only ~190 dp tall and
             // the board needs every one of those dp for keys: the hint bar cost
             // a whole row of them, which is why only two key rows were visible
@@ -177,7 +236,9 @@ fun FullKeyboardScreen(
             }
 
             // ---------- Favorites row ----------
-            if (layout.favorites.isNotEmpty()) {
+            // Landscape needs the dp for keys; Copy/Paste/Undo are one tap away
+            // in portrait and in the Text & Clips screen.
+            if (layout.favorites.isNotEmpty() && !landscape) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -237,41 +298,10 @@ fun FullKeyboardScreen(
             // produce Ctrl+/Shift+/Alt+ or any symbol. Every modifier is a
             // latch chip here, the Caps state is drawn, and ?123 swaps in the
             // symbol layer.
-            val mods by viewModel.modifiers.collectAsStateWithLifecycle()
-            var symbolLayer by remember { mutableStateOf(false) }
-            ScrollableChipRow(modifier = Modifier.padding(vertical = 4.dp)) {
-                com.aeropad.remote.domain.KeyboardModifierState.CHIPS.forEach { (label, bit) ->
-                    FilterChip(
-                        selected = mods.isOn(bit),
-                        onClick = { haptic(); viewModel.toggleModifier(bit) },
-                        label = {
-                            Text(if (mods.isLocked(bit)) "$label locked" else label)
-                        }
-                    )
-                }
-                // Caps lives here as well as on the keycap: the keycap is at
-                // the far left of the number row, which is a long reach in
-                // landscape, and it is the control people were hunting for.
-                FilterChip(
-                    selected = mods.capsLock,
-                    onClick = { haptic(); viewModel.toggleCaps() },
-                    label = { Text(if (mods.capsLock) "CAPS on" else "Caps") }
-                )
-                FilterChip(
-                    selected = symbolLayer,
-                    onClick = { haptic(); symbolLayer = !symbolLayer },
-                    label = { Text(if (symbolLayer) "abc" else "?123") }
-                )
-                if (mods.anyActive) {
-                    AssistChip(
-                        onClick = { haptic(); viewModel.clearModifiers() },
-                        label = { Text("Clear") }
-                    )
-                }
-            }
-            // Persistent status line: the single biggest confusion reported was
-            // "I press Caps and the letters never change".
-            Text(
+            // The status line sits directly above the modifier row: it is the
+            // answer to "I pressed Caps and nothing changed", so it has to be
+            // next to the control that changes it.
+            if (!landscape) Text(
                 text = when {
                     mods.capsLock && mods.mask != 0 -> "CAPS LOCK on  •  modifier latched"
                     mods.capsLock -> "CAPS LOCK on — letters will be capitals"
@@ -280,9 +310,18 @@ fun FullKeyboardScreen(
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = if (mods.anyActive) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 4.dp)
+                else MaterialTheme.colorScheme.onSurfaceVariant
             )
+            if (!landscape) ScrollableChipRow(modifier = Modifier.padding(bottom = 4.dp)) {
+                ModifierChips(
+                    mods = mods,
+                    symbolLayer = symbolLayer,
+                    onToggleModifier = { haptic(); viewModel.toggleModifier(it) },
+                    onCaps = { haptic(); viewModel.toggleCaps() },
+                    onSymbols = { haptic(); symbolLayer = !symbolLayer },
+                    onClear = { haptic(); viewModel.clearModifiers() }
+                )
+            }
 
             // ---------- The board ----------
             // V2 MATRIX 7 — FN active: keys with an overlay entry render
@@ -305,6 +344,7 @@ fun FullKeyboardScreen(
                     modifier = Modifier
                         .fillMaxWidth(boardWidthFraction)
                         .align(boardAlign)
+                        .then(if (landscape) Modifier.weight(1f) else Modifier)
                         .padding(vertical = if (compactBoard) 1.dp else 2.dp),
                     horizontalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
@@ -330,18 +370,21 @@ fun FullKeyboardScreen(
                             ),
                             editMode = editMode,
                             highlight = fnOnBoard && shown !== key,
-                            modifier = Modifier.weight(key.widthWeight),
+                            modifier = Modifier
+                                .weight(key.widthWeight)
+                                .then(if (landscape) Modifier.fillMaxHeight() else Modifier),
                             compact = compactBoard,
+                            stretch = landscape,
                             onTap = { haptic(); viewModel.tap(if (symbolLayer) key else cased) },
                             onLongPress = { haptic(); viewModel.longPress(key) }
                         )
                     }
                 }
             }
-            Spacer(Modifier.height(10.dp))
-
             // STITCH REDESIGN — live status strip (REAL measured values).
-            run {
+            // Portrait only: the same numbers live in Connection Health.
+            if (!landscape) run {
+                Spacer(Modifier.height(10.dp))
                 val healthVm: com.aeropad.remote.viewmodel.ConnectionHealthViewModel =
                     androidx.hilt.navigation.compose.hiltViewModel()
                 val snap by healthVm.snapshot.collectAsStateWithLifecycle()
@@ -395,6 +438,43 @@ fun FullKeyboardScreen(
 
 // ----------------------------------------------------------------------
 
+/**
+ * Round 15 — the modifier / caps / symbol controls, in one place so the
+ * portrait and landscape layouts cannot drift apart again.
+ */
+@Composable
+private fun ModifierChips(
+    mods: com.aeropad.remote.domain.KeyboardModifierState.Ui,
+    symbolLayer: Boolean,
+    onToggleModifier: (Byte) -> Unit,
+    onCaps: () -> Unit,
+    onSymbols: () -> Unit,
+    onClear: () -> Unit
+) {
+    com.aeropad.remote.domain.KeyboardModifierState.CHIPS.forEach { (label, bit) ->
+        FilterChip(
+            selected = mods.isOn(bit),
+            onClick = { onToggleModifier(bit) },
+            label = { Text(if (mods.isLocked(bit)) "$label locked" else label) }
+        )
+    }
+    // Caps lives here as well as on the keycap: the keycap sits at the far
+    // left of the number row, and hunting for it was the reported problem.
+    FilterChip(
+        selected = mods.capsLock,
+        onClick = onCaps,
+        label = { Text(if (mods.capsLock) "CAPS on" else "Caps") }
+    )
+    FilterChip(
+        selected = symbolLayer,
+        onClick = onSymbols,
+        label = { Text(if (symbolLayer) "abc" else "?123") }
+    )
+    if (mods.anyActive) {
+        AssistChip(onClick = onClear, label = { Text("Clear") })
+    }
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun KeyCap(
@@ -408,6 +488,8 @@ private fun KeyCap(
      * keycaps shrink rather than pushing whole rows off-screen.
      */
     compact: Boolean = false,
+    /** Landscape rows share the leftover height, so the cap must not have a floor. */
+    stretch: Boolean = false,
     onTap: () -> Unit,
     onLongPress: () -> Unit
 ) {
@@ -420,7 +502,7 @@ private fun KeyCap(
     var pressed by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     Box(
         modifier = modifier
-            .heightIn(min = if (compact) 30.dp else 40.dp)
+            .then(if (stretch) Modifier else Modifier.heightIn(min = if (compact) 30.dp else 40.dp))
             .graphicsLayer {
                 if (pressed) {
                     scaleX = 0.95f; scaleY = 0.95f
@@ -452,9 +534,13 @@ private fun KeyCap(
                 style = MaterialTheme.typography.labelLarge,
                 color = if (custom != null) custom.bestContentColor() else MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 2.dp, vertical = 6.dp)
+                modifier = Modifier.padding(
+                    horizontal = 2.dp,
+                    vertical = if (stretch) 1.dp else 6.dp
+                )
             )
-            if (key.secondaryKeyCode != null && key.secondaryLabel.isNotBlank()) {
+            // On a shared-height row there is not room for two lines of text.
+            if (!stretch && key.secondaryKeyCode != null && key.secondaryLabel.isNotBlank()) {
                 Text(
                     text = key.secondaryLabel,
                     style = MaterialTheme.typography.bodyMedium.copy(fontSize = MaterialTheme.typography.bodyMedium.fontSize * 0.7f),
