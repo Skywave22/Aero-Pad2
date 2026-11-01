@@ -1,0 +1,51 @@
+# AeroPad — launch + home walk.
+#
+# `keyless-test.yml` runs `maestro test .maestro/` twice (light, then dark), so
+# every flow here must work in both palettes. Selectors are text/description
+# based only; no coordinates, no IDs, so a theme change or a font-size change
+# cannot silently pass a broken screen.
+appId: com.aeropad.remote
+name: 01 launch and home
+---
+- launchApp:
+    clearState: true
+
+# Onboarding tour appears once; skip it if it is up.
+- runFlow:
+    when:
+      visible: "Skip"
+    commands:
+      - tapOn: "Skip"
+
+# Brand, tagline and the single status row (Round 19 merged the old status card
+# and the "Connect to a device" button into this one line).
+- assertVisible: "AeroPad"
+- assertVisible: "Your PC, in your hand"
+
+# Section labels: uppercase micro-type, so they are matched uppercase.
+- assertVisible: "CONTROLS"
+- assertVisible: "CREATE"
+- assertVisible: "SYSTEM"
+
+# A tile from every section must be on screen.
+- assertVisible: "Mouse"
+- assertVisible: "Keyboard"
+- assertVisible: "Gamepad"
+- assertVisible: "Full Board"
+- assertVisible: "Layouts"
+- assertVisible: "Settings"
+
+# The version chip is gone from Home by design; make sure it never comes back.
+- assertNotVisible: "v3.6.1"
+
+# Scroll to the bottom of the deck and back to the top.
+- scroll
+- scroll
+- scroll
+- assertVisible: "QUICK TOOLS"
+- assertVisible: "Air Mouse"
+- assertVisible: "Devices"
+- scrollUntilVisible:
+    element:
+      text: "AeroPad"
+    direction: UP

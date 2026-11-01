@@ -1,0 +1,39 @@
+# AeroPad — landscape walk.
+#
+# The dock shrinks in landscape (Round 11), and the deck reserves the real
+# navigation-bar inset (Round 14). This flow proves the last row of tiles can be
+# scrolled clear of the dock at the narrowest width the app supports.
+appId: com.aeropad.remote
+name: 03 landscape
+---
+- launchApp:
+    clearState: true
+- runFlow:
+    when:
+      visible: "Skip"
+    commands:
+      - tapOn: "Skip"
+
+- setOrientation: LANDSCAPE_LEFT
+
+- assertVisible: "AeroPad"
+- assertVisible: "Mouse"
+
+# Scroll to the very bottom; the Quick Tools strip must be fully reachable.
+- scrollUntilVisible:
+    element:
+      text: "QUICK TOOLS"
+    direction: DOWN
+- assertVisible: "Air Mouse"
+- assertVisible: "Health"
+
+# Open a control screen in landscape — the gamepad is the tightest layout.
+- scrollUntilVisible:
+    element:
+      text: "Gamepad"
+    direction: UP
+- tapOn: "Gamepad"
+- assertVisible: "Not connected — controls are inactive."
+- back
+
+- setOrientation: PORTRAIT

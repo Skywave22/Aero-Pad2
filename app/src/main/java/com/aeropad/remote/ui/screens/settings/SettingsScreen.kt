@@ -46,6 +46,7 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -94,6 +95,8 @@ fun SettingsScreen(
 ) {
     val app by viewModel.app.collectAsStateWithLifecycle()
     var query by remember { mutableStateOf("") }
+    // Round 19 — in-app release notes (Settings → About → What's new).
+    var showReleaseNotes by remember { mutableStateOf(false) }
     /** Search: a row matches when its label contains the query. */
     fun matches(vararg labels: String): Boolean =
         query.isBlank() || labels.any { it.contains(query, ignoreCase = true) }
@@ -530,8 +533,68 @@ fun SettingsScreen(
                 }
             }
 
+            if (matches("about", "version", "what's new", "whats new", "changelog", "release", "update")) SettingsGroup("About") {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "AeroPad Remote",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = "Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    androidx.compose.material3.OutlinedButton(
+                        onClick = { showReleaseNotes = true }
+                    ) {
+                        Text("What's new")
+                    }
+                }
+                Text(
+                    text = "No internet permission, no analytics, no accounts. Input goes straight to your PC over Bluetooth.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
+
             Spacer(Modifier.height(110.dp)) // room for the floating dock
         }
+    }
+
+    if (showReleaseNotes) {
+        AlertDialog(
+            onDismissRequest = { showReleaseNotes = false },
+            title = { Text("What's new") },
+            text = {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    releaseNotes.forEach { note ->
+                        Text(
+                            text = "${note.version} — ${note.headline}",
+                            style = MaterialTheme.typography.titleSmall
+                        )
+                        note.bullets.forEach { bullet ->
+                            Text(
+                                text = "•  $bullet",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showReleaseNotes = false }) { Text("Close") }
+            }
+        )
     }
 }
 

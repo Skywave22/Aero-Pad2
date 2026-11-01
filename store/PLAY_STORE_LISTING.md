@@ -53,6 +53,19 @@ Note: a small number of phone models/ROMs block Android's HID Device mode. AeroP
 ```
 (~2600 chars — comfortably under the limit)
 
+## What's new (Play Console "Release notes", 500 chars max)
+
+```
+3.6.1 — A cleaner home screen.
+One status row instead of a status card plus a Connect button.
+The version number moved into Settings, where it belongs.
+New hand-drawn icons; colour now marks a section, not each tile.
+Quick Tools fits without sideways scrolling.
+Every tile scrolls clear of the bottom bar.
+Full Board keys look like real keys.
+Smaller: pressing a key no longer flashes a square in light mode.
+```
+
 ## Category / tags
 - Category: **Tools** (alt: Productivity)
 - Tags: bluetooth keyboard, bluetooth mouse, remote control, gamepad, presenter, HID

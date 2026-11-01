@@ -3,8 +3,11 @@ package com.aeropad.remote.ui.components
 import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
@@ -156,26 +159,40 @@ fun KeyCard(
 @Composable
 fun NotConnectedBanner(visible: Boolean) {
     if (!visible) return
-    // Round 14 — on a landscape phone the two-line sentence took about 60 dp
-    // of a ~270 dp window, which is the difference between a complete gamepad
-    // and a clipped one. Short landscape wording, single line, smaller padding;
-    // the full sentence stays in portrait where there is room for it.
+    // Round 19 — this used to be a full-width errorContainer card: a saturated
+    // red slab above the controls on all 20 screens, before the user had done
+    // anything wrong. Being unpaired is the app's normal starting state, not a
+    // failure, so error red was shouting at people who had simply not
+    // connected yet. It is now one quiet line that reads as information. Real
+    // failures (permission denial, HID unsupported) still surface in full on
+    // Home and on the Connect screen, where they are actionable.
+    //
+    // Round 14 retained: landscape wording is shorter so the note costs one
+    // line of a ~270 dp window instead of three.
     val compact = com.aeropad.remote.ui.components.isLandscape()
-    Card(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = if (compact) 4.dp else 8.dp),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+            .padding(bottom = if (compact) 4.dp else 8.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
+            .padding(horizontal = 11.dp, vertical = if (compact) 6.dp else 8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        Box(
+            modifier = Modifier
+                .size(6.dp)
+                .clip(RoundedCornerShape(3.dp))
+                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f))
+        )
+        Spacer(Modifier.width(9.dp))
         Text(
             text = if (compact) "Not connected — open Connect to pair."
-            else "Not connected — controls are inactive. Open Connect to pair.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onErrorContainer,
-            maxLines = if (compact) 1 else 3,
-            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = if (compact) 6.dp else 12.dp)
+            else "Not connected — controls are inactive.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
         )
     }
 }

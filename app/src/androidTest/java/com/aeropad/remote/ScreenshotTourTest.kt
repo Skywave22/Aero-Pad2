@@ -306,14 +306,10 @@ class ScreenshotTourTest {
         // Round 8 — My Layout + the new key pad sheet.
         scrollToTop()
         scrollDown(3)
-        // Quick Tools is a horizontally scrolling row; "My Layout" sits past the
-        // right edge, so swipe the row left before looking for it.
-        device.findObject(By.textContains("Air Mouse"))?.let { chip ->
-            val b = chip.visibleBounds
-            device.swipe(b.right - 5, b.centerY(), b.left + 30, b.centerY(), 20)
-            device.waitForIdle()
-            Thread.sleep(400)
-        }
+        // Round 19 — Quick Tools is a 4×2 strip now, not a horizontally
+        // scrolling row, so "My Layout" is reachable without a sideways swipe.
+        // The swipe is kept as a harmless no-op guard for builds that still
+        // have the old row, but nothing depends on it any more.
         if (tapContains("My Layout")) {
             shot("20-my-layout")
             if (tap("Keys")) {

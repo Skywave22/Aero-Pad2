@@ -1,0 +1,38 @@
+# AeroPad — every control screen opens and renders its primary surface.
+#
+# Round 19 replaced the red "Not connected" card with a quiet one-line note, so
+# the flows assert on the note's new wording instead of the old sentence.
+appId: com.aeropad.remote
+name: 02 control screens
+---
+- launchApp:
+    clearState: true
+- runFlow:
+    when:
+      visible: "Skip"
+    commands:
+      - tapOn: "Skip"
+
+- tapOn: "Mouse"
+- assertVisible: "Not connected — controls are inactive."
+- back
+
+- tapOn: "Keyboard"
+- assertVisible: "Not connected — controls are inactive."
+- back
+
+- tapOn: "Gamepad"
+- assertVisible: "Not connected — controls are inactive."
+- back
+
+- tapOn: "Multimedia"
+- assertVisible: "Not connected — controls are inactive."
+- back
+
+- tapOn: "Presenter"
+- assertVisible: "Not connected — controls are inactive."
+- back
+
+- tapOn: "Text & Clips"
+- assertVisible: "Not connected — controls are inactive."
+- back

@@ -34,7 +34,12 @@ class HomeScreenUiTest {
     @Test
     fun homeShowsAppTitleAndTiles() {
         composeRule.onNodeWithText("AeroPad").assertIsDisplayed()
-        composeRule.onNodeWithText("Connect to a device").assertIsDisplayed()
+        // Round 19 — the old "Connect to a device" button and the status card
+        // above it were merged into one tap-to-act status row, so the button
+        // label no longer exists. The section labels and the brand tagline are
+        // the stable things to assert on.
+        composeRule.onNodeWithText("Your PC, in your hand").assertIsDisplayed()
+        composeRule.onNodeWithText("CONTROLS").assertIsDisplayed()
         composeRule.onNodeWithText("Mouse").assertIsDisplayed()
         composeRule.onNodeWithText("Keyboard").assertIsDisplayed()
         composeRule.onNodeWithText("Layouts").assertIsDisplayed()

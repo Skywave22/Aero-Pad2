@@ -49,7 +49,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -525,9 +529,38 @@ private fun KeyCap(
                     translationY = 2f * density
                 }
             }
-            .shadow(if (pressed) 0.dp else 3.dp, shape, clip = false)
+            // Round 19 — keycap depth. A flat fill under a drop shadow reads as
+            // a coloured rectangle; a physical cap has a lit top face, a body
+            // and a darker bottom lip. Three gradient stops plus a 2 dp lip buy
+            // that with no asset and no extra layer.
+            .shadow(
+                elevation = if (pressed) 0.dp else 2.dp,
+                shape = shape,
+                clip = false,
+                ambientColor = Color.Black.copy(alpha = 0.26f),
+                spotColor = Color.Black.copy(alpha = 0.32f)
+            )
             .clip(shape)
-            .background(Brush.verticalGradient(listOf(bg.copy(alpha = 1f), bg)), shape)
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        androidx.compose.ui.graphics.lerp(bg, Color.White, 0.16f),
+                        bg,
+                        androidx.compose.ui.graphics.lerp(bg, Color.Black, 0.06f)
+                    )
+                ),
+                shape
+            )
+            .drawWithContent {
+                drawContent()
+                val lip = 2.dp.toPx()
+                drawRoundRect(
+                    color = Color.Black.copy(alpha = 0.10f),
+                    topLeft = Offset(0f, size.height - lip),
+                    size = Size(size.width, lip),
+                    cornerRadius = CornerRadius(3.dp.toPx())
+                )
+            }
             .then(
                 if (editMode) Modifier.border(
                     1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
