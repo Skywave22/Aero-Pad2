@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -1804,6 +1805,9 @@ private fun ControlPropertiesPanel(viewModel: GamepadBuilderViewModel) {
                 Box(
                     modifier = Modifier
                         .size(34.dp)
+                        // Round 18 — rounded swatch, so the ripple must be
+                        // clipped to the circle instead of painting a square.
+                        .clip(CircleShape)
                         .background(argb.toComposeColor(), CircleShape)
                         .border(
                             width = if (argb == control.color) 3.dp else 1.dp,

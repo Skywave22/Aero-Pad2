@@ -1,6 +1,7 @@
 package com.aeropad.remote.ui.screens.editor
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -260,6 +261,9 @@ private fun ColorRow(selected: Long, onPick: (Long) -> Unit) {
             Box(
                 modifier = Modifier
                     .size(34.dp)
+                    // Round 18 — clip so the press ripple is a circle, not a
+                    // square drawn behind a round swatch.
+                    .clip(CircleShape)
                     .background(color, CircleShape)
                     .border(
                         width = if (argb == selected) 3.dp else 1.dp,

@@ -25,6 +25,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -487,6 +488,9 @@ private fun MiniHealthIndicator(onOpen: () -> Unit, modifier: Modifier = Modifie
             // Position is handled by the overlay Column in AeroPadApp; this
             // only guarantees a 44dp tap target around the 12dp dot.
             .size(44.dp)
+            // Round 18 — round the touch target's ripple too; a square
+            // highlight around a round dot reads as a rendering bug.
+            .clip(androidx.compose.foundation.shape.CircleShape)
             .clickable(onClickLabel = "Connection health") { onOpen() },
         contentAlignment = Alignment.Center
     ) {

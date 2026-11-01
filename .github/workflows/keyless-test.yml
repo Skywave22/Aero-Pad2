@@ -1,0 +1,251 @@
+name: Deep test (no API key)
+
+# Three independent checks that need no model, no key, and no paid service:
+#
+#   static  — reads the built APK: permissions, exported components, embedded
+#             secrets, signing certificate. Runs in seconds, no emulator.
+#   maestro — drives the real UI on an emulator with deterministic YAML steps
+#             and saves a screenshot of every screen, portrait and landscape.
+#   monkey  — fires thousands of random events at the app looking for crashes
+#             and ANRs that no scripted test would find.
+#
+# Runs on every push to main and on demand.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      events:
+        description: "Monkey events per run"
+        required: false
+        default: "3000"
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------- static ---
+  static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Gradle (with caching)
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug
+
+      - name: Static audit
+        run: |
+          chmod +x tools/apk-audit.sh
+          tools/apk-audit.sh app/build/outputs/apk/debug/app-debug.apk apk-audit.md || STATUS=$?
+          cat apk-audit.md >> "$GITHUB_STEP_SUMMARY"
+          exit ${STATUS:-0}
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-audit
+          path: apk-audit.md
+          if-no-files-found: warn
+
+  # --------------------------------------------------------------- maestro ---
+  maestro:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          android: false
+          tool-cache: true
+          dotnet: true
+          haskell: true
+          swap-storage: true
+          docker-images: false
+          large-packages: false
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+
+      - uses: actions/checkout@v4
+
+      - name: JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Gradle (with caching)
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug
+
+      - name: Install Maestro
+        run: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+          "$HOME/.maestro/bin/maestro" --version
+
+      - name: Run flows on an emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          disable-animations: true
+          disk-size: 6000M
+          heap-size: 600M
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          script: |
+            adb install -r app/build/outputs/apk/debug/app-debug.apk
+
+            # Round 18 — the app defaults to theme = Follow system, so this
+            # switch decides which palette the whole walk renders in. Light
+            # mode is where the Full Board ripple bug was visible (dark hides
+            # it), so both modes are captured, light first.
+            adb shell cmd uimode night no
+            maestro test .maestro/ \
+              --format junit \
+              --output maestro-report-light.xml \
+              --test-output-dir screenshots-light
+
+            adb shell cmd uimode night yes
+            maestro test .maestro/ \
+              --format junit \
+              --output maestro-report-dark.xml \
+              --test-output-dir screenshots-dark
+
+            adb shell cmd uimode night no
+
+      - name: Collect logcat
+        if: always()
+        run: adb logcat -d > logcat.txt || true
+
+      - name: CRASHES in logcat
+        if: always()
+        run: |
+          if grep -qE "FATAL EXCEPTION|AndroidRuntime: Process: com.aeropad.remote" logcat.txt; then
+            echo "::error title=Crash during UI test::The app threw while Maestro was driving it."
+            grep -A20 "FATAL EXCEPTION" logcat.txt | head -60
+            exit 1
+          fi
+          echo "No fatal exceptions in logcat."
+
+      - name: Upload screenshots and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-screenshots
+          path: |
+            maestro-report-light.xml
+            maestro-report-dark.xml
+            screenshots-light/**
+            screenshots-dark/**
+            logcat.txt
+          retention-days: 30
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------- monkey ---
+  monkey:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          android: false
+          tool-cache: true
+          dotnet: true
+          haskell: true
+          swap-storage: true
+          docker-images: false
+          large-packages: false
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - uses: actions/checkout@v4
+
+      - name: JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Gradle (with caching)
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug
+
+      - name: Random-event stress
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          EVENTS: ${{ inputs.events || '3000' }}
+        with:
+          api-level: 34
+          arch: x86_64
+          disable-animations: true
+          disk-size: 6000M
+          heap-size: 600M
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          script: |
+            adb install -r app/build/outputs/apk/debug/app-debug.apk
+            adb shell pm grant com.aeropad.remote android.permission.BLUETOOTH_CONNECT || true
+            adb shell pm grant com.aeropad.remote android.permission.BLUETOOTH_SCAN || true
+            adb shell pm grant com.aeropad.remote android.permission.POST_NOTIFICATIONS || true
+
+            adb logcat -c
+            # --ignore-crashes keeps going after a crash so one run can surface
+            # several; the exit code and the logcat scan below decide pass/fail.
+            adb shell monkey -p com.aeropad.remote \
+              --throttle 150 \
+              --pct-touch 40 --pct-motion 20 --pct-nav 10 --pct-majornav 10 \
+              --pct-syskeys 5 --pct-appswitch 10 --pct-anyevent 5 \
+              --ignore-crashes --ignore-timeouts --ignore-security-exceptions \
+              --monitor-native-crashes \
+              -v "$EVENTS" | tee monkey.log
+
+            adb logcat -d > logcat.txt
+
+            if grep -qE "FATAL EXCEPTION|ANR in com.aeropad.remote" logcat.txt; then
+              echo "::error title=Monkey found a crash::See the monkey-crash artifact."
+              exit 1
+            fi
+
+      - name: Upload crash evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: monkey-crash
+          path: |
+            logcat.txt
+            monkey.log
+          retention-days: 30
+          if-no-files-found: warn

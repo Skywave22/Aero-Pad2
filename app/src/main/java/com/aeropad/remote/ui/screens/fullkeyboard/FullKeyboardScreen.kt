@@ -5,6 +5,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,9 +46,9 @@ import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -503,8 +506,16 @@ private fun KeyCap(
         highlight -> MaterialTheme.colorScheme.primaryContainer
         else -> custom ?: MaterialTheme.colorScheme.surfaceVariant
     }
-    // SECTION 4 - 3D keycap: pressed state sinks + shadow shrinks
-    var pressed by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    val shape = MaterialTheme.shapes.small
+    // Round 18 — the press ripple was painted into the keycap's square layout
+    // bounds while only the background was rounded, so in a light theme every
+    // pressed key showed a grey square behind its rounded cap (in dark theme
+    // the ripple is nearly invisible on the dark background, which is why it
+    // only showed up in light mode). Clip the whole chain to the cap shape, and
+    // drive the press animation from the same interaction source the ripple
+    // uses so the sink and the ripple can never disagree.
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
     Box(
         modifier = modifier
             .then(if (stretch) Modifier else Modifier.heightIn(min = if (compact) 30.dp else 40.dp))
@@ -514,23 +525,23 @@ private fun KeyCap(
                     translationY = 2f * density
                 }
             }
-            .shadow(if (pressed) 0.dp else 3.dp, MaterialTheme.shapes.small, clip = false)
-            .background(Brush.verticalGradient(listOf(bg.copy(alpha=1f), bg)), MaterialTheme.shapes.small)
+            .shadow(if (pressed) 0.dp else 3.dp, shape, clip = false)
+            .clip(shape)
+            .background(Brush.verticalGradient(listOf(bg.copy(alpha = 1f), bg)), shape)
             .then(
                 if (editMode) Modifier.border(
                     1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                    MaterialTheme.shapes.small
+                    shape
                 ) else Modifier
             )
-                        .pointerInput(key.id + "-press") {
-                awaitPointerEventScope {
-                    while (true) {
-                        val e = awaitPointerEvent()
-                        pressed = e.changes.any { it.pressed }
-                    }
-                }
-            }
-.combinedClickable(onClick = onTap, onLongClick = onLongPress),
+            .combinedClickable(
+                interactionSource = interaction,
+                indication = LocalIndication.current,
+                onClickLabel = "Press ${key.label}",
+                onLongClickLabel = "Edit ${key.label}",
+                onClick = onTap,
+                onLongClick = onLongPress
+            ),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -649,6 +660,7 @@ private fun KeyEditorPanel(viewModel: FullKeyboardViewModel) {
             Box(
                 modifier = Modifier
                     .size(34.dp)
+                    .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
                     .border(
                         width = if (key.colorArgb == null) 3.dp else 1.dp,
@@ -662,6 +674,7 @@ private fun KeyEditorPanel(viewModel: FullKeyboardViewModel) {
                 Box(
                     modifier = Modifier
                         .size(34.dp)
+                        .clip(CircleShape)
                         .background(argb.toComposeColor(), CircleShape)
                         .border(
                             width = if (key.colorArgb == argb) 3.dp else 1.dp,
