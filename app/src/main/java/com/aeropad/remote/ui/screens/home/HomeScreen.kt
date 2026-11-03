@@ -167,6 +167,13 @@ private val controlTiles = listOf(
         route = Routes.PRESENTER
     ),
     HomeTile(
+        id = "wifi_tv_remote",
+        title = "Wi-Fi TV Remote",
+        subtitle = "HiSilicon TV boxes on your Wi-Fi",
+        icon = AeroIcons.Television,
+        route = Routes.WIFI_TV_REMOTE
+    ),
+    HomeTile(
         id = "android_remote",
         title = "Android",
         subtitle = "Remote for phones & TVs",

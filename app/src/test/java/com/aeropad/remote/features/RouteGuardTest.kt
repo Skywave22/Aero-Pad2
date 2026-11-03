@@ -29,6 +29,7 @@ class RouteGuardTest {
         assertEquals("layout_editor/12", RouteGuard.sanitize("layout_editor/12"))
         assertEquals("mouse", RouteGuard.sanitize("mouse"))
         assertEquals("settings", RouteGuard.sanitize("settings"))
+        assertEquals("wifi_tv_remote", RouteGuard.sanitize("wifi_tv_remote"))
     }
 
     @Test

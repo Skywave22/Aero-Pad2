@@ -18,7 +18,7 @@ Turn your phone into a Bluetooth keyboard, mouse & custom gamepad for any PC.
 Turn your Android phone into a wireless keyboard, mouse, media remote, presenter and fully custom gamepad — with nothing to install on the PC. AeroPad Remote uses Bluetooth HID, the same standard as real keyboards and mice, so it works with Windows, macOS, Linux, Android TV and most smart TVs out of the box.
 
 REAL BLUETOOTH HID — NO PC SOFTWARE
-Pair once and your phone IS a keyboard and mouse. No server programs, no Wi-Fi, no account, no cloud. Input travels directly over Bluetooth.
+Pair once and your phone IS a keyboard and mouse. No PC server programs, no account, no cloud. Input travels directly over Bluetooth.
 
 COMPLETE CONTROL SUITE
 - Mouse: smooth trackpad with tap-to-click, right-click, scroll strip, adjustable sensitivity, smoothing and precision pen mode
@@ -39,8 +39,8 @@ CLEAN, FOCUSED DESIGN
 One pure look in two modes: crisp Light (white) and true Dark (pure black, OLED-friendly). Follows your system setting or stays locked to either — no clutter, no gimmicks, just your controls.
 
 PRIVACY FIRST
-- No account, no ads, no analytics, no internet use
-- Bluetooth permissions are used only to connect to your devices
+- No account, ads, analytics or cloud service
+- Bluetooth permissions are used for Bluetooth features; optional Wi-Fi TV control sends local UDP only to your selected TV over your home network
 - Optional secure-screen mode blocks screenshots
 - Backups disabled: your layouts and macros stay on your phone
 
@@ -56,14 +56,9 @@ Note: a small number of phone models/ROMs block Android's HID Device mode. AeroP
 ## What's new (Play Console "Release notes", 500 chars max)
 
 ```
-3.6.1 — A cleaner home screen.
-One status row instead of a status card plus a Connect button.
-The version number moved into Settings, where it belongs.
-New hand-drawn icons; colour now marks a section, not each tile.
-Quick Tools fits without sideways scrolling.
-Every tile scrolls clear of the bottom bar.
-Full Board keys look like real keys.
-Smaller: pressing a key no longer flashes a square in light mode.
+3.6.2-pre1 preview: Optional local Wi-Fi remote for compatible HiSilicon TV boxes. Existing Bluetooth controls stay available. Same Wi-Fi required; legacy UDP is unencrypted.
+
+3.6.1: Cleaner home screen, custom icons, calmer connection status, better dashboard spacing, and corrected key ripple.
 ```
 
 ## Category / tags

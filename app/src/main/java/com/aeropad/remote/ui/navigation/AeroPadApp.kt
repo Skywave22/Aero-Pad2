@@ -67,6 +67,7 @@ import com.aeropad.remote.ui.screens.mouse.MouseScreen
 import com.aeropad.remote.ui.screens.multimedia.MultimediaScreen
 import com.aeropad.remote.ui.screens.numpad.NumpadScreen
 import com.aeropad.remote.ui.screens.presenter.PresenterScreen
+import com.aeropad.remote.ui.screens.tvremote.WifiTvRemoteScreen
 import com.aeropad.remote.ui.screens.settings.SettingsScreen
 
 /**
@@ -83,6 +84,7 @@ object Routes {
     const val KEYBOARD = "keyboard"
     const val NUMPAD = "numpad"
     const val MULTIMEDIA = "multimedia"
+    const val WIFI_TV_REMOTE = "wifi_tv_remote"
     const val PRESENTER = "presenter"
     const val GAMEPAD = "gamepad"
     const val ANDROID = "android_remote"
@@ -109,6 +111,7 @@ private val controlScreenLabels = mapOf(
     Routes.FULL_KEYBOARD to "Full Board",
     Routes.GAMEPAD to "Gamepad",
     Routes.MULTIMEDIA to "Media",
+    Routes.WIFI_TV_REMOTE to "TV Remote",
     Routes.PRESENTER to "Presenter",
     Routes.ANDROID to "Android",
     Routes.TOUCH to "Touch",
@@ -298,6 +301,7 @@ fun AeroPadApp(
         }
         composable(Routes.NUMPAD) { NumpadScreen(onBack = { navController.popBackStack() }) }
         composable(Routes.MULTIMEDIA) { MultimediaScreen(onBack = { navController.popBackStack() }) }
+        composable(Routes.WIFI_TV_REMOTE) { WifiTvRemoteScreen(onBack = { navController.popBackStack() }) }
         composable(Routes.PRESENTER) { PresenterScreen(onBack = { navController.popBackStack() }) }
         composable(Routes.GAMEPAD) {
             GamepadScreen(

@@ -132,6 +132,14 @@ object AeroIcons {
         circle(12f, 9.3f, 2.4f)
     }
 
+    /** TV display: a screen on a short stand, matching the angular AeroPad icon set. */
+    val Television: ImageVector = vector("AeroTelevision") {
+        poly(3f, 4f, 21f, 4f, 21f, 17f, 3f, 17f)
+        rect(4.8f, 5.8f, 14.4f, 9.4f)
+        poly(10.5f, 17f, 13.5f, 17f, 14.5f, 20f, 9.5f, 20f)
+        rect(7.5f, 20f, 9f, 1.6f)
+    }
+
     /**
      * Android target: a phone, not a monitor. It started as a TV, which made it
      * nearly identical to [Presenter] at 19 dp — two tiles in different sections

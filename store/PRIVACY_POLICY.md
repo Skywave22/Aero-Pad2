@@ -9,7 +9,7 @@ AeroPad Remote collects **no personal data**. Nothing you do in the app leaves y
 
 ## Data collection
 - **We collect nothing.** The app has no analytics, no advertising SDKs, no crash-reporting services, no user accounts and no server backend.
-- The app does not use the internet. It requests no internet permission for its features.
+- Core keyboard, mouse and gamepad features use Bluetooth HID. The optional Wi-Fi TV remote requests network access only when used; it sends local UDP discovery and control packets on your Wi-Fi (port 7899) to a TV you select. It does not use a cloud service or send these commands to an AeroPad server.
 
 ## Bluetooth permissions — why they are needed
 Android requires these permissions for the app to function as a Bluetooth keyboard/mouse/gamepad:
@@ -26,7 +26,7 @@ Android requires these permissions for the app to function as a Bluetooth keyboa
 Bluetooth is used **exclusively** to transmit the input you actively perform (keys, pointer movement, media buttons, gamepad controls) to the device you paired with. No input is logged or stored beyond what you explicitly save as a macro on your own phone.
 
 ## Data stored on your device only
-Your settings, appearance choice, custom layouts, gamepad profiles and macros are stored locally in the app's private storage. Android backup of this data is disabled. Exported layout/gamepad files are created only where you choose to save them, and sharing them is entirely under your control.
+Your settings, appearance choice, custom layouts, gamepad profiles and macros are stored locally in the app's private storage. Android backup of this data is disabled. When you use the TV remote, the app sends your phone's local Wi-Fi IP address and device brand/model label to the selected compatible TV as part of its legacy UDP protocol. No account, advertising, analytics or cloud telemetry is used. Exported layout/gamepad files are created only where you choose to save them, and sharing them is entirely under your control.
 
 ## Children's privacy
 The app collects no data from anyone, including children.

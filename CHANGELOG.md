@@ -5,6 +5,28 @@ All notable changes to AeroPad Remote. The in-app copy lives in
 (Settings → About → What's new); the Play Store block lives in
 `store/PLAY_STORE_LISTING.md`. Keep the three in step when cutting a build.
 
+## [3.6.2-pre1] — Wi-Fi TV remote preview
+
+An optional local-network remote is now available alongside all existing
+Bluetooth controls. It is designed for PhoneRemote-compatible HiSilicon TV
+boxes; generic smart TVs are not guaranteed to work.
+
+### Added
+- Home tile for UDP discovery or manual IP selection, TV navigation, volume,
+  mute, back/home/menu, a basic air-mouse pad, and TV search text.
+- Protocol handling is isolated from the Bluetooth HID stack. The app needs
+  local Wi-Fi access; no TV APK, third-party library, account, or cloud service
+  is bundled.
+- A warning explains that the legacy UDP protocol is unauthenticated and
+  unencrypted.
+
+### Compatibility and test note
+- TV communication uses the same LAN-only discovery/command protocol observed
+  in the analysed PhoneRemote 2.1.3 package. Real-TV validation is still needed;
+  device discovery may be blocked by guest Wi-Fi or access-point isolation.
+- This is a branch preview, not a published release. The APK is produced as a
+  GitHub Actions artifact on `feature/tv-wifi-remote`.
+
 ## [3.6.1] — 2026-11-01
 
 A design pass. Same controls, same behaviour — the app stops looking like a

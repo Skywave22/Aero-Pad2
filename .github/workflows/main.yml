@@ -202,13 +202,13 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: aeropad-release
+          name: ${{ github.ref_name == 'feature/tv-wifi-remote' && 'aeropad-tv-wifi-prerelease' || 'aeropad-release' }}
           path: app/build/outputs/apk/release/*.apk
 
       # Publish to GitHub Releases — only a genuinely release-signed APK, and
       # only after the certificate check above has passed.
       - name: Publish GitHub Release
-        if: env.SIGNED == 'true'
+        if: env.SIGNED == 'true' && github.ref != 'refs/heads/feature/tv-wifi-remote'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION }}

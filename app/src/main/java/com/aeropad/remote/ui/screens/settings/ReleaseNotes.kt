@@ -23,6 +23,17 @@ data class ReleaseNote(
 
 val releaseNotes: List<ReleaseNote> = listOf(
     ReleaseNote(
+        version = "3.6.2-pre1",
+        headline = "A local Wi-Fi remote for compatible TV boxes",
+        bullets = listOf(
+            "New optional Wi-Fi TV remote, while every existing Bluetooth control remains available.",
+            "Find a compatible TV on the same network or enter its local IP; use navigation, volume, mute, mouse and search controls.",
+            "Designed for PhoneRemote-compatible HiSilicon TV boxes. Generic smart TVs are not guaranteed to work.",
+            "The legacy UDP protocol has no authentication or encryption: use it only on a trusted home Wi-Fi network.",
+            "Preview build. Please test with a real TV; guest-network isolation can block discovery."
+        )
+    ),
+    ReleaseNote(
         version = "3.6.1",
         headline = "A home screen that looks made, not generated",
         bullets = listOf(
