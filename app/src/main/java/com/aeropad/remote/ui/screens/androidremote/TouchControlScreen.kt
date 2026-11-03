@@ -62,6 +62,7 @@ fun TouchControlScreen(
     viewModel: RemoteControlViewModel = hiltViewModel()
 ) {
     val isConnected by viewModel.isConnected.collectAsStateWithLifecycle()
+    val wifiTvTarget by com.aeropad.remote.data.tv.WifiTvSession.targetIp.collectAsStateWithLifecycle()
     val vibration by viewModel.vibrationsEnabled.collectAsStateWithLifecycle()
     val extended by viewModel.extendedReports.collectAsStateWithLifecycle()
     val haptic = rememberHaptic(vibration)
@@ -98,6 +99,13 @@ fun TouchControlScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             NotConnectedBanner(!isConnected)
+            if (wifiTvTarget != null) {
+                Text(
+                    "Touch-digitizer reports are Bluetooth HID-only; the selected Wi-Fi TV protocol cannot carry this input.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
             if (!extended) {
                 // Round 14 — in landscape this two-line paragraph plus the

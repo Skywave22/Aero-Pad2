@@ -11,6 +11,7 @@ All notable changes to AeroPad Remote. The in-app copy lives in
 - Equal-width D-pad layout: Up and Down now occupy the same width as Left, OK, and Right.
 - Live TV search text relay while typing, with a short debounce.
 - Voice typing with partial-result relay and final transcript replacement; microphone permission is requested only when used. Offline recognition is requested where supported.
+- The selected TV IP becomes the app-wide target for supported plain-key, text/search, pointer, media, shortcut, macro, and layout actions. Held keys/chords, true gamepad reports, gyro, and touch-digitizer input remain Bluetooth-only; unsupported actions are never disguised as TV input.
 
 ## [3.6.2-pre1] — Wi-Fi TV remote preview
 

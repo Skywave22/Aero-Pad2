@@ -46,8 +46,16 @@ class RemoteControlViewModel @Inject constructor(
     val connectionState: StateFlow<HidConnectionState> = observeConnection()
         .stateIn(viewModelScope, SharingStarted.Eagerly, HidConnectionState.Idle)
 
-    val isConnected: StateFlow<Boolean> = observeConnection()
+    /** Raw Bluetooth status; true gamepad/touch reports still require this transport. */
+    val isBluetoothConnected: StateFlow<Boolean> = connectionState
         .map { it.isConnected }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    /** Supported TV actions count as connected while a Wi-Fi target is selected. */
+    val isConnected: StateFlow<Boolean> = kotlinx.coroutines.flow.combine(
+        isBluetoothConnected,
+        com.aeropad.remote.data.tv.WifiTvSession.targetIp
+    ) { bluetooth, tvIp -> bluetooth || tvIp != null }
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     // CRASH FIX (v3.6.0): the safety `init` block used to live HERE, above the
@@ -265,7 +273,11 @@ class RemoteControlViewModel @Inject constructor(
      */
     fun typeLive(text: String) {
         if (text.isEmpty()) return
-        dispatch(HidAction.TypeText(text), isDiscreteTap = true)
+        if (com.aeropad.remote.data.tv.WifiTvSession.targetIp.value != null) {
+            sendAction.typeLive(text)
+        } else {
+            dispatch(HidAction.TypeText(text), isDiscreteTap = true)
+        }
     }
 
     // AEROPAD v1.0 #12 — history of texts sent to the host (tap to resend).

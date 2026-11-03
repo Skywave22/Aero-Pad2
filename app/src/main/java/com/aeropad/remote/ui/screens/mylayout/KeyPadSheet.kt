@@ -136,7 +136,7 @@ fun KeyPadSheet(
                     Text("Keyboard & shortcuts", style = MaterialTheme.typography.titleMedium)
                     Text(
                         if (addMode) "Tap a key to add it to this layout"
-                        else if (isConnected) "Tap a key to send it to the PC"
+                        else if (isConnected) "Tap a key to send it to the connected host"
                         else "Not connected — keys will queue as unavailable",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant

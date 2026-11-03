@@ -96,6 +96,8 @@ fun GamepadScreen(
     viewModel: RemoteControlViewModel = hiltViewModel()
 ) {
     val isConnected by viewModel.isConnected.collectAsStateWithLifecycle()
+    val isBluetoothConnected by viewModel.isBluetoothConnected.collectAsStateWithLifecycle()
+    val wifiTvTarget by com.aeropad.remote.data.tv.WifiTvSession.targetIp.collectAsStateWithLifecycle()
     val gamepadSettings by viewModel.gamepadSettings.collectAsStateWithLifecycle()
     val vibration by viewModel.vibrationsEnabled.collectAsStateWithLifecycle()
     val haptic = rememberHaptic(vibration)
@@ -186,6 +188,17 @@ fun GamepadScreen(
             }
 
             NotConnectedBanner(!isConnected)
+            if (wifiTvTarget != null) {
+                Text(
+                    if (isBluetoothConnected) {
+                        "Wi-Fi TV target selected. Full gamepad reports and gyro still go to the Bluetooth host."
+                    } else {
+                        "Wi-Fi TV target selected. This TV protocol does not carry gamepad or gyro reports; connect a Bluetooth host for this screen."
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             // Round 14 — in landscape this line competed with the pad for a
             // ~270 dp tall window; the mode is also shown in Settings, so it is
             // portrait-only now.

@@ -56,8 +56,8 @@ class FullKeyboardViewModel @Inject constructor(
         store.setOneHanded(next)
     }
 
-    val isConnected: StateFlow<Boolean> = observeConnection()
-        .map { it.isConnected }
+    val isConnected: StateFlow<Boolean> = com.aeropad.remote.data.tv.WifiTvSession
+        .connectedForControls(observeConnection())
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     /** Key currently open in the editor sheet (null = none). */

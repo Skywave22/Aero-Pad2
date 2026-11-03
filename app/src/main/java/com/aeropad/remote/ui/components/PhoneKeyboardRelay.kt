@@ -132,7 +132,7 @@ fun PhoneKeyboardRelay(
         // field already raises the IME, and a second control here made the
         // block taller than the keyboard it belongs to.
         Text(
-            "Live — each character reaches the host as you type.",
+            "Live — each character reaches the selected host as you type.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 4.dp, top = 4.dp)

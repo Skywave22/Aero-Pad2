@@ -56,7 +56,7 @@ Note: a small number of phone models/ROMs block Android's HID Device mode. AeroP
 ## What's new (Play Console "Release notes", 500 chars max)
 
 ```
-3.6.2-pre2 preview: Wi-Fi remote for compatible HiSilicon TV boxes, equal-width navigation keys, live text and voice typing. Existing Bluetooth controls stay available. Same Wi-Fi; legacy UDP is unencrypted.
+3.6.2-pre2 preview: Selected compatible TV IP now receives supported keyboard, pointer, media, macro and shortcut actions across AeroPad. Equal-width D-pad, live text and voice typing. Full gamepad/gyro/touch remain Bluetooth-only; same trusted Wi-Fi required.
 
 3.6.1: Cleaner home screen, custom icons, calmer connection status, better dashboard spacing, and corrected key ripple.
 ```

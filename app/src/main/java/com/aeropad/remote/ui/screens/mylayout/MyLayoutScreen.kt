@@ -65,6 +65,8 @@ fun MyLayoutScreen(
     val layout by viewModel.layout.collectAsStateWithLifecycle()
     val profiles by viewModel.profiles.collectAsStateWithLifecycle()
     val connected by viewModel.connectedAddress.collectAsStateWithLifecycle()
+    val wifiTvTarget by com.aeropad.remote.data.tv.WifiTvSession.targetIp.collectAsStateWithLifecycle()
+    val hasConnectedTarget = connected != null || wifiTvTarget != null
     val combos by viewModel.combos.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
 
@@ -121,7 +123,7 @@ fun MyLayoutScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            NotConnectedBanner(connected == null)
+            NotConnectedBanner(!hasConnectedTarget)
 
             // ---------- layout switcher ----------
             if (profiles.isNotEmpty()) {
@@ -164,7 +166,7 @@ fun MyLayoutScreen(
     if (showKeyPad) {
         KeyPadSheet(
             combos = combos,
-            isConnected = connected != null,
+            isConnected = hasConnectedTarget,
             hasLayout = layout != null,
             onDismiss = { showKeyPad = false },
             onSend = { key, mods -> viewModel.playKey(key, mods) },

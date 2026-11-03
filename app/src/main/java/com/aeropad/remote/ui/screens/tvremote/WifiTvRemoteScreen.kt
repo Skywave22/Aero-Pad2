@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import com.aeropad.remote.data.tv.PhoneRemoteProtocol
 import com.aeropad.remote.data.tv.WifiTv
 import com.aeropad.remote.data.tv.WifiTvRemoteClient
+import com.aeropad.remote.data.tv.WifiTvSession
 import com.aeropad.remote.ui.components.KeyCard
 import com.aeropad.remote.viewmodel.WifiTvRemoteViewModel
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -73,7 +74,8 @@ fun WifiTvRemoteScreen(onBack: () -> Unit) {
     val voiceError by voiceVm.voice.error.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var manualIp by rememberSaveable { mutableStateOf("") }
-    var selectedIp by rememberSaveable { mutableStateOf("") }
+    val selectedIpState by WifiTvSession.targetIp.collectAsStateWithLifecycle()
+    val selectedIp = selectedIpState.orEmpty()
     var devices by remember { mutableStateOf(emptyList<WifiTv>()) }
     var scanning by remember { mutableStateOf(false) }
     var mouseMode by rememberSaveable { mutableStateOf(false) }
@@ -145,7 +147,7 @@ fun WifiTvRemoteScreen(onBack: () -> Unit) {
         scope.launch {
             runCatching { withContext(Dispatchers.IO) { client.connect(normalized) } }
                 .onSuccess {
-                    selectedIp = normalized
+                    WifiTvSession.selectTarget(normalized)
                     manualIp = normalized
                     notice = "Remote commands are being sent to $normalized."
                 }
@@ -197,7 +199,7 @@ fun WifiTvRemoteScreen(onBack: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                "Works with PhoneRemote-compatible HiSilicon TV boxes on your local Wi-Fi. This adds a TV remote alongside AeroPad’s existing Bluetooth controls; it does not replace them.",
+                "Works with PhoneRemote-compatible HiSilicon TV boxes on your local Wi-Fi. While selected, supported plain-key, text/search, pointer, media, shortcut, macro, and layout actions across AeroPad use this TV IP. Modifier chords, held keys, true gamepad, gyro, and touch remain Bluetooth features.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -217,6 +219,13 @@ fun WifiTvRemoteScreen(onBack: () -> Unit) {
                         Button(onClick = { connect(manualIp) }) { Text("Connect") }
                     }
                     if (scanning) Text("Scanning the local network…", color = MaterialTheme.colorScheme.primary)
+                    if (selectedIp.isNotBlank()) {
+                        TextButton(onClick = {
+                            WifiTvSession.disconnect()
+                            mouseMode = false
+                            notice = "TV target disconnected. AeroPad input now goes to Bluetooth."
+                        }) { Text("Disconnect TV target") }
+                    }
                     devices.forEach { tv ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(tv.label + " · " + tv.address, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)

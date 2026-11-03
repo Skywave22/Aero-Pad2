@@ -1,6 +1,6 @@
 # AeroPad
 
-**Your Android phone as a real Bluetooth keyboard, mouse & gamepad** — for any PC, laptop, Android device, tablet, TV or console that accepts Bluetooth input. No companion software, no account, no cloud, no ads: input travels straight over Android's Bluetooth HID Device API.
+**Your Android phone as a Bluetooth keyboard, mouse & gamepad, plus a local Wi-Fi remote for compatible TV boxes.** Bluetooth HID needs no PC companion software. The optional Wi-Fi TV target routes supported keyboard, text/search, pointer, media, macro, shortcut and layout actions over the TV's local UDP protocol; true gamepad/gyro/touch remain Bluetooth-only.
 
 Built 100% in Kotlin + Jetpack Compose (MVVM + Clean Architecture, Hilt, Room, DataStore), release-signed and published to GitHub Releases by CI.
 
@@ -15,7 +15,7 @@ Built 100% in Kotlin + Jetpack Compose (MVVM + Clean Architecture, Hilt, Room, D
 - **Pro gamepad:** gyro aim, tilt steering, analog triggers and per-game tuning profiles.
 - **Make it yours:** drag-and-drop layout editor (widgets, zones, styling, undo), multi-device profiles (every host remembers its own layout), shortcut decks, macros, Quick Text & clipboard tools, Light/Dark/System themes plus Glass/Neon UI styles.
 - **Reliability first:** legacy 3.3.0-compatible HID descriptor by default, GET_REPORT replies + idle keep-alive for picky hosts, anti-flap reconnect logic, live connection-health dashboard with optional spoken alerts.
-- **Private:** no internet use, no analytics; input goes only to the paired host.
+- **Private:** no analytics, account or cloud. Bluetooth input goes to the paired host; selected-TV traffic stays on your local Wi-Fi and uses an unauthenticated legacy protocol.
 
 ## Features
 
@@ -27,7 +27,8 @@ Built 100% in Kotlin + Jetpack Compose (MVVM + Clean Architecture, Hilt, Room, D
 - **Numpad** — real keypad usage codes, calculator layout.
 - **Multimedia** — play/pause, stop, tracks, volume, mute, brightness.
 - **Presenter** — big prev/next, start/from-here, black/white screen, end.
-- **Android Remote** — dedicated Home / Back / Recents / Power + volume & media for Android phones, tablets and Android TV (all real HID — no host app needed).
+- **Android Remote** — dedicated Home / Back / Recents / Power + volume & media for Android phones, tablets and Android TV over Bluetooth HID.
+- **Wi-Fi TV Remote** — local discovery/IP connection for PhoneRemote-compatible HiSilicon TV boxes; supported AeroPad controls route to the selected TV while connected. Same Wi-Fi required; legacy UDP is unencrypted and unauthenticated.
 - **Gamepad** — virtual stick + D-pad + ABXY + shoulders + analog triggers; three modes: real HID gamepad, keyboard fallback, mouse+keyboard hybrid; sensitivity + dead-zone tuning; Pro mode with gyro aim / tilt steering and per-game profiles.
 - **Touch Screen** — absolute-position digitizer surface (opt-in extended HID reports).
 
@@ -57,7 +58,8 @@ Built 100% in Kotlin + Jetpack Compose (MVVM + Clean Architecture, Hilt, Room, D
 ## Requirements
 - **Android 10 (API 29) or newer.**
 - A phone/ROM that supports **Bluetooth HID Device mode** (most do; some ROMs block it — the app detects and reports this).
-- A host that accepts Bluetooth keyboards/mice: Windows, macOS, Linux, Android/Google TV, most smart TVs. iOS/iPadOS: keyboard yes; mouse depends on OS version + AssistiveTouch settings.
+- For Bluetooth: a host that accepts Bluetooth keyboards/mice (Windows, macOS, Linux, Android/Google TV, most smart TVs). iOS/iPadOS: keyboard yes; mouse depends on OS version + AssistiveTouch settings.
+- For Wi-Fi TV mode: a PhoneRemote-compatible HiSilicon TV box and phone on the same non-isolated home Wi-Fi. Generic Android/Google TV support is not guaranteed.
 
 ## Pairing with a PC (Windows)
 1. Open AeroPad → **Connect** → **Prepare PC pairing** (accept discoverability).
@@ -85,10 +87,11 @@ Add these repository secrets to sign releases with your own key:
 Without them CI signs with the debug key (installable for testing) and skips publishing.
 
 ## Privacy & security
-- No internet permission use, no analytics, no account.
+- No analytics, account, cloud backend or telemetry. The app has Internet permission for the optional LAN feature; selected-TV input uses UDP port 7899 on the local Wi-Fi only.
+- The TV protocol has no authentication or encryption. Use only on a trusted home network; do not use it on public Wi-Fi.
 - Backups and data extraction disabled.
 - Optional secure-screen mode blocks screenshots/app-switcher previews.
-- Foreground service is not exported; HID input goes only to the paired host.
+- Foreground service is not exported; Bluetooth HID input goes only to the paired host.
 
 ## Architecture
 ```

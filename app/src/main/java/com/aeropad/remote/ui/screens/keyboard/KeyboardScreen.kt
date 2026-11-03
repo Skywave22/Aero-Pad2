@@ -69,6 +69,7 @@ fun KeyboardScreen(
     settingsVm: SettingsViewModel = hiltViewModel()
 ) {
     val isConnected by viewModel.isConnected.collectAsStateWithLifecycle()
+    val wifiTvTarget by com.aeropad.remote.data.tv.WifiTvSession.targetIp.collectAsStateWithLifecycle()
     val keyboardSettings by viewModel.keyboardSettings.collectAsStateWithLifecycle()
     val vibration by viewModel.vibrationsEnabled.collectAsStateWithLifecycle()
     val uiNotice by viewModel.uiNotice.collectAsStateWithLifecycle()
@@ -89,7 +90,7 @@ fun KeyboardScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("PC Keyboard") },
+                title = { Text(if (wifiTvTarget != null) "TV Search Keyboard" else "PC Keyboard") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
@@ -122,6 +123,7 @@ fun KeyboardScreen(
             if (keyboardSettings.showTextInputBar) {
                 var autoOpen by remember { mutableStateOf(false) }
                 com.aeropad.remote.ui.components.PhoneKeyboardRelay(
+                    placeholder = if (wifiTvTarget != null) "Type into the TV search field" else "Type here — goes to your PC",
                     onType = { chunk -> viewModel.typeLive(chunk) },
                     onBackspace = { viewModel.keyTap(HidKeys.BACKSPACE) },
                     onEnter = { viewModel.keyTap(HidKeys.ENTER) },

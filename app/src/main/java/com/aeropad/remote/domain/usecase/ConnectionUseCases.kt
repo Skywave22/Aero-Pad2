@@ -1,6 +1,7 @@
 package com.aeropad.remote.domain.usecase
 
 import com.aeropad.remote.domain.HidController
+import com.aeropad.remote.data.tv.WifiTvSession
 import com.aeropad.remote.model.HidAction
 import com.aeropad.remote.model.HidConnectionState
 import com.aeropad.remote.model.RemoteDevice
@@ -66,11 +67,27 @@ class SendHidActionUseCase @Inject constructor(
     private val controller: HidController,
     private val recorder: com.aeropad.remote.domain.MacroRecorder
 ) {
+    /** Incremental IME edit fragment; Wi-Fi TV sessions accumulate it into a live search string. */
+    fun typeLive(text: String) {
+        if (text.isEmpty()) return
+        val action = HidAction.TypeText(text)
+        recorder.capture(action)
+        if (!WifiTvSession.typeLiveChunk(text)) controller.send(action)
+    }
+
     operator fun invoke(action: HidAction) {
         // Macro recorder taps the pipeline: captures recordable actions
         // from EVERY screen while armed; zero overhead when idle.
         recorder.capture(action)
-        // AeroPad is Bluetooth-only: every action goes to the HID link.
-        controller.send(action)
+        // When a Wi-Fi TV target is selected, use the TV protocol for the
+        // subset it understands. HID-only reports (gamepad, touch, held keys)
+        // stay on Bluetooth; never pretend the TV accepts a full HID report.
+        when (WifiTvSession.route(action, bluetoothAvailable = controller.state.value.isConnected)) {
+            WifiTvSession.RouteResult.ROUTED_TO_TV -> Unit
+            WifiTvSession.RouteResult.NO_TV_TARGET -> controller.send(action)
+            WifiTvSession.RouteResult.UNSUPPORTED_BY_TV -> {
+                if (controller.state.value.isConnected) controller.send(action)
+            }
+        }
     }
 }

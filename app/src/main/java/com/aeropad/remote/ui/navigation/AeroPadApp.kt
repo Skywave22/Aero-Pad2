@@ -152,6 +152,13 @@ fun AeroPadApp(
 
     // A4 + V2 MATRIX 5 b2 — Auto-apply per-host tuning overrides on connect + spoken alerts.
     val view = androidx.compose.ui.platform.LocalView.current
+    val wifiTvNotice by com.aeropad.remote.data.tv.WifiTvSession.notice.collectAsStateWithLifecycle()
+    LaunchedEffect(wifiTvNotice) {
+        wifiTvNotice?.let { message ->
+            android.widget.Toast.makeText(view.context, message, android.widget.Toast.LENGTH_LONG).show()
+            com.aeropad.remote.data.tv.WifiTvSession.consumeNotice()
+        }
+    }
     var lastAnnounced by remember { mutableStateOf<String?>(null) }
     var lastAppliedHost by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(connState) {

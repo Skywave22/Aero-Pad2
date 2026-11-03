@@ -32,8 +32,8 @@ class VoiceInputViewModel @Inject constructor(
     private val sendAction: SendHidActionUseCase
 ) : ViewModel() {
 
-    val isConnected: StateFlow<Boolean> = observeConnection()
-        .map { it.isConnected }
+    val isConnected: StateFlow<Boolean> = com.aeropad.remote.data.tv.WifiTvSession
+        .connectedForControls(observeConnection())
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     // ----- Options (session-scoped) -----

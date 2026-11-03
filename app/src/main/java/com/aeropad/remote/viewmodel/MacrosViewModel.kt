@@ -41,8 +41,8 @@ class MacrosViewModel @Inject constructor(
     val macros: StateFlow<List<Macro>> = repository.observeAll()
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    val isConnected: StateFlow<Boolean> = observeConnection()
-        .map { it.isConnected }
+    val isConnected: StateFlow<Boolean> = com.aeropad.remote.data.tv.WifiTvSession
+        .connectedForControls(observeConnection())
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     /** Draft being edited; null = list view. */

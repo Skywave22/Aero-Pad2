@@ -56,8 +56,8 @@ class LayoutsViewModel @Inject constructor(
             }
         }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    val isConnected: StateFlow<Boolean> = observeConnection()
-        .map { it.isConnected }
+    val isConnected: StateFlow<Boolean> = com.aeropad.remote.data.tv.WifiTvSession
+        .connectedForControls(observeConnection())
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     private val mouseSettings: StateFlow<MouseSettings> = settingsStore.mouseSettings

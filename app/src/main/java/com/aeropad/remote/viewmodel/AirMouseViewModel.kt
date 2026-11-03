@@ -35,8 +35,8 @@ class AirMouseViewModel @Inject constructor(
 
     val hasGyro: Boolean get() = sensors.hasGyroscope
 
-    val isConnected: StateFlow<Boolean> = observeConnection()
-        .map { it.isConnected }
+    val isConnected: StateFlow<Boolean> = com.aeropad.remote.data.tv.WifiTvSession
+        .connectedForControls(observeConnection())
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     private val core = AirMouseCore()

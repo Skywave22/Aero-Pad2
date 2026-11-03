@@ -70,6 +70,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aeropad.remote.model.HidConnectionState
+import com.aeropad.remote.data.tv.WifiTvSession
 import com.aeropad.remote.ui.components.statusVisual
 import com.aeropad.remote.ui.components.toComposeColor
 import com.aeropad.remote.ui.navigation.Routes
@@ -249,6 +250,7 @@ fun HomeScreen(
     viewModel: ConnectionViewModel = hiltViewModel()
 ) {
     val state by viewModel.connectionState.collectAsStateWithLifecycle()
+    val wifiTvTarget by WifiTvSession.targetIp.collectAsStateWithLifecycle()
     val permissionsGranted by viewModel.permissionsGranted.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
     val view = LocalView.current
@@ -367,7 +369,7 @@ fun HomeScreen(
                                     maxLines = 1
                                 )
                                 Text(
-                                    text = "Your PC, in your hand",
+                                    text = "Your controls, in your hand",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1,
@@ -403,6 +405,31 @@ fun HomeScreen(
                                 else onNavigate(Routes.CONNECTION)
                             }
                         )
+                        wifiTvTarget?.let { ip ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(MaterialTheme.colorScheme.secondaryContainer)
+                                    .clickable { onNavigate(Routes.WIFI_TV_REMOTE) }
+                                    .padding(horizontal = 12.dp, vertical = 9.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = AeroIcons.Television,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(Modifier.width(9.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text("Wi-Fi TV target", style = MaterialTheme.typography.labelMedium)
+                                    Text(ip, style = MaterialTheme.typography.bodySmall)
+                                }
+                                TextButton(onClick = { WifiTvSession.disconnect() }) { Text("Disconnect") }
+                            }
+                        }
                     }
                 }
 
