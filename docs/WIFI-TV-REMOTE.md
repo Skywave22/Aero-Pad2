@@ -1,4 +1,4 @@
-# Wi-Fi TV remote preview (3.6.2-pre1)
+# Wi-Fi TV remote preview (3.6.2-pre2)
 
 AeroPad's existing Bluetooth HID controls remain intact. The new Home tile,
 **Wi-Fi TV Remote**, is a separate client for TV boxes that implement the UDP
@@ -12,7 +12,8 @@ The analysed vendor APK itself and its native libraries are not included.
   TV replies; a TV IP can also be entered manually.
 - Selects a TV using the `TVIP=<tv-ip>&<phone-brand> <phone-model>` handshake.
 - Sends D-pad, OK, Back, Home, Menu, volume, mute, air-mouse movement/click, and
-  search text commands in the `local-phone-ip&<command>` envelope.
+  search text commands in the `local-phone-ip&<command>` envelope. Manual edits and
+  speech-recognition partials relay to the TV search field as they arrive.
 - Keeps all TV traffic on the local network. No account or cloud service is
   involved. The local IP and phone brand/model are visible to the selected TV.
 

@@ -5,6 +5,13 @@ All notable changes to AeroPad Remote. The in-app copy lives in
 (Settings → About → What's new); the Play Store block lives in
 `store/PLAY_STORE_LISTING.md`. Keep the three in step when cutting a build.
 
+## [3.6.2-pre2] — TV remote input polish
+
+### Fixed and added
+- Equal-width D-pad layout: Up and Down now occupy the same width as Left, OK, and Right.
+- Live TV search text relay while typing, with a short debounce.
+- Voice typing with partial-result relay and final transcript replacement; microphone permission is requested only when used. Offline recognition is requested where supported.
+
 ## [3.6.2-pre1] — Wi-Fi TV remote preview
 
 An optional local-network remote is now available alongside all existing

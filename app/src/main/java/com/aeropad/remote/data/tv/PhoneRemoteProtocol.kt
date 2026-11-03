@@ -37,6 +37,9 @@ object PhoneRemoteProtocol {
     }
 
     fun envelope(localIp: String, command: String): String = "$localIp&$command"
+
+    /** Replaces the live text/search value understood by the compatible TV remote protocol. */
+    fun searchCommand(text: String): String = "key=search=$text"
 }
 
 data class WifiTv(val address: String, val label: String = "HiSilicon TV box")

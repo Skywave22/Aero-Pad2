@@ -1,6 +1,5 @@
 package com.aeropad.remote.ui.screens.tvremote
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,7 +17,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,13 +32,15 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
@@ -45,6 +48,14 @@ import com.aeropad.remote.data.tv.PhoneRemoteProtocol
 import com.aeropad.remote.data.tv.WifiTv
 import com.aeropad.remote.data.tv.WifiTvRemoteClient
 import com.aeropad.remote.ui.components.KeyCard
+import com.aeropad.remote.viewmodel.WifiTvRemoteViewModel
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import android.Manifest
+import android.content.pm.PackageManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -55,13 +66,64 @@ import kotlinx.coroutines.withContext
 fun WifiTvRemoteScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val client = remember { WifiTvRemoteClient() }
+    val voiceVm: WifiTvRemoteViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+    val voiceState by voiceVm.voice.state.collectAsStateWithLifecycle()
+    val voicePartial by voiceVm.voice.partial.collectAsStateWithLifecycle()
+    val voiceResult by voiceVm.voice.result.collectAsStateWithLifecycle()
+    val voiceError by voiceVm.voice.error.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     var manualIp by rememberSaveable { mutableStateOf("") }
     var selectedIp by rememberSaveable { mutableStateOf("") }
     var devices by remember { mutableStateOf(emptyList<WifiTv>()) }
     var scanning by remember { mutableStateOf(false) }
     var mouseMode by rememberSaveable { mutableStateOf(false) }
     var searchText by rememberSaveable { mutableStateOf("") }
+    var hasEditedText by rememberSaveable { mutableStateOf(false) }
+    var showMicRationale by remember { mutableStateOf(false) }
+    var micDenied by remember { mutableStateOf(false) }
     var notice by remember { mutableStateOf<String?>(null) }
+
+    val micPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        micDenied = !granted
+        if (granted) voiceVm.startVoice()
+    }
+
+    DisposableEffect(voiceVm) {
+        onDispose { voiceVm.stopVoice() }
+    }
+
+    LaunchedEffect(voiceResult) {
+        val recognized = voiceResult
+        if (!recognized.isNullOrBlank()) {
+            searchText = recognized
+            hasEditedText = true
+            voiceVm.voice.consumeResult()
+        }
+    }
+
+    suspend fun sendNow(command: String) {
+        if (selectedIp.isBlank()) return
+        runCatching { withContext(Dispatchers.IO) { client.sendRemoteCommand(command) } }
+            .onFailure { notice = it.message ?: "Could not send the command." }
+    }
+
+    // Send edits and partial voice recognition to the TV search field as they
+    // arrive. A short debounce avoids flooding UDP while someone is typing.
+    LaunchedEffect(searchText, hasEditedText, selectedIp) {
+        if (selectedIp.isNotBlank() && hasEditedText) {
+            kotlinx.coroutines.delay(180)
+            sendNow(PhoneRemoteProtocol.searchCommand(searchText))
+        }
+    }
+    LaunchedEffect(voicePartial, selectedIp) {
+        val partial = voicePartial.trim()
+        if (selectedIp.isNotBlank() && partial.isNotBlank()) {
+            kotlinx.coroutines.delay(180)
+            sendNow(PhoneRemoteProtocol.searchCommand(partial))
+        }
+    }
 
     fun launchCommand(command: String) {
         if (selectedIp.isBlank()) {
@@ -169,14 +231,24 @@ fun WifiTvRemoteScreen(onBack: () -> Unit) {
             }
 
             Text("Navigation", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                RemoteKey("▲", enabled = selectedIp.isNotBlank()) { launchCommand("19") }
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Three equal cells on every row keep Up/Down exactly as wide
+                // as Left/OK/Right, including on narrow phones.
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Spacer(Modifier.weight(1f))
+                    RemoteKey("▲", Modifier.weight(1f), selectedIp.isNotBlank()) { launchCommand("19") }
+                    Spacer(Modifier.weight(1f))
+                }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     RemoteKey("◀", Modifier.weight(1f), selectedIp.isNotBlank()) { launchCommand("21") }
                     RemoteKey("OK", Modifier.weight(1f), selectedIp.isNotBlank(), emphasized = true) { launchCommand("23") }
                     RemoteKey("▶", Modifier.weight(1f), selectedIp.isNotBlank()) { launchCommand("22") }
                 }
-                RemoteKey("▼", enabled = selectedIp.isNotBlank()) { launchCommand("20") }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Spacer(Modifier.weight(1f))
+                    RemoteKey("▼", Modifier.weight(1f), selectedIp.isNotBlank()) { launchCommand("20") }
+                    Spacer(Modifier.weight(1f))
+                }
             }
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -225,18 +297,68 @@ fun WifiTvRemoteScreen(onBack: () -> Unit) {
                 }
             }
 
-            Text("TV search", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(
-                    value = searchText,
-                    onValueChange = { searchText = it },
-                    modifier = Modifier.weight(1f),
-                    label = { Text("Search text") },
-                    singleLine = true
+            Text("Live text & voice", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            OutlinedTextField(
+                value = searchText,
+                onValueChange = {
+                    searchText = it
+                    hasEditedText = true
+                },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Type into the TV search field") },
+                supportingText = { Text("Edits are relayed to the TV as you type.") },
+                singleLine = true,
+                enabled = selectedIp.isNotBlank()
+            )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(
+                    enabled = selectedIp.isNotBlank(),
+                    onClick = {
+                        if (voiceState != com.aeropad.remote.voice.VoiceInputManager.State.IDLE) {
+                            voiceVm.stopVoice()
+                        } else if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                            micDenied = false
+                            voiceVm.startVoice()
+                        } else {
+                            showMicRationale = true
+                        }
+                    },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(if (voiceState == com.aeropad.remote.voice.VoiceInputManager.State.LISTENING) "Stop listening" else "🎙 Voice type")
+                }
+                Button(
+                    enabled = selectedIp.isNotBlank(),
+                    onClick = { launchCommand("23") },
+                    modifier = Modifier.weight(1f)
+                ) { Text("Done / OK") }
+            }
+            if (voicePartial.isNotBlank()) {
+                Text("Hearing: $voicePartial", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+            }
+            voiceError?.let { Text(it.message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
+            if (micDenied) {
+                Text("Microphone permission is needed for voice typing.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+            }
+            Text(
+                "Voice uses your installed speech-recognition service. Offline recognition is requested where supported; otherwise that service may process audio online.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            if (showMicRationale) {
+                AlertDialog(
+                    onDismissRequest = { showMicRationale = false },
+                    title = { Text("Allow voice typing?") },
+                    text = { Text("AeroPad listens only while you start a voice-typing session. Your installed speech service converts speech to text; online processing may depend on that service.") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showMicRationale = false
+                            micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                        }) { Text("Continue") }
+                    },
+                    dismissButton = { TextButton(onClick = { showMicRationale = false }) { Text("Cancel") } }
                 )
-                Button(enabled = selectedIp.isNotBlank() && searchText.isNotBlank(), onClick = {
-                    launchCommand("key=search=$searchText")
-                }) { Text("Send") }
             }
 
             Spacer(Modifier.size(8.dp))

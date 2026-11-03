@@ -24,4 +24,9 @@ class WifiTvProtocolTest {
     @Test fun `wraps commands with the sender Wi-Fi address`() {
         assertEquals("192.168.1.7&23", PhoneRemoteProtocol.envelope("192.168.1.7", "23"))
     }
+
+    @Test fun `builds live TV search updates without altering typed text`() {
+        assertEquals("key=search=hello world", PhoneRemoteProtocol.searchCommand("hello world"))
+        assertEquals("key=search=", PhoneRemoteProtocol.searchCommand(""))
+    }
 }

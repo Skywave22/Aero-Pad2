@@ -57,8 +57,8 @@ android {
         applicationId = "com.aeropad.remote"
         minSdk = 29          // Android 10+ (BluetoothHidDevice API requires 28; 29 confirmed by product decision)
         targetSdk = 35
-        versionCode = 362
-        versionName = "3.6.2-pre1"
+        versionCode = 363
+        versionName = "3.6.2-pre2"
 
         // Round 13 — which key signed THIS build, for every variant. Read it
         // back with: aapt2 dump xmltree --file AndroidManifest.xml app.apk
