@@ -3,458 +3,294 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AeroPad — 40 Plain &amp; Polished UI/UX Mockups (Portrait + Landscape)</title>
+<title>AeroPad — 40 Distinct UI/UX Layouts (Portrait + Landscape)</title>
 <style>
-  :root {
-    --bg: #f3f4f6;
-    --card: #ffffff;
-    --text: #111827;
-    --muted: #6b7280;
-    --border: #e5e7eb;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    padding: 24px;
-    line-height: 1.4;
-  }
-  header {
-    max-width: 1400px;
-    margin: 0 auto 24px;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-  }
-  header h1 { font-size: 22px; font-weight: 700; }
-  header p { font-size: 13px; color: var(--muted); }
-  .filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .filter-btn {
-    border: 1px solid var(--border);
-    background: var(--card);
-    color: var(--text);
-    padding: 6px 12px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-  .filter-btn.active {
-    background: #111827;
-    color: #ffffff;
-    border-color: #111827;
-  }
-  .grid {
-    max-width: 1400px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(560px, 1fr));
-    gap: 20px;
-  }
-  .design-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .design-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 8px;
-  }
-  .design-title { font-size: 14px; font-weight: 700; }
-  .design-meta { font-size: 11px; color: var(--muted); }
-  .dual-stage {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    background: #f9fafb;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 14px;
-    overflow-x: auto;
-  }
-  .phone-p {
-    width: 156px;
-    height: 290px;
-    border-radius: 20px;
-    border: 3px solid #1f2937;
-    padding: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    flex-shrink: 0;
-    font-size: 9px;
-    overflow: hidden;
-  }
-  .phone-l {
-    width: 320px;
-    height: 168px;
-    border-radius: 18px;
-    border: 3px solid #1f2937;
-    padding: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    flex-shrink: 0;
-    font-size: 9px;
-    overflow: hidden;
-  }
-  .p-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-weight: 600;
-    font-size: 8px;
-    padding: 2px 4px;
-    border-radius: 6px;
-  }
-  .pill {
-    padding: 2px 6px;
-    border-radius: 999px;
-    font-size: 7.5px;
-    font-weight: 600;
-  }
-  .trackpad {
-    flex: 1;
-    border-radius: 10px;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 8px;
-    font-weight: 500;
-    border: 1px solid rgba(128,128,128,0.25);
-  }
-  .touch-dot {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    position: absolute;
-    opacity: 0.75;
-  }
-  .v-scroll {
-    position: absolute;
-    right: 4px;
-    top: 16%;
-    bottom: 16%;
-    width: 4px;
-    border-radius: 4px;
-    opacity: 0.45;
-  }
-  .h-scroll {
-    position: absolute;
-    bottom: 4px;
-    left: 16%;
-    right: 16%;
-    height: 4px;
-    border-radius: 4px;
-    opacity: 0.45;
-  }
-  .btn-row {
-    display: flex;
-    gap: 4px;
-  }
-  .btn {
-    flex: 1;
-    text-align: center;
-    padding: 5px 2px;
-    border-radius: 6px;
-    font-weight: 600;
-    font-size: 8px;
-    border: 1px solid rgba(128,128,128,0.22);
-  }
-  .l-split {
-    flex: 1;
-    display: flex;
-    gap: 6px;
-    min-height: 0;
-  }
-  .l-half {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 0;
-  }
-  .kbd-grid {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    justify-content: center;
-  }
-  .kbd-row {
-    display: flex;
-    gap: 2px;
-  }
-  .key {
-    flex: 1;
-    text-align: center;
-    padding: 4px 1px;
-    border-radius: 4px;
-    font-size: 7px;
-    font-weight: 600;
-    border: 1px solid rgba(128,128,128,0.22);
-  }
-  .dpad {
-    width: 76px;
-    height: 76px;
-    border-radius: 50%;
-    margin: 4px auto;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(3, 1fr);
-    place-items: center;
-    font-size: 8px;
-    font-weight: 700;
-    border: 1px solid rgba(128,128,128,0.28);
-  }
-  .nav-bar {
-    display: flex;
-    justify-content: space-around;
-    padding-top: 3px;
-    border-top: 1px solid rgba(128,128,128,0.18);
-    font-size: 7.5px;
-    font-weight: 600;
-  }
-  @media (max-width: 640px) {
-    .grid { grid-template-columns: 1fr; }
-  }
+  :root { --bg:#f3f4f6; --card:#fff; --text:#111827; --muted:#6b7280; --border:#e5e7eb; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,sans-serif; background:var(--bg); color:var(--text); padding:24px; }
+  header { max-width:1440px; margin:0 auto 20px; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px; }
+  header h1 { font-size:22px; font-weight:700; }
+  header p { font-size:13px; color:var(--muted); }
+  .filters { display:flex; flex-wrap:wrap; gap:8px; }
+  .filter-btn { border:1px solid var(--border); background:var(--card); color:var(--text); padding:6px 12px; border-radius:999px; font-size:12px; font-weight:600; cursor:pointer; }
+  .filter-btn.active { background:#111827; color:#fff; border-color:#111827; }
+  .grid { max-width:1440px; margin:0 auto; display:grid; grid-template-columns:repeat(auto-fill,minmax(580px,1fr)); gap:20px; }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:10px; }
+  .head { display:flex; justify-content:space-between; align-items:center; }
+  .title { font-size:14px; font-weight:700; }
+  .meta { font-size:11px; color:var(--muted); }
+  .stage { display:flex; align-items:center; justify-content:space-between; gap:14px; background:#f8fafc; border:1px solid var(--border); border-radius:12px; padding:14px; overflow-x:auto; }
+  .p-frame { width:160px; height:300px; border-radius:20px; border:3px solid #1f2937; padding:8px; display:flex; flex-direction:column; gap:5px; flex-shrink:0; font-size:8.5px; overflow:hidden; }
+  .l-frame { width:330px; height:172px; border-radius:18px; border:3px solid #1f2937; padding:8px; display:flex; flex-direction:column; gap:5px; flex-shrink:0; font-size:8.5px; overflow:hidden; }
+  .bar { display:flex; justify-content:space-between; align-items:center; padding:3px 6px; border-radius:6px; font-weight:600; font-size:8px; }
+  .pill { padding:2px 6px; border-radius:999px; font-size:7px; font-weight:700; }
+  .row { display:flex; gap:4px; align-items:stretch; }
+  .col { display:flex; flex-direction:column; gap:4px; }
+  .box { border-radius:8px; padding:5px; border:1px solid rgba(128,128,128,0.24); display:flex; align-items:center; justify-content:center; text-align:center; font-weight:600; }
+  .pad { flex:1; border-radius:10px; position:relative; border:1px solid rgba(128,128,128,0.25); display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:600; }
+  .dot { width:12px; height:12px; border-radius:50%; position:absolute; opacity:0.8; }
+  .vs { position:absolute; right:4px; top:14%; bottom:14%; width:4px; border-radius:4px; opacity:0.5; }
+  .hs { position:absolute; bottom:4px; left:14%; right:14%; height:4px; border-radius:4px; opacity:0.5; }
+  .nav { display:flex; justify-content:space-around; padding-top:3px; border-top:1px solid rgba(128,128,128,0.2); font-size:7.5px; font-weight:600; }
+  .kbd { display:flex; flex-direction:column; gap:2px; flex:1; justify-content:center; }
+  .krow { display:flex; gap:2px; }
+  .k { flex:1; text-align:center; padding:3px 1px; border-radius:4px; font-size:6.8px; font-weight:600; border:1px solid rgba(128,128,128,0.22); }
+  .dpad { width:72px; height:72px; border-radius:50%; display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); place-items:center; font-size:8px; font-weight:700; border:1px solid rgba(128,128,128,0.28); margin:auto; }
+  @media (max-width:640px){ .grid{ grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
 <header>
   <div>
-    <h1>AeroPad — 40 Plain &amp; Polished UI/UX Mockups</h1>
-    <p>Each card shows Portrait + Landscape side-by-side. Zero neon, clean Material 3 surfaces, horizontal/vertical scroll, colored multi-touch, and Universal TV Remote.</p>
+    <h1>AeroPad — 40 Distinct UI/UX Layouts &amp; Screens</h1>
+    <p>Every card has a genuinely different structural layout (not just color swaps), showing Portrait + Landscape side-by-side.</p>
   </div>
   <div class="filters" id="filters">
     <button class="filter-btn active" data-filter="all">All (40)</button>
-    <button class="filter-btn" data-filter="Trackpad">Trackpad (10)</button>
-    <button class="filter-btn" data-filter="TV Remote">TV Remote (10)</button>
-    <button class="filter-btn" data-filter="Keyboard">Keyboard (10)</button>
-    <button class="filter-btn" data-filter="Gamepad">Gamepad (10)</button>
+    <button class="filter-btn" data-filter="Home">Home &amp; Connect (6)</button>
+    <button class="filter-btn" data-filter="Trackpad">Trackpad (9)</button>
+    <button class="filter-btn" data-filter="TV Remote">Universal TV (9)</button>
+    <button class="filter-btn" data-filter="Keyboard">Keyboard (8)</button>
+    <button class="filter-btn" data-filter="Gamepad">Gamepad &amp; Macros (8)</button>
   </div>
 </header>
-
 <main class="grid" id="gallery"></main>
 
 <script>
-const themes = [
-  { name: "Crisp White", bg: "#FFFFFF", surface: "#F3F4F6", text: "#111827", accent: "#2563EB", touch1: "#3B82F6", touch2: "#EF4444" },
-  { name: "Matte Charcoal", bg: "#141619", surface: "#1F2328", text: "#F3F4F6", accent: "#60A5FA", touch1: "#60A5FA", touch2: "#F59E0B" },
-  { name: "Warm Paper", bg: "#FAF8F5", surface: "#EFECE6", text: "#1F2937", accent: "#0D9488", touch1: "#14B8A6", touch2: "#F97316" },
-  { name: "Slate Night", bg: "#0F172A", surface: "#1E293B", text: "#F8FAFC", accent: "#38BDF8", touch1: "#38BDF8", touch2: "#A78BFA" },
-  { name: "Soft Sage", bg: "#F4F7F5", surface: "#E6ECE8", text: "#14261C", accent: "#15803D", touch1: "#22C55E", touch2: "#3B82F6" },
-  { name: "Graphite Pro", bg: "#18181B", surface: "#27272A", text: "#FAFAFA", accent: "#A1A1AA", touch1: "#60A5FA", touch2: "#FB7185" },
-  { name: "Nordic Mist", bg: "#F1F5F9", surface: "#E2E8F0", text: "#0F172A", accent: "#475569", touch1: "#0284C7", touch2: "#E11D48" },
-  { name: "Espresso Dark", bg: "#1C1917", surface: "#292524", text: "#F5F5F4", accent: "#D97706", touch1: "#F59E0B", touch2: "#38BDF8" },
-  { name: "Pure OLED", bg: "#000000", surface: "#121212", text: "#FFFFFF", accent: "#9CA3AF", touch1: "#3B82F6", touch2: "#10B981" },
-  { name: "Studio Gray", bg: "#E5E7EB", surface: "#F9FAFB", text: "#111827", accent: "#374151", touch1: "#2563EB", touch2: "#DC2626" }
+const palettes = [
+  { bg:"#FFFFFF", s:"#F3F4F6", t:"#111827", a:"#2563EB", t1:"#3B82F6", t2:"#EF4444" },
+  { bg:"#141619", s:"#1F2328", t:"#F3F4F6", a:"#60A5FA", t1:"#60A5FA", t2:"#F59E0B" },
+  { bg:"#FAF8F5", s:"#EFECE6", t:"#1F2937", a:"#0D9488", t1:"#14B8A6", t2:"#F97316" },
+  { bg:"#0F172A", s:"#1E293B", t:"#F8FAFC", a:"#38BDF8", t1:"#38BDF8", t2:"#A78BFA" },
+  { bg:"#F4F7F5", s:"#E6ECE8", t:"#14261C", a:"#15803D", t1:"#22C55E", t2:"#3B82F6" },
+  { bg:"#18181B", s:"#27272A", t:"#FAFAFA", a:"#71717A", t1:"#60A5FA", t2:"#FB7185" }
 ];
 
-const screens = ["Trackpad", "TV Remote", "Keyboard", "Gamepad"];
-const layouts = ["Standard", "Compact", "Edge-to-Edge", "Carded", "Split-Action", "Minimal", "Ergonomic", "One-Handed", "Pro-Bar", "Classic"];
+const designs = [
+  // HOME & CONNECT (6)
+  { cat:"Home", name:"01 · Hero Status + 2x2 Mode Grid", p:(c)=>`
+    <div class="box" style="background:${c.s};justify-content:space-between;padding:8px"><span>Living Room PC</span><span class="pill" style="background:${c.a};color:#fff">Ready</span></div>
+    <div class="row" style="flex:1"><div class="box" style="flex:1;background:${c.s}">Trackpad</div><div class="box" style="flex:1;background:${c.s}">Keyboard</div></div>
+    <div class="row" style="flex:1"><div class="box" style="flex:1;background:${c.s}">TV Remote</div><div class="box" style="flex:1;background:${c.s}">Gamepad</div></div>
+    <div class="nav"><span>Home</span><span>Devices</span><span>Settings</span></div>`,
+    l:(c)=>`<div class="row" style="flex:1"><div class="col" style="width:38%"><div class="box" style="flex:1;background:${c.s}">Living Room PC<br/>Connected</div><div class="box" style="background:${c.a};color:#fff">Switch Host</div></div><div class="col" style="flex:1"><div class="row" style="flex:1"><div class="box" style="flex:1;background:${c.s}">Trackpad</div><div class="box" style="flex:1;background:${c.s}">Keyboard</div></div><div class="row" style="flex:1"><div class="box" style="flex:1;background:${c.s}">TV Remote</div><div class="box" style="flex:1;background:${c.s}">Gamepad</div></div></div></div>` },
+  { cat:"Home", name:"02 · Device List + Quick Launch", p:(c)=>`
+    <div class="box" style="background:${c.a};color:#fff">Pair New Device</div>
+    <div class="col" style="flex:1"><div class="box" style="background:${c.s};justify-content:space-between"><span>MacBook Pro</span><span>●</span></div><div class="box" style="background:${c.s};justify-content:space-between"><span>Samsung TV</span><span>○</span></div><div class="box" style="background:${c.s};justify-content:space-between"><span>Gaming PC</span><span>○</span></div></div>
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">Mouse</div><div class="box" style="flex:1;background:${c.s}">Keys</div><div class="box" style="flex:1;background:${c.s}">TV</div></div>`,
+    l:(c)=>`<div class="row" style="flex:1"><div class="col" style="flex:1"><div class="box" style="background:${c.s}">MacBook Pro ●</div><div class="box" style="background:${c.s}">Samsung TV ○</div><div class="box" style="background:${c.s}">Gaming PC ○</div></div><div class="col" style="flex:1"><div class="box" style="flex:1;background:${c.a};color:#fff">Open Trackpad</div><div class="box" style="flex:1;background:${c.s}">Open TV Remote</div></div></div>` },
+  { cat:"Home", name:"03 · Recent Host Carousel + Dock", p:(c)=>`
+    <div class="box" style="height:70px;background:${c.s}">Active: Office Laptop<br/>HID Link 100%</div>
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">Macros</div><div class="box" style="flex:1;background:${c.s}">Layouts</div></div>
+    <div class="box" style="flex:1;background:${c.s}">Quick Trackpad Preview</div>
+    <div class="nav"><span>Home</span><span>Pad</span><span>TV</span><span>More</span></div>`,
+    l:(c)=>`<div class="row" style="flex:1"><div class="box" style="flex:1;background:${c.s}">Office Laptop<br/>HID 100%</div><div class="col" style="flex:1"><div class="box" style="flex:1;background:${c.s}">Quick Trackpad</div><div class="row"><div class="box" style="flex:1;background:${c.s}">Macros</div><div class="box" style="flex:1;background:${c.s}">Layouts</div></div></div></div>` },
+  { cat:"Home", name:"04 · Minimalist Single-Tap Hub", p:(c)=>`
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:6px">
+      <div class="box" style="background:${c.a};color:#fff;padding:10px">Resume Trackpad</div>
+      <div class="box" style="background:${c.s};padding:8px">Universal TV</div>
+      <div class="box" style="background:${c.s};padding:8px">Full Keyboard</div>
+      <div class="box" style="background:${c.s};padding:8px">Gamepad</div>
+    </div>`,
+    l:(c)=>`<div class="row" style="flex:1;align-items:center"><div class="box" style="flex:1;height:100%;background:${c.a};color:#fff">Resume Trackpad</div><div class="col" style="flex:1;height:100%"><div class="box" style="flex:1;background:${c.s}">Universal TV</div><div class="box" style="flex:1;background:${c.s}">Full Keyboard</div><div class="box" style="flex:1;background:${c.s}">Gamepad</div></div></div>` },
+  { cat:"Home", name:"05 · Sidebar Rail + Live Health", p:(c)=>`
+    <div class="row" style="flex:1"><div class="col" style="width:42px"><div class="box" style="flex:1;background:${c.a};color:#fff">H</div><div class="box" style="flex:1;background:${c.s}">M</div><div class="box" style="flex:1;background:${c.s}">K</div><div class="box" style="flex:1;background:${c.s}">TV</div></div><div class="col" style="flex:1"><div class="box" style="background:${c.s}">Latency: 8ms</div><div class="box" style="flex:1;background:${c.s}">Connected Hosts</div></div></div>`,
+    l:(c)=>`<div class="row" style="flex:1"><div class="col" style="width:52px"><div class="box" style="flex:1;background:${c.a};color:#fff">Home</div><div class="box" style="flex:1;background:${c.s}">Mouse</div><div class="box" style="flex:1;background:${c.s}">TV</div></div><div class="box" style="flex:1;background:${c.s}">Latency 8ms · Host: Living Room PC</div></div>` },
+  { cat:"Home", name:"06 · Carded Dashboard + Quick Text", p:(c)=>`
+    <div class="box" style="background:${c.s}">Type to Host...</div>
+    <div class="row" style="flex:1"><div class="box" style="flex:1;background:${c.s}">Mouse</div><div class="box" style="flex:1;background:${c.s}">TV</div></div>
+    <div class="box" style="background:${c.s}">Clipboard Mirror</div>`,
+    l:(c)=>`<div class="col" style="flex:1"><div class="box" style="background:${c.s}">Type to Host / Clipboard Mirror</div><div class="row" style="flex:1"><div class="box" style="flex:1;background:${c.s}">Mouse</div><div class="box" style="flex:1;background:${c.s}">Keyboard</div><div class="box" style="flex:1;background:${c.s}">TV</div></div></div>` },
+
+  // TRACKPAD (9)
+  { cat:"Trackpad", name:"07 · Classic L/M/R + Dual Scroll", p:(c)=>`
+    <div class="pad" style="background:${c.s}"><span>2-Finger Scroll</span><div class="dot" style="background:${c.t1};left:28%;top:35%"></div><div class="dot" style="background:${c.t2};left:46%;top:42%"></div><div class="vs" style="background:${c.a}"></div><div class="hs" style="background:${c.a}"></div></div>
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">L</div><div class="box" style="flex:1;background:${c.s}">M</div><div class="box" style="flex:1;background:${c.s}">R</div></div>`,
+    l:(c)=>`<div class="row" style="flex:1"><div class="pad" style="background:${c.s}"><span>Trackpad + H/V Scroll</span><div class="dot" style="background:${c.t1};left:30%;top:40%"></div><div class="vs" style="background:${c.a}"></div><div class="hs" style="background:${c.a}"></div></div><div class="col" style="width:54px"><div class="box" style="flex:1;background:${c.s}">L</div><div class="box" style="flex:1;background:${c.s}">M</div><div class="box" style="flex:1;background:${c.s}">R</div></div></div>` },
+  { cat:"Trackpad", name:"08 · Edge-to-Edge Gesture Pad", p:(c)=>`
+    <div class="pad" style="background:${c.s}"><span>Full Surface · No Buttons<br/>1-Tap=L · 2-Tap=R</span><div class="dot" style="background:${c.t1};left:55%;top:48%"></div><div class="hs" style="background:${c.a}"></div></div>`,
+    l:(c)=>`<div class="pad" style="background:${c.s}"><span>Full-Screen Gesture Pad (Pinch, 2-Finger H/V Scroll)</span><div class="dot" style="background:${c.t1};left:40%;top:45%"></div><div class="dot" style="background:${c.t2};left:55%;top:50%"></div><div class="hs" style="background:${c.a}"></div></div>` },
+  { cat:"Trackpad", name:"09 · Top Click Buttons + Scroll Bar", p:(c)=>`
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">Left Click</div><div class="box" style="flex:1;background:${c.s}">Right Click</div></div>
+    <div class="pad" style="background:${c.s}"><span>Trackpad</span><div class="dot" style="background:${c.t1};left:38%;top:50%"></div><div class="vs" style="background:${c.a}"></div><div class="hs" style="background:${c.a}"></div></div>`,
+    l:(c)=>`<div class="col" style="flex:1"><div class="row"><div class="box" style="flex:1;background:${c.s}">Left</div><div class="box" style="flex:1;background:${c.s}">Right</div></div><div class="pad" style="background:${c.s}"><span>Trackpad</span><div class="hs" style="background:${c.a}"></div></div></div>` },
+  { cat:"Trackpad", name:"10 · Left-Handed Vertical Strip", p:(c)=>`
+    <div class="row" style="flex:1"><div class="box" style="width:26px;background:${c.s}">V<br/>S<br/>c</div><div class="pad" style="background:${c.s}"><span>Left-Handed</span><div class="dot" style="background:${c.t1};left:50%;top:40%"></div><div class="hs" style="background:${c.a}"></div></div></div>
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">R</div><div class="box" style="flex:1;background:${c.s}">L</div></div>`,
+    l:(c)=>`<div class="row" style="flex:1"><div class="col" style="width:48px"><div class="box" style="flex:1;background:${c.s}">L</div><div class="box" style="flex:1;background:${c.s}">R</div></div><div class="pad" style="background:${c.s}"><span>Left-Handed Pad</span><div class="hs" style="background:${c.a}"></div></div></div>` },
+  { cat:"Trackpad", name:"11 · Dedicated Horizontal Scroll Slider", p:(c)=>`
+    <div class="pad" style="background:${c.s}"><span>Cursor Area</span><div class="dot" style="background:${c.t1};left:45%;top:35%"></div></div>
+    <div class="box" style="background:${c.s}">◀ Horizontal Scroll ▶</div>
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">L</div><div class="box" style="flex:1;background:${c.s}">R</div></div>`,
+    l:(c)=>`<div class="row" style="flex:1"><div class="pad" style="background:${c.s}"><span>Cursor Area</span></div><div class="col" style="width:90px"><div class="box" style="flex:1;background:${c.s}">◀ H-Scroll ▶</div><div class="row"><div class="box" style="flex:1;background:${c.s}">L</div><div class="box" style="flex:1;background:${c.s}">R</div></div></div></div>` },
+  { cat:"Trackpad", name:"12 · Media Bar + Trackpad", p:(c)=>`
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">⏮</div><div class="box" style="flex:1;background:${c.s}">⏯</div><div class="box" style="flex:1;background:${c.s}">⏭</div><div class="box" style="flex:1;background:${c.s}">🔊</div></div>
+    <div class="pad" style="background:${c.s}"><span>Trackpad</span><div class="dot" style="background:${c.t2};left:40%;top:45%"></div><div class="hs" style="background:${c.a}"></div></div>
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">L</div><div class="box" style="flex:1;background:${c.s}">R</div></div>`,
+    l:(c)=>`<div class="row" style="flex:1"><div class="col" style="width:44px"><div class="box" style="flex:1;background:${c.s}">⏯</div><div class="box" style="flex:1;background:${c.s}">🔊</div></div><div class="pad" style="background:${c.s}"><span>Trackpad</span><div class="hs" style="background:${c.a}"></div></div></div>` },
+  { cat:"Trackpad", name:"13 · Air Mouse + Trackpad Toggle", p:(c)=>`
+    <div class="row"><div class="box" style="flex:1;background:${c.a};color:#fff">Touch</div><div class="box" style="flex:1;background:${c.s}">Air Gyro</div></div>
+    <div class="pad" style="background:${c.s}"><span>Multi-Touch Surface</span><div class="dot" style="background:${c.t1};left:30%;top:40%"></div><div class="dot" style="background:${c.t2};left:55%;top:50%"></div></div>`,
+    l:(c)=>`<div class="row" style="flex:1"><div class="col" style="width:70px"><div class="box" style="flex:1;background:${c.a};color:#fff">Touch</div><div class="box" style="flex:1;background:${c.s}">Air Gyro</div></div><div class="pad" style="background:${c.s}"><span>Multi-Touch Surface</span></div></div>` },
+  { cat:"Trackpad", name:"14 · Precision DPI Switcher", p:(c)=>`
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">Slow</div><div class="box" style="flex:1;background:${c.a};color:#fff">Med</div><div class="box" style="flex:1;background:${c.s}">Fast</div></div>
+    <div class="pad" style="background:${c.s}"><span>Trackpad</span><div class="hs" style="background:${c.a}"></div></div>
+    <div class="row"><div class="box" style="flex:2;background:${c.s}">Left</div><div class="box" style="flex:1;background:${c.s}">Right</div></div>`,
+    l:(c)=>`<div class="row" style="flex:1"><div class="pad" style="background:${c.s}"><span>Trackpad</span></div><div class="col" style="width:60px"><div class="box" style="flex:1;background:${c.a};color:#fff">Med</div><div class="box" style="flex:1;background:${c.s}">L</div><div class="box" style="flex:1;background:${c.s}">R</div></div></div>` },
+  { cat:"Trackpad", name:"15 · Floating Mini-Keyboard Trigger", p:(c)=>`
+    <div class="pad" style="background:${c.s}"><span>Trackpad</span><div class="dot" style="background:${c.t1};left:50%;top:50%"></div><div class="hs" style="background:${c.a}"></div></div>
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">L</div><div class="box" style="flex:1;background:${c.a};color:#fff">⌨ Type</div><div class="box" style="flex:1;background:${c.s}">R</div></div>`,
+    l:(c)=>`<div class="row" style="flex:1"><div class="pad" style="background:${c.s}"><span>Trackpad</span></div><div class="box" style="width:80px;background:${c.a};color:#fff">⌨ Type</div></div>` },
+
+  // UNIVERSAL TV (9)
+  { cat:"TV Remote", name:"16 · Platform Chips + Circular D-Pad", p:(c)=>`
+    <div class="row"><div class="box" style="flex:1;background:${c.a};color:#fff">Android</div><div class="box" style="flex:1;background:${c.s}">Samsung</div><div class="box" style="flex:1;background:${c.s}">webOS</div></div>
+    <div class="dpad" style="background:${c.s}"><span></span><span>▲</span><span></span><span>◀</span><span style="color:${c.a}">OK</span><span>▶</span><span></span><span>▼</span><span></span></div>
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">Back</div><div class="box" style="flex:1;background:${c.s}">Home</div><div class="box" style="flex:1;background:${c.s}">Mute</div></div>
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">Vol -/+</div><div class="box" style="flex:1;background:${c.s}">Ch -/+</div></div>`,
+    l:(c)=>`<div class="row" style="flex:1"><div class="dpad" style="background:${c.s}"><span></span><span>▲</span><span></span><span>◀</span><span style="color:${c.a}">OK</span><span>▶</span><span></span><span>▼</span><span></span></div><div class="col" style="flex:1;justify-content:center"><div class="row"><div class="box" style="flex:1;background:${c.a};color:#fff">Android TV</div><div class="box" style="flex:1;background:${c.s}">Fire TV</div></div><div class="row"><div class="box" style="flex:1;background:${c.s}">Back</div><div class="box" style="flex:1;background:${c.s}">Home</div><div class="box" style="flex:1;background:${c.s}">Mute</div></div><div class="row"><div class="box" style="flex:1;background:${c.s}">Vol -/+</div><div class="box" style="flex:1;background:${c.s}">Ch -/+</div></div></div></div>` },
+  { cat:"TV Remote", name:"17 · Touchpad-First Smart TV", p:(c)=>`
+    <div class="pad" style="background:${c.s}"><span>Swipe to Navigate TV</span><div class="dot" style="background:${c.t1};left:48%;top:45%"></div></div>
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">Back</div><div class="box" style="flex:1;background:${c.s}">Home</div><div class="box" style="flex:1;background:${c.s}">⌨</div></div>
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">Vol -</div><div class="box" style="flex:1;background:${c.s}">⏯</div><div class="box" style="flex:1;background:${c.s}">Vol +</div></div>`,
+    l:(c)=>`<div class="row" style="flex:1"><div class="pad" style="background:${c.s}"><span>TV Touchpad</span></div><div class="col" style="width:110px"><div class="box" style="flex:1;background:${c.s}">Back / Home</div><div class="box" style="flex:1;background:${c.s}">Vol - / +</div><div class="box" style="flex:1;background:${c.s}">⏯ / ⌨</div></div></div>` },
+  { cat:"TV Remote", name:"18 · Classic Physical-Style Remote", p:(c)=>`
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">Power</div><div class="box" style="flex:1;background:${c.s}">Input</div></div>
+    <div class="dpad" style="background:${c.s}"><span></span><span>▲</span><span></span><span>◀</span><span>OK</span><span>▶</span><span></span><span>▼</span><span></span></div>
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">Vol +</div><div class="box" style="flex:1;background:${c.s}">Ch +</div></div>
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">Vol -</div><div class="box" style="flex:1;background:${c.s}">Ch -</div></div>`,
+    l:(c)=>`<div class="row" style="flex:1"><div class="col" style="width:70px"><div class="box" style="flex:1;background:${c.s}">Power</div><div class="box" style="flex:1;background:${c.s}">Input</div></div><div class="dpad" style="background:${c.s}"><span></span><span>▲</span><span></span><span>◀</span><span>OK</span><span>▶</span><span></span><span>▼</span><span></span></div><div class="col" style="width:70px"><div class="box" style="flex:1;background:${c.s}">Vol -/+</div><div class="box" style="flex:1;background:${c.s}">Ch -/+</div></div></div>` },
+  { cat:"TV Remote", name:"19 · Streaming Apps + Media Deck", p:(c)=>`
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">Netflix</div><div class="box" style="flex:1;background:${c.s}">YouTube</div><div class="box" style="flex:1;background:${c.s}">Prime</div></div>
+    <div class="dpad" style="background:${c.s}"><span></span><span>▲</span><span></span><span>◀</span><span>OK</span><span>▶</span><span></span><span>▼</span><span></span></div>
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">⏮</div><div class="box" style="flex:1;background:${c.a};color:#fff">⏯</div><div class="box" style="flex:1;background:${c.s}">⏭</div></div>`,
+    l:(c)=>`<div class="row" style="flex:1"><div class="dpad" style="background:${c.s}"><span></span><span>▲</span><span></span><span>◀</span><span>OK</span><span>▶</span><span></span><span>▼</span><span></span></div><div class="col" style="flex:1"><div class="row"><div class="box" style="flex:1;background:${c.s}">Netflix</div><div class="box" style="flex:1;background:${c.s}">YouTube</div></div><div class="row" style="flex:1"><div class="box" style="flex:1;background:${c.s}">⏮</div><div class="box" style="flex:1;background:${c.a};color:#fff">⏯</div><div class="box" style="flex:1;background:${c.s}">⏭</div></div></div></div>` },
+  { cat:"TV Remote", name:"20 · Numpad + Channel Zapper", p:(c)=>`
+    <div class="kbd"><div class="krow"><div class="k" style="background:${c.s}">1</div><div class="k" style="background:${c.s}">2</div><div class="k" style="background:${c.s}">3</div></div><div class="krow"><div class="k" style="background:${c.s}">4</div><div class="k" style="background:${c.s}">5</div><div class="k" style="background:${c.s}">6</div></div><div class="krow"><div class="k" style="background:${c.s}">7</div><div class="k" style="background:${c.s}">8</div><div class="k" style="background:${c.s}">9</div></div><div class="krow"><div class="k" style="background:${c.s}">Prev</div><div class="k" style="background:${c.s}">0</div><div class="k" style="background:${c.s}">Guide</div></div></div>
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">Vol -/+</div><div class="box" style="flex:1;background:${c.s}">Ch -/+</div></div>`,
+    l:(c)=>`<div class="row" style="flex:1"><div class="kbd" style="flex:1"><div class="krow"><div class="k" style="background:${c.s}">1</div><div class="k" style="background:${c.s}">2</div><div class="k" style="background:${c.s}">3</div></div><div class="krow"><div class="k" style="background:${c.s}">4</div><div class="k" style="background:${c.s}">5</div><div class="k" style="background:${c.s}">6</div></div><div class="krow"><div class="k" style="background:${c.s}">7</div><div class="k" style="background:${c.s}">8</div><div class="k" style="background:${c.s}">9</div></div></div><div class="col" style="width:90px"><div class="box" style="flex:1;background:${c.s}">Vol -/+</div><div class="box" style="flex:1;background:${c.s}">Ch -/+</div></div></div>` },
+  { cat:"TV Remote", name:"21 · Google TV / Fire TV Minimal", p:(c)=>`
+    <div class="dpad" style="background:${c.s}"><span></span><span>▲</span><span></span><span>◀</span><span style="color:${c.a}">●</span><span>▶</span><span></span><span>▼</span><span></span></div>
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">◀ Back</div><div class="box" style="flex:1;background:${c.a};color:#fff">⌂ Home</div></div>
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">🎙 Voice</div><div class="box" style="flex:1;background:${c.s}">🔇 Mute</div></div>`,
+    l:(c)=>`<div class="row" style="flex:1"><div class="dpad" style="background:${c.s}"><span></span><span>▲</span><span></span><span>◀</span><span style="color:${c.a}">●</span><span>▶</span><span></span><span>▼</span><span></span></div><div class="col" style="flex:1"><div class="box" style="flex:1;background:${c.a};color:#fff">⌂ Home</div><div class="box" style="flex:1;background:${c.s}">◀ Back</div><div class="box" style="flex:1;background:${c.s}">🎙 Voice</div></div></div>` },
+  { cat:"TV Remote", name:"22 · Samsung Tizen / LG webOS Bar", p:(c)=>`
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">Source</div><div class="box" style="flex:1;background:${c.s}">Settings</div><div class="box" style="flex:1;background:${c.s}">Power</div></div>
+    <div class="dpad" style="background:${c.s}"><span></span><span>▲</span><span></span><span>◀</span><span>OK</span><span>▶</span><span></span><span>▼</span><span></span></div>
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">Return</div><div class="box" style="flex:1;background:${c.s}">Smart Hub</div></div>`,
+    l:(c)=>`<div class="row" style="flex:1"><div class="dpad" style="background:${c.s}"><span></span><span>▲</span><span></span><span>◀</span><span>OK</span><span>▶</span><span></span><span>▼</span><span></span></div><div class="col" style="flex:1"><div class="box" style="flex:1;background:${c.s}">Source / Settings</div><div class="box" style="flex:1;background:${c.s}">Return / Smart Hub</div></div></div>` },
+  { cat:"TV Remote", name:"23 · One-Handed Bottom D-Pad", p:(c)=>`
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">Power</div><div class="box" style="flex:1;background:${c.s}">Mute</div><div class="box" style="flex:1;background:${c.s}">⌨</div></div>
+    <div class="row" style="flex:1"><div class="box" style="flex:1;background:${c.s}">Vol -/+</div><div class="box" style="flex:1;background:${c.s}">Ch -/+</div></div>
+    <div class="dpad" style="background:${c.s}"><span></span><span>▲</span><span></span><span>◀</span><span style="color:${c.a}">OK</span><span>▶</span><span></span><span>▼</span><span></span></div>`,
+    l:(c)=>`<div class="row" style="flex:1"><div class="col" style="flex:1"><div class="box" style="flex:1;background:${c.s}">Vol -/+</div><div class="box" style="flex:1;background:${c.s}">Ch -/+</div></div><div class="dpad" style="background:${c.s}"><span></span><span>▲</span><span></span><span>◀</span><span>OK</span><span>▶</span><span></span><span>▼</span><span></span></div></div>` },
+  { cat:"TV Remote", name:"24 · TV + Keyboard Combo", p:(c)=>`
+    <div class="dpad" style="width:62px;height:62px;background:${c.s}"><span></span><span>▲</span><span></span><span>◀</span><span>OK</span><span>▶</span><span></span><span>▼</span><span></span></div>
+    <div class="kbd"><div class="krow">${"qwertyuiop".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}</div><div class="krow">${"asdfghjkl".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}</div><div class="krow"><div class="k" style="background:${c.s};flex:3">Space</div><div class="k" style="background:${c.a};color:#fff">Search</div></div></div>`,
+    l:(c)=>`<div class="row" style="flex:1"><div class="dpad" style="background:${c.s}"><span></span><span>▲</span><span></span><span>◀</span><span>OK</span><span>▶</span><span></span><span>▼</span><span></span></div><div class="kbd" style="flex:1.4"><div class="krow">${"qwertyuiop".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}</div><div class="krow">${"asdfghjkl".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}</div><div class="krow"><div class="k" style="background:${c.s};flex:3">Space</div><div class="k" style="background:${c.a};color:#fff">Go</div></div></div></div>` },
+
+  // KEYBOARD (8)
+  { cat:"Keyboard", name:"25 · Full QWERTY + Numeric Row (Shift Letters Only)", p:(c)=>`
+    <div class="kbd">
+      <div class="krow">${"1234567890".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}</div>
+      <div class="krow">${"QWERTYUIOP".split("").map((k,i)=>`<div class="k" style="background:${i===2?c.t1:c.s};color:${i===2?'#fff':c.t}">${k}</div>`).join("")}</div>
+      <div class="krow">${"ASDFGHJKL".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}</div>
+      <div class="krow"><div class="k" style="background:${c.a};color:#fff;flex:1.5">⇧</div>${"ZXCVBNM".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}</div>
+      <div class="krow"><div class="k" style="background:${c.s}">Ctrl</div><div class="k" style="background:${c.s};flex:3">Space</div><div class="k" style="background:${c.s}">⏎</div></div>
+    </div>`,
+    l:(c)=>`<div class="kbd"><div class="krow">${"1234567890".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}</div><div class="krow">${"QWERTYUIOP".split("").map((k,i)=>`<div class="k" style="background:${i===2?c.t1:c.s};color:${i===2?'#fff':c.t}">${k}</div>`).join("")}</div><div class="krow">${"ASDFGHJKL".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}</div><div class="krow"><div class="k" style="background:${c.a};color:#fff;flex:1.4">Shift</div>${"ZXCVBNM".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}<div class="k" style="background:${c.s};flex:1.4">⌫</div></div></div>` },
+  { cat:"Keyboard", name:"26 · Trackpad Top + QWERTY Bottom", p:(c)=>`
+    <div class="pad" style="flex:0.6;background:${c.s}"><span>Mini Trackpad</span><div class="dot" style="background:${c.t1};left:45%;top:40%"></div></div>
+    <div class="kbd"><div class="krow">${"qwertyuiop".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}</div><div class="krow">${"asdfghjkl".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}</div><div class="krow"><div class="k" style="background:${c.s};flex:3">Space</div><div class="k" style="background:${c.s}">⏎</div></div></div>`,
+    l:(c)=>`<div class="row" style="flex:1"><div class="pad" style="flex:0.8;background:${c.s}"><span>Trackpad</span></div><div class="kbd" style="flex:1.3"><div class="krow">${"qwertyuiop".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}</div><div class="krow">${"asdfghjkl".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}</div><div class="krow"><div class="k" style="background:${c.s};flex:3">Space</div><div class="k" style="background:${c.s}">⏎</div></div></div></div>` },
+  { cat:"Keyboard", name:"27 · Function Bar (F1-F12) + Arrows", p:(c)=>`
+    <div class="krow"><div class="k" style="background:${c.s}">Esc</div><div class="k" style="background:${c.s}">F1</div><div class="k" style="background:${c.s}">F2</div><div class="k" style="background:${c.s}">F5</div><div class="k" style="background:${c.s}">F11</div></div>
+    <div class="kbd"><div class="krow">${"qwertyuiop".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}</div><div class="krow">${"asdfghjkl".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}</div></div>
+    <div class="krow"><div class="k" style="background:${c.s}">◀</div><div class="k" style="background:${c.s}">▲</div><div class="k" style="background:${c.s}">▼</div><div class="k" style="background:${c.s}">▶</div></div>`,
+    l:(c)=>`<div class="kbd"><div class="krow"><div class="k" style="background:${c.s}">Esc</div><div class="k" style="background:${c.s}">F1</div><div class="k" style="background:${c.s}">F2</div><div class="k" style="background:${c.s}">F5</div><div class="k" style="background:${c.s}">F11</div><div class="k" style="background:${c.s}">F12</div></div><div class="krow">${"qwertyuiop".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}</div><div class="krow"><div class="k" style="background:${c.s}">◀</div><div class="k" style="background:${c.s}">▲</div><div class="k" style="background:${c.s}">▼</div><div class="k" style="background:${c.s}">▶</div></div></div>` },
+  { cat:"Keyboard", name:"28 · Programmer / Terminal Shortcuts", p:(c)=>`
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">Ctrl+C</div><div class="box" style="flex:1;background:${c.s}">Ctrl+V</div><div class="box" style="flex:1;background:${c.s}">Tab</div></div>
+    <div class="kbd"><div class="krow">${"1234567890".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}</div><div class="krow">${"qwertyuiop".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}</div><div class="krow"><div class="k" style="background:${c.s}">{</div><div class="k" style="background:${c.s}">}</div><div class="k" style="background:${c.s}">[</div><div class="k" style="background:${c.s}">]</div><div class="k" style="background:${c.s}">/</div></div></div>`,
+    l:(c)=>`<div class="kbd"><div class="krow"><div class="k" style="background:${c.s}">Ctrl+C</div><div class="k" style="background:${c.s}">Ctrl+V</div><div class="k" style="background:${c.s}">Tab</div><div class="k" style="background:${c.s}">Esc</div></div><div class="krow">${"1234567890".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}</div><div class="krow">${"qwertyuiop".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}</div></div>` },
+  { cat:"Keyboard", name:"29 · Split-Thumb Landscape Board", p:(c)=>`
+    <div class="kbd"><div class="krow">${"qwertyuiop".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}</div><div class="krow">${"asdfghjkl".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}</div><div class="krow"><div class="k" style="background:${c.s};flex:2">Space</div></div></div>`,
+    l:(c)=>`<div class="row" style="flex:1"><div class="kbd" style="flex:1"><div class="krow">${"qwert".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}</div><div class="krow">${"asdfg".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}</div><div class="krow"><div class="k" style="background:${c.s}">Space</div></div></div><div style="width:16px"></div><div class="kbd" style="flex:1"><div class="krow">${"yuiop".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}</div><div class="krow">${"hjkl".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}</div><div class="krow"><div class="k" style="background:${c.s}">⏎</div></div></div></div>` },
+  { cat:"Keyboard", name:"30 · Numpad + Calculator Mode", p:(c)=>`
+    <div class="kbd"><div class="krow"><div class="k" style="background:${c.s}">7</div><div class="k" style="background:${c.s}">8</div><div class="k" style="background:${c.s}">9</div><div class="k" style="background:${c.s}">/</div></div><div class="krow"><div class="k" style="background:${c.s}">4</div><div class="k" style="background:${c.s}">5</div><div class="k" style="background:${c.s}">6</div><div class="k" style="background:${c.s}">*</div></div><div class="krow"><div class="k" style="background:${c.s}">1</div><div class="k" style="background:${c.s}">2</div><div class="k" style="background:${c.s}">3</div><div class="k" style="background:${c.s}">-</div></div><div class="krow"><div class="k" style="background:${c.s};flex:2">0</div><div class="k" style="background:${c.s}">.</div><div class="k" style="background:${c.a};color:#fff">⏎</div></div></div>`,
+    l:(c)=>`<div class="row" style="flex:1"><div class="pad" style="background:${c.s}"><span>Trackpad</span></div><div class="kbd" style="flex:1"><div class="krow"><div class="k" style="background:${c.s}">7</div><div class="k" style="background:${c.s}">8</div><div class="k" style="background:${c.s}">9</div></div><div class="krow"><div class="k" style="background:${c.s}">4</div><div class="k" style="background:${c.s}">5</div><div class="k" style="background:${c.s}">6</div></div><div class="krow"><div class="k" style="background:${c.s}">1</div><div class="k" style="background:${c.s}">2</div><div class="k" style="background:${c.s}">3</div></div></div></div>` },
+  { cat:"Keyboard", name:"31 · Text Relay Bar + Quick Phrases", p:(c)=>`
+    <div class="box" style="background:${c.s}">Type text &amp; send...</div>
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">Hello</div><div class="box" style="flex:1;background:${c.s}">Thanks</div></div>
+    <div class="kbd"><div class="krow">${"qwertyuiop".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}</div><div class="krow">${"asdfghjkl".split("").map(k=>`<div class="k" style="background:${c.s}">${k}</div>`).join("")}</div></div>`,
+    l:(c)=>`<div class="col" style="flex:1"><div class="box" style="background:${c.s}">Type text &amp; send...</div><div class="row" style="flex:1"><div class="box" style="flex:1;background:${c.s}">Quick Phrases</div><div class="box" style="flex:1;background:${c.s}">Clipboard</div></div></div>` },
+  { cat:"Keyboard", name:"32 · Presenter Deck (Slides + Notes)", p:(c)=>`
+    <div class="row" style="flex:1"><div class="box" style="flex:1;background:${c.s}">◀ Prev Slide</div><div class="box" style="flex:1.4;background:${c.a};color:#fff">Next Slide ▶</div></div>
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">Start</div><div class="box" style="flex:1;background:${c.s}">Black</div><div class="box" style="flex:1;background:${c.s}">End</div></div>`,
+    l:(c)=>`<div class="row" style="flex:1"><div class="box" style="flex:1;background:${c.s}">◀ Prev</div><div class="box" style="flex:1.5;background:${c.a};color:#fff">Next Slide ▶</div><div class="col" style="width:70px"><div class="box" style="flex:1;background:${c.s}">Black</div><div class="box" style="flex:1;background:${c.s}">End</div></div></div>` },
+
+  // GAMEPAD & MACROS (8)
+  { cat:"Gamepad", name:"33 · Classic Dual-Stick + ABXY", p:(c)=>`
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">L2/L1</div><div class="box" style="flex:1;background:${c.s}">R1/R2</div></div>
+    <div class="row" style="flex:1;align-items:center"><div class="dpad" style="width:56px;height:56px;background:${c.s}"><span></span><span>▲</span><span></span><span>◀</span><span>●</span><span>▶</span><span></span><span>▼</span><span></span></div><div class="col" style="width:56px"><div class="row"><div class="box" style="flex:1;background:${c.s}">Y</div><div class="box" style="flex:1;background:${c.s}">X</div></div><div class="row"><div class="box" style="flex:1;background:${c.s}">B</div><div class="box" style="flex:1;background:${c.a};color:#fff">A</div></div></div></div>`,
+    l:(c)=>`<div class="row" style="flex:1;align-items:center"><div class="dpad" style="background:${c.s}"><span></span><span>▲</span><span></span><span>◀</span><span>●</span><span>▶</span><span></span><span>▼</span><span></span></div><div class="col" style="flex:1"><div class="row"><div class="box" style="flex:1;background:${c.s}">L1/L2</div><div class="box" style="flex:1;background:${c.s}">R1/R2</div></div><div class="row"><div class="box" style="flex:1;background:${c.s}">Select</div><div class="box" style="flex:1;background:${c.s}">Start</div></div></div><div class="col" style="width:70px"><div class="row"><div class="box" style="flex:1;background:${c.s}">Y</div><div class="box" style="flex:1;background:${c.s}">X</div></div><div class="row"><div class="box" style="flex:1;background:${c.s}">B</div><div class="box" style="flex:1;background:${c.a};color:#fff">A</div></div></div></div>` },
+  { cat:"Gamepad", name:"34 · Racing Tilt Wheel + Pedals", p:(c)=>`
+    <div class="box" style="flex:1;background:${c.s}">Steering Wheel (Gyro)</div>
+    <div class="row" style="height:64px"><div class="box" style="flex:1;background:${c.s}">Brake</div><div class="box" style="flex:1;background:${c.a};color:#fff">Gas</div></div>`,
+    l:(c)=>`<div class="row" style="flex:1"><div class="box" style="flex:1;background:${c.s}">Brake</div><div class="box" style="flex:1.4;background:${c.s}">Tilt Steer</div><div class="box" style="flex:1;background:${c.a};color:#fff">Gas</div></div>` },
+  { cat:"Gamepad", name:"35 · Arcade Fight Stick (6-Button)", p:(c)=>`
+    <div class="dpad" style="background:${c.s}"><span></span><span>▲</span><span></span><span>◀</span><span>●</span><span>▶</span><span></span><span>▼</span><span></span></div>
+    <div class="kbd"><div class="krow"><div class="k" style="background:${c.s}">LP</div><div class="k" style="background:${c.s}">MP</div><div class="k" style="background:${c.s}">HP</div></div><div class="krow"><div class="k" style="background:${c.s}">LK</div><div class="k" style="background:${c.s}">MK</div><div class="k" style="background:${c.a};color:#fff">HK</div></div></div>`,
+    l:(c)=>`<div class="row" style="flex:1;align-items:center"><div class="dpad" style="background:${c.s}"><span></span><span>▲</span><span></span><span>◀</span><span>●</span><span>▶</span><span></span><span>▼</span><span></span></div><div class="kbd" style="flex:1.2"><div class="krow"><div class="k" style="background:${c.s}">LP</div><div class="k" style="background:${c.s}">MP</div><div class="k" style="background:${c.s}">HP</div></div><div class="krow"><div class="k" style="background:${c.s}">LK</div><div class="k" style="background:${c.s}">MK</div><div class="k" style="background:${c.a};color:#fff">HK</div></div></div></div>` },
+  { cat:"Gamepad", name:"36 · FPS Gyro Aim + Triggers", p:(c)=>`
+    <div class="row"><div class="box" style="flex:1;background:${c.s}">Aim (L2)</div><div class="box" style="flex:1;background:${c.a};color:#fff">Fire (R2)</div></div>
+    <div class="pad" style="background:${c.s}"><span>Gyro + Touch Aim</span><div class="dot" style="background:${c.t1};left:50%;top:50%"></div></div>`,
+    l:(c)=>`<div class="row" style="flex:1"><div class="box" style="width:70px;background:${c.s}">Move</div><div class="pad" style="background:${c.s}"><span>Gyro + Touch Aim</span></div><div class="box" style="width:70px;background:${c.a};color:#fff">Fire</div></div>` },
+  { cat:"Gamepad", name:"37 · Macro Deck (3x3 Action Grid)", p:(c)=>`
+    <div class="kbd" style="gap:4px"><div class="krow"><div class="k" style="background:${c.s};padding:10px">Copy</div><div class="k" style="background:${c.s};padding:10px">Paste</div><div class="k" style="background:${c.s};padding:10px">Save</div></div><div class="krow"><div class="k" style="background:${c.s};padding:10px">Mute</div><div class="k" style="background:${c.a};color:#fff;padding:10px">Record</div><div class="k" style="background:${c.s};padding:10px">Lock</div></div><div class="krow"><div class="k" style="background:${c.s};padding:10px">Term</div><div class="k" style="background:${c.s};padding:10px">Browser</div><div class="k" style="background:${c.s};padding:10px">Sleep</div></div></div>`,
+    l:(c)=>`<div class="kbd" style="gap:4px"><div class="krow"><div class="k" style="background:${c.s};padding:12px">Copy</div><div class="k" style="background:${c.s};padding:12px">Paste</div><div class="k" style="background:${c.s};padding:12px">Save</div><div class="k" style="background:${c.a};color:#fff;padding:12px">Record</div></div><div class="krow"><div class="k" style="background:${c.s};padding:12px">Mute</div><div class="k" style="background:${c.s};padding:12px">Lock</div><div class="k" style="background:${c.s};padding:12px">Term</div><div class="k" style="background:${c.s};padding:12px">Sleep</div></div></div>` },
+  { cat:"Gamepad", name:"38 · Custom Layout Editor Canvas", p:(c)=>`
+    <div class="row"><div class="box" style="flex:1;background:${c.a};color:#fff">+ Widget</div><div class="box" style="flex:1;background:${c.s}">Undo</div><div class="box" style="flex:1;background:${c.s}">Save</div></div>
+    <div class="pad" style="background:${c.s}"><span>Snap Grid Canvas</span></div>`,
+    l:(c)=>`<div class="row" style="flex:1"><div class="col" style="width:66px"><div class="box" style="flex:1;background:${c.a};color:#fff">+ Add</div><div class="box" style="flex:1;background:${c.s}">Undo</div><div class="box" style="flex:1;background:${c.s}">Save</div></div><div class="pad" style="background:${c.s}"><span>Snap Grid Canvas</span></div></div>` },
+  { cat:"Gamepad", name:"39 · Touch Screen Digitizer", p:(c)=>`
+    <div class="pad" style="background:${c.s}"><span>Absolute Touch Surface</span><div class="dot" style="background:${c.t1};left:35%;top:40%"></div><div class="dot" style="background:${c.t2};left:60%;top:60%"></div></div>`,
+    l:(c)=>`<div class="pad" style="background:${c.s}"><span>Absolute Touch Digitizer (1:1 Screen Map)</span><div class="dot" style="background:${c.t1};left:40%;top:50%"></div></div>` },
+  { cat:"Gamepad", name:"40 · Settings & Theme Studio", p:(c)=>`
+    <div class="col" style="flex:1"><div class="box" style="background:${c.s};justify-content:space-between"><span>Theme</span><span>Light / Dark</span></div><div class="box" style="background:${c.s};justify-content:space-between"><span>Touch Colors</span><span>On</span></div><div class="box" style="background:${c.s};justify-content:space-between"><span>Haptics</span><span>Medium</span></div><div class="box" style="background:${c.s};justify-content:space-between"><span>Keep Screen On</span><span>On</span></div></div>`,
+    l:(c)=>`<div class="row" style="flex:1"><div class="col" style="flex:1"><div class="box" style="flex:1;background:${c.s}">Theme: Light / Dark</div><div class="box" style="flex:1;background:${c.s}">Touch Colors: On</div></div><div class="col" style="flex:1"><div class="box" style="flex:1;background:${c.s}">Haptics: Medium</div><div class="box" style="flex:1;background:${c.s}">Keep Screen On</div></div></div>` }
+];
 
 const gallery = document.getElementById("gallery");
-
-function buildPortrait(screen, t) {
-  if (screen === "Trackpad") {
-    return `
-      <div class="trackpad" style="background:${t.surface}">
-        <span>2-Finger Scroll &amp; Tap</span>
-        <div class="touch-dot" style="background:${t.touch1}; left:28%; top:34%;"></div>
-        <div class="touch-dot" style="background:${t.touch2}; left:44%; top:42%;"></div>
-        <div class="v-scroll" style="background:${t.accent}"></div>
-        <div class="h-scroll" style="background:${t.accent}"></div>
-      </div>
-      <div class="btn-row">
-        <div class="btn" style="background:${t.surface}">L</div>
-        <div class="btn" style="background:${t.surface}">M</div>
-        <div class="btn" style="background:${t.surface}">R</div>
-      </div>`;
-  }
-  if (screen === "TV Remote") {
-    return `
-      <div class="btn-row">
-        <div class="btn" style="background:${t.accent}; color:#fff">Android TV</div>
-        <div class="btn" style="background:${t.surface}">Samsung</div>
-        <div class="btn" style="background:${t.surface}">webOS</div>
-      </div>
-      <div class="dpad" style="background:${t.surface}">
-        <span></span><span>▲</span><span></span>
-        <span>◀</span><span style="color:${t.accent}">OK</span><span>▶</span>
-        <span></span><span>▼</span><span></span>
-      </div>
-      <div class="btn-row">
-        <div class="btn" style="background:${t.surface}">Back</div>
-        <div class="btn" style="background:${t.surface}">Home</div>
-        <div class="btn" style="background:${t.surface}">Mute</div>
-      </div>
-      <div class="btn-row">
-        <div class="btn" style="background:${t.surface}">Vol -/+</div>
-        <div class="btn" style="background:${t.surface}">Ch -/+</div>
-      </div>`;
-  }
-  if (screen === "Keyboard") {
-    return `
-      <div class="trackpad" style="flex:0.45; background:${t.surface}">
-        <span>Mini Trackpad</span>
-        <div class="touch-dot" style="background:${t.touch1}; left:45%; top:30%;"></div>
-      </div>
-      <div class="kbd-grid">
-        <div class="kbd-row">${["1","2","3","4","5","6","7","8","9","0"].map(k=>`<div class="key" style="background:${t.surface}">${k}</div>`).join("")}</div>
-        <div class="kbd-row">${["q","w","e","r","t","y","u","i","o","p"].map((k,i)=>`<div class="key" style="background:${i===2?t.touch1:t.surface}; color:${i===2?'#fff':t.text}">${k}</div>`).join("")}</div>
-        <div class="kbd-row">${["a","s","d","f","g","h","j","k","l"].map(k=>`<div class="key" style="background:${t.surface}">${k}</div>`).join("")}</div>
-        <div class="kbd-row"><div class="key" style="background:${t.accent}; color:#fff; flex:1.5">Shift</div>${["z","x","c","v","b","n","m"].map(k=>`<div class="key" style="background:${t.surface}">${k}</div>`).join("")}</div>
-        <div class="kbd-row"><div class="key" style="background:${t.surface}">Ctrl</div><div class="key" style="background:${t.surface}; flex:3">Space</div><div class="key" style="background:${t.surface}">Enter</div></div>
-      </div>`;
-  }
-  return `
-    <div class="btn-row">
-      <div class="btn" style="background:${t.surface}">L2 / L1</div>
-      <div class="btn" style="background:${t.surface}">R1 / R2</div>
+designs.forEach((d, i) => {
+  const c = palettes[i % palettes.length];
+  const card = document.createElement("article");
+  card.className = "card";
+  card.dataset.cat = d.cat;
+  card.innerHTML = `
+    <div class="head">
+      <span class="title">${d.name}</span>
+      <span class="meta">${d.cat}</span>
     </div>
-    <div style="flex:1; display:flex; align-items:center; justify-content:space-around;">
-      <div class="dpad" style="width:60px; height:60px; background:${t.surface}">
-        <span></span><span>▲</span><span></span><span>◀</span><span>●</span><span>▶</span><span></span><span>▼</span><span></span>
+    <div class="stage">
+      <div class="p-frame" style="background:${c.bg};color:${c.t}">
+        <div class="bar" style="background:${c.s}"><span>AeroPad</span><span class="pill" style="background:${c.a};color:#fff">HID</span></div>
+        ${d.p(c)}
       </div>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; width:56px;">
-        <div class="btn" style="background:${t.surface}">Y</div>
-        <div class="btn" style="background:${t.surface}">X</div>
-        <div class="btn" style="background:${t.surface}">B</div>
-        <div class="btn" style="background:${t.accent}; color:#fff">A</div>
-      </div>
-    </div>
-    <div class="btn-row">
-      <div class="btn" style="background:${t.surface}">Select</div>
-      <div class="btn" style="background:${t.surface}">Start</div>
-    </div>`;
-}
-
-function buildLandscape(screen, t) {
-  if (screen === "Trackpad" || screen === "Keyboard") {
-    return `
-      <div class="l-split">
-        <div class="l-half">
-          <div class="trackpad" style="background:${t.surface}">
-            <span>Trackpad</span>
-            <div class="touch-dot" style="background:${t.touch1}; left:30%; top:35%;"></div>
-            <div class="touch-dot" style="background:${t.touch2}; left:50%; top:45%;"></div>
-            <div class="v-scroll" style="background:${t.accent}"></div>
-            <div class="h-scroll" style="background:${t.accent}"></div>
-          </div>
-          <div class="btn-row">
-            <div class="btn" style="background:${t.surface}">L</div>
-            <div class="btn" style="background:${t.surface}">R</div>
-          </div>
-        </div>
-        <div class="l-half">
-          <div class="kbd-grid">
-            <div class="kbd-row">${["1","2","3","4","5","6","7","8"].map(k=>`<div class="key" style="background:${t.surface}">${k}</div>`).join("")}</div>
-            <div class="kbd-row">${["Q","W","E","R","T","Y","U","I"].map((k,i)=>`<div class="key" style="background:${i===1?t.touch1:t.surface}; color:${i===1?'#fff':t.text}">${k}</div>`).join("")}</div>
-            <div class="kbd-row">${["A","S","D","F","G","H","J","K"].map(k=>`<div class="key" style="background:${t.surface}">${k}</div>`).join("")}</div>
-            <div class="kbd-row"><div class="key" style="background:${t.accent}; color:#fff">⇧</div><div class="key" style="background:${t.surface}; flex:3">Space</div><div class="key" style="background:${t.surface}">⏎</div></div>
-          </div>
-        </div>
-      </div>`;
-  }
-  if (screen === "TV Remote") {
-    return `
-      <div class="l-split">
-        <div class="l-half" style="justify-content:center">
-          <div class="dpad" style="background:${t.surface}">
-            <span></span><span>▲</span><span></span><span>◀</span><span style="color:${t.accent}">OK</span><span>▶</span><span></span><span>▼</span><span></span>
-          </div>
-        </div>
-        <div class="l-half" style="justify-content:space-between">
-          <div class="btn-row">
-            <div class="btn" style="background:${t.accent}; color:#fff">Google TV</div>
-            <div class="btn" style="background:${t.surface}">Fire TV</div>
-          </div>
-          <div class="btn-row">
-            <div class="btn" style="background:${t.surface}">Back</div>
-            <div class="btn" style="background:${t.surface}">Home</div>
-            <div class="btn" style="background:${t.surface}">Menu</div>
-          </div>
-          <div class="btn-row">
-            <div class="btn" style="background:${t.surface}">Vol -/+</div>
-            <div class="btn" style="background:${t.surface}">Ch -/+</div>
-            <div class="btn" style="background:${t.surface}">Mute</div>
-          </div>
-        </div>
-      </div>`;
-  }
-  return `
-    <div class="l-split" style="align-items:center">
-      <div class="l-half">
-        <div class="dpad" style="width:68px; height:68px; background:${t.surface}">
-          <span></span><span>▲</span><span></span><span>◀</span><span>●</span><span>▶</span><span></span><span>▼</span><span></span>
-        </div>
-      </div>
-      <div class="l-half" style="gap:6px">
-        <div class="btn-row"><div class="btn" style="background:${t.surface}">L1/L2</div><div class="btn" style="background:${t.surface}">R1/R2</div></div>
-        <div class="btn-row"><div class="btn" style="background:${t.surface}">X</div><div class="btn" style="background:${t.surface}">Y</div><div class="btn" style="background:${t.accent}; color:#fff">A</div><div class="btn" style="background:${t.surface}">B</div></div>
-        <div class="btn-row"><div class="btn" style="background:${t.surface}">Select</div><div class="btn" style="background:${t.surface}">Start</div></div>
+      <div class="l-frame" style="background:${c.bg};color:${c.t}">
+        <div class="bar" style="background:${c.s}"><span>AeroPad · ${d.cat}</span><span class="pill" style="background:${c.a};color:#fff">Connected</span></div>
+        ${d.l(c)}
       </div>
     </div>`;
-}
-
-let idx = 1;
-for (let s = 0; s < screens.length; s++) {
-  for (let l = 0; l < layouts.length; l++) {
-    const screen = screens[s];
-    const t = themes[(idx - 1) % themes.length];
-    const card = document.createElement("article");
-    card.className = "design-card";
-    card.dataset.screen = screen;
-    card.innerHTML = `
-      <div class="design-head">
-        <span class="design-title">#${String(idx).padStart(2, "0")} — ${screen} · ${layouts[l]}</span>
-        <span class="design-meta">${t.name}</span>
-      </div>
-      <div class="dual-stage">
-        <div class="phone-p" style="background:${t.bg}; color:${t.text}">
-          <div class="p-top" style="background:${t.surface}">
-            <span>AeroPad</span>
-            <span class="pill" style="background:${t.accent}; color:#fff">Connected</span>
-          </div>
-          ${buildPortrait(screen, t)}
-          <div class="nav-bar"><span>Mouse</span><span>Keys</span><span>TV</span><span>Pad</span></div>
-        </div>
-        <div class="phone-l" style="background:${t.bg}; color:${t.text}">
-          <div class="p-top" style="background:${t.surface}">
-            <span>AeroPad · ${screen}</span>
-            <span class="pill" style="background:${t.accent}; color:#fff">Connected</span>
-          </div>
-          ${buildLandscape(screen, t)}
-        </div>
-      </div>`;
-    gallery.appendChild(card);
-    idx++;
-  }
-}
+  gallery.appendChild(card);
+});
 
 document.getElementById("filters").addEventListener("click", (e) => {
   if (!e.target.classList.contains("filter-btn")) return;
   document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
   e.target.classList.add("active");
   const f = e.target.dataset.filter;
-  document.querySelectorAll(".design-card").forEach(c => {
-    c.style.display = (f === "all" || c.dataset.screen === f) ? "flex" : "none";
+  document.querySelectorAll(".card").forEach(c => {
+    c.style.display = (f === "all" || c.dataset.cat === f) ? "flex" : "none";
   });
 });
 </script>
