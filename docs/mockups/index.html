@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AeroPad — 40 Plain &amp; Polished UI/UX Mockups (Portrait + Landscape)</title>
+<style>
+  :root {
+    --bg: #f3f4f6;
+    --card: #ffffff;
+    --text: #111827;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 24px;
+    line-height: 1.4;
+  }
+  header {
+    max-width: 1400px;
+    margin: 0 auto 24px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+  header h1 { font-size: 22px; font-weight: 700; }
+  header p { font-size: 13px; color: var(--muted); }
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .filter-btn {
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .filter-btn.active {
+    background: #111827;
+    color: #ffffff;
+    border-color: #111827;
+  }
+  .grid {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(560px, 1fr));
+    gap: 20px;
+  }
+  .design-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .design-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .design-title { font-size: 14px; font-weight: 700; }
+  .design-meta { font-size: 11px; color: var(--muted); }
+  .dual-stage {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    background: #f9fafb;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    overflow-x: auto;
+  }
+  .phone-p {
+    width: 156px;
+    height: 290px;
+    border-radius: 20px;
+    border: 3px solid #1f2937;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+    font-size: 9px;
+    overflow: hidden;
+  }
+  .phone-l {
+    width: 320px;
+    height: 168px;
+    border-radius: 18px;
+    border: 3px solid #1f2937;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+    font-size: 9px;
+    overflow: hidden;
+  }
+  .p-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    font-size: 8px;
+    padding: 2px 4px;
+    border-radius: 6px;
+  }
+  .pill {
+    padding: 2px 6px;
+    border-radius: 999px;
+    font-size: 7.5px;
+    font-weight: 600;
+  }
+  .trackpad {
+    flex: 1;
+    border-radius: 10px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-weight: 500;
+    border: 1px solid rgba(128,128,128,0.25);
+  }
+  .touch-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    position: absolute;
+    opacity: 0.75;
+  }
+  .v-scroll {
+    position: absolute;
+    right: 4px;
+    top: 16%;
+    bottom: 16%;
+    width: 4px;
+    border-radius: 4px;
+    opacity: 0.45;
+  }
+  .h-scroll {
+    position: absolute;
+    bottom: 4px;
+    left: 16%;
+    right: 16%;
+    height: 4px;
+    border-radius: 4px;
+    opacity: 0.45;
+  }
+  .btn-row {
+    display: flex;
+    gap: 4px;
+  }
+  .btn {
+    flex: 1;
+    text-align: center;
+    padding: 5px 2px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 8px;
+    border: 1px solid rgba(128,128,128,0.22);
+  }
+  .l-split {
+    flex: 1;
+    display: flex;
+    gap: 6px;
+    min-height: 0;
+  }
+  .l-half {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+  .kbd-grid {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    justify-content: center;
+  }
+  .kbd-row {
+    display: flex;
+    gap: 2px;
+  }
+  .key {
+    flex: 1;
+    text-align: center;
+    padding: 4px 1px;
+    border-radius: 4px;
+    font-size: 7px;
+    font-weight: 600;
+    border: 1px solid rgba(128,128,128,0.22);
+  }
+  .dpad {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    margin: 4px auto;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    place-items: center;
+    font-size: 8px;
+    font-weight: 700;
+    border: 1px solid rgba(128,128,128,0.28);
+  }
+  .nav-bar {
+    display: flex;
+    justify-content: space-around;
+    padding-top: 3px;
+    border-top: 1px solid rgba(128,128,128,0.18);
+    font-size: 7.5px;
+    font-weight: 600;
+  }
+  @media (max-width: 640px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>AeroPad — 40 Plain &amp; Polished UI/UX Mockups</h1>
+    <p>Each card shows Portrait + Landscape side-by-side. Zero neon, clean Material 3 surfaces, horizontal/vertical scroll, colored multi-touch, and Universal TV Remote.</p>
+  </div>
+  <div class="filters" id="filters">
+    <button class="filter-btn active" data-filter="all">All (40)</button>
+    <button class="filter-btn" data-filter="Trackpad">Trackpad (10)</button>
+    <button class="filter-btn" data-filter="TV Remote">TV Remote (10)</button>
+    <button class="filter-btn" data-filter="Keyboard">Keyboard (10)</button>
+    <button class="filter-btn" data-filter="Gamepad">Gamepad (10)</button>
+  </div>
+</header>
+
+<main class="grid" id="gallery"></main>
+
+<script>
+const themes = [
+  { name: "Crisp White", bg: "#FFFFFF", surface: "#F3F4F6", text: "#111827", accent: "#2563EB", touch1: "#3B82F6", touch2: "#EF4444" },
+  { name: "Matte Charcoal", bg: "#141619", surface: "#1F2328", text: "#F3F4F6", accent: "#60A5FA", touch1: "#60A5FA", touch2: "#F59E0B" },
+  { name: "Warm Paper", bg: "#FAF8F5", surface: "#EFECE6", text: "#1F2937", accent: "#0D9488", touch1: "#14B8A6", touch2: "#F97316" },
+  { name: "Slate Night", bg: "#0F172A", surface: "#1E293B", text: "#F8FAFC", accent: "#38BDF8", touch1: "#38BDF8", touch2: "#A78BFA" },
+  { name: "Soft Sage", bg: "#F4F7F5", surface: "#E6ECE8", text: "#14261C", accent: "#15803D", touch1: "#22C55E", touch2: "#3B82F6" },
+  { name: "Graphite Pro", bg: "#18181B", surface: "#27272A", text: "#FAFAFA", accent: "#A1A1AA", touch1: "#60A5FA", touch2: "#FB7185" },
+  { name: "Nordic Mist", bg: "#F1F5F9", surface: "#E2E8F0", text: "#0F172A", accent: "#475569", touch1: "#0284C7", touch2: "#E11D48" },
+  { name: "Espresso Dark", bg: "#1C1917", surface: "#292524", text: "#F5F5F4", accent: "#D97706", touch1: "#F59E0B", touch2: "#38BDF8" },
+  { name: "Pure OLED", bg: "#000000", surface: "#121212", text: "#FFFFFF", accent: "#9CA3AF", touch1: "#3B82F6", touch2: "#10B981" },
+  { name: "Studio Gray", bg: "#E5E7EB", surface: "#F9FAFB", text: "#111827", accent: "#374151", touch1: "#2563EB", touch2: "#DC2626" }
+];
+
+const screens = ["Trackpad", "TV Remote", "Keyboard", "Gamepad"];
+const layouts = ["Standard", "Compact", "Edge-to-Edge", "Carded", "Split-Action", "Minimal", "Ergonomic", "One-Handed", "Pro-Bar", "Classic"];
+
+const gallery = document.getElementById("gallery");
+
+function buildPortrait(screen, t) {
+  if (screen === "Trackpad") {
+    return `
+      <div class="trackpad" style="background:${t.surface}">
+        <span>2-Finger Scroll &amp; Tap</span>
+        <div class="touch-dot" style="background:${t.touch1}; left:28%; top:34%;"></div>
+        <div class="touch-dot" style="background:${t.touch2}; left:44%; top:42%;"></div>
+        <div class="v-scroll" style="background:${t.accent}"></div>
+        <div class="h-scroll" style="background:${t.accent}"></div>
+      </div>
+      <div class="btn-row">
+        <div class="btn" style="background:${t.surface}">L</div>
+        <div class="btn" style="background:${t.surface}">M</div>
+        <div class="btn" style="background:${t.surface}">R</div>
+      </div>`;
+  }
+  if (screen === "TV Remote") {
+    return `
+      <div class="btn-row">
+        <div class="btn" style="background:${t.accent}; color:#fff">Android TV</div>
+        <div class="btn" style="background:${t.surface}">Samsung</div>
+        <div class="btn" style="background:${t.surface}">webOS</div>
+      </div>
+      <div class="dpad" style="background:${t.surface}">
+        <span></span><span>▲</span><span></span>
+        <span>◀</span><span style="color:${t.accent}">OK</span><span>▶</span>
+        <span></span><span>▼</span><span></span>
+      </div>
+      <div class="btn-row">
+        <div class="btn" style="background:${t.surface}">Back</div>
+        <div class="btn" style="background:${t.surface}">Home</div>
+        <div class="btn" style="background:${t.surface}">Mute</div>
+      </div>
+      <div class="btn-row">
+        <div class="btn" style="background:${t.surface}">Vol -/+</div>
+        <div class="btn" style="background:${t.surface}">Ch -/+</div>
+      </div>`;
+  }
+  if (screen === "Keyboard") {
+    return `
+      <div class="trackpad" style="flex:0.45; background:${t.surface}">
+        <span>Mini Trackpad</span>
+        <div class="touch-dot" style="background:${t.touch1}; left:45%; top:30%;"></div>
+      </div>
+      <div class="kbd-grid">
+        <div class="kbd-row">${["1","2","3","4","5","6","7","8","9","0"].map(k=>`<div class="key" style="background:${t.surface}">${k}</div>`).join("")}</div>
+        <div class="kbd-row">${["q","w","e","r","t","y","u","i","o","p"].map((k,i)=>`<div class="key" style="background:${i===2?t.touch1:t.surface}; color:${i===2?'#fff':t.text}">${k}</div>`).join("")}</div>
+        <div class="kbd-row">${["a","s","d","f","g","h","j","k","l"].map(k=>`<div class="key" style="background:${t.surface}">${k}</div>`).join("")}</div>
+        <div class="kbd-row"><div class="key" style="background:${t.accent}; color:#fff; flex:1.5">Shift</div>${["z","x","c","v","b","n","m"].map(k=>`<div class="key" style="background:${t.surface}">${k}</div>`).join("")}</div>
+        <div class="kbd-row"><div class="key" style="background:${t.surface}">Ctrl</div><div class="key" style="background:${t.surface}; flex:3">Space</div><div class="key" style="background:${t.surface}">Enter</div></div>
+      </div>`;
+  }
+  return `
+    <div class="btn-row">
+      <div class="btn" style="background:${t.surface}">L2 / L1</div>
+      <div class="btn" style="background:${t.surface}">R1 / R2</div>
+    </div>
+    <div style="flex:1; display:flex; align-items:center; justify-content:space-around;">
+      <div class="dpad" style="width:60px; height:60px; background:${t.surface}">
+        <span></span><span>▲</span><span></span><span>◀</span><span>●</span><span>▶</span><span></span><span>▼</span><span></span>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; width:56px;">
+        <div class="btn" style="background:${t.surface}">Y</div>
+        <div class="btn" style="background:${t.surface}">X</div>
+        <div class="btn" style="background:${t.surface}">B</div>
+        <div class="btn" style="background:${t.accent}; color:#fff">A</div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <div class="btn" style="background:${t.surface}">Select</div>
+      <div class="btn" style="background:${t.surface}">Start</div>
+    </div>`;
+}
+
+function buildLandscape(screen, t) {
+  if (screen === "Trackpad" || screen === "Keyboard") {
+    return `
+      <div class="l-split">
+        <div class="l-half">
+          <div class="trackpad" style="background:${t.surface}">
+            <span>Trackpad</span>
+            <div class="touch-dot" style="background:${t.touch1}; left:30%; top:35%;"></div>
+            <div class="touch-dot" style="background:${t.touch2}; left:50%; top:45%;"></div>
+            <div class="v-scroll" style="background:${t.accent}"></div>
+            <div class="h-scroll" style="background:${t.accent}"></div>
+          </div>
+          <div class="btn-row">
+            <div class="btn" style="background:${t.surface}">L</div>
+            <div class="btn" style="background:${t.surface}">R</div>
+          </div>
+        </div>
+        <div class="l-half">
+          <div class="kbd-grid">
+            <div class="kbd-row">${["1","2","3","4","5","6","7","8"].map(k=>`<div class="key" style="background:${t.surface}">${k}</div>`).join("")}</div>
+            <div class="kbd-row">${["Q","W","E","R","T","Y","U","I"].map((k,i)=>`<div class="key" style="background:${i===1?t.touch1:t.surface}; color:${i===1?'#fff':t.text}">${k}</div>`).join("")}</div>
+            <div class="kbd-row">${["A","S","D","F","G","H","J","K"].map(k=>`<div class="key" style="background:${t.surface}">${k}</div>`).join("")}</div>
+            <div class="kbd-row"><div class="key" style="background:${t.accent}; color:#fff">⇧</div><div class="key" style="background:${t.surface}; flex:3">Space</div><div class="key" style="background:${t.surface}">⏎</div></div>
+          </div>
+        </div>
+      </div>`;
+  }
+  if (screen === "TV Remote") {
+    return `
+      <div class="l-split">
+        <div class="l-half" style="justify-content:center">
+          <div class="dpad" style="background:${t.surface}">
+            <span></span><span>▲</span><span></span><span>◀</span><span style="color:${t.accent}">OK</span><span>▶</span><span></span><span>▼</span><span></span>
+          </div>
+        </div>
+        <div class="l-half" style="justify-content:space-between">
+          <div class="btn-row">
+            <div class="btn" style="background:${t.accent}; color:#fff">Google TV</div>
+            <div class="btn" style="background:${t.surface}">Fire TV</div>
+          </div>
+          <div class="btn-row">
+            <div class="btn" style="background:${t.surface}">Back</div>
+            <div class="btn" style="background:${t.surface}">Home</div>
+            <div class="btn" style="background:${t.surface}">Menu</div>
+          </div>
+          <div class="btn-row">
+            <div class="btn" style="background:${t.surface}">Vol -/+</div>
+            <div class="btn" style="background:${t.surface}">Ch -/+</div>
+            <div class="btn" style="background:${t.surface}">Mute</div>
+          </div>
+        </div>
+      </div>`;
+  }
+  return `
+    <div class="l-split" style="align-items:center">
+      <div class="l-half">
+        <div class="dpad" style="width:68px; height:68px; background:${t.surface}">
+          <span></span><span>▲</span><span></span><span>◀</span><span>●</span><span>▶</span><span></span><span>▼</span><span></span>
+        </div>
+      </div>
+      <div class="l-half" style="gap:6px">
+        <div class="btn-row"><div class="btn" style="background:${t.surface}">L1/L2</div><div class="btn" style="background:${t.surface}">R1/R2</div></div>
+        <div class="btn-row"><div class="btn" style="background:${t.surface}">X</div><div class="btn" style="background:${t.surface}">Y</div><div class="btn" style="background:${t.accent}; color:#fff">A</div><div class="btn" style="background:${t.surface}">B</div></div>
+        <div class="btn-row"><div class="btn" style="background:${t.surface}">Select</div><div class="btn" style="background:${t.surface}">Start</div></div>
+      </div>
+    </div>`;
+}
+
+let idx = 1;
+for (let s = 0; s < screens.length; s++) {
+  for (let l = 0; l < layouts.length; l++) {
+    const screen = screens[s];
+    const t = themes[(idx - 1) % themes.length];
+    const card = document.createElement("article");
+    card.className = "design-card";
+    card.dataset.screen = screen;
+    card.innerHTML = `
+      <div class="design-head">
+        <span class="design-title">#${String(idx).padStart(2, "0")} — ${screen} · ${layouts[l]}</span>
+        <span class="design-meta">${t.name}</span>
+      </div>
+      <div class="dual-stage">
+        <div class="phone-p" style="background:${t.bg}; color:${t.text}">
+          <div class="p-top" style="background:${t.surface}">
+            <span>AeroPad</span>
+            <span class="pill" style="background:${t.accent}; color:#fff">Connected</span>
+          </div>
+          ${buildPortrait(screen, t)}
+          <div class="nav-bar"><span>Mouse</span><span>Keys</span><span>TV</span><span>Pad</span></div>
+        </div>
+        <div class="phone-l" style="background:${t.bg}; color:${t.text}">
+          <div class="p-top" style="background:${t.surface}">
+            <span>AeroPad · ${screen}</span>
+            <span class="pill" style="background:${t.accent}; color:#fff">Connected</span>
+          </div>
+          ${buildLandscape(screen, t)}
+        </div>
+      </div>`;
+    gallery.appendChild(card);
+    idx++;
+  }
+}
+
+document.getElementById("filters").addEventListener("click", (e) => {
+  if (!e.target.classList.contains("filter-btn")) return;
+  document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+  e.target.classList.add("active");
+  const f = e.target.dataset.filter;
+  document.querySelectorAll(".design-card").forEach(c => {
+    c.style.display = (f === "all" || c.dataset.screen === f) ? "flex" : "none";
+  });
+});
+</script>
+</body>
+</html>

@@ -62,7 +62,12 @@ class BluetoothDeviceScanner @Inject constructor(
         }
 
         runCatching {
-            context.registerReceiver(receiver, IntentFilter(BluetoothDevice.ACTION_FOUND))
+            androidx.core.content.ContextCompat.registerReceiver(
+                context,
+                receiver,
+                IntentFilter(BluetoothDevice.ACTION_FOUND),
+                androidx.core.content.ContextCompat.RECEIVER_EXPORTED
+            )
         }.onFailure {
             Timber.e(it, "registerReceiver failed")
             close(); return@callbackFlow

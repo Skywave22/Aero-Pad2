@@ -77,7 +77,7 @@ If an older debug-signed build is installed, uninstall it once first (Android si
 ./gradlew :app:testDebugUnitTest    # unit tests
 ./gradlew :app:connectedDebugAndroidTest   # Compose UI tests (device needed)
 ```
-JDK 17, Android SDK 34. CI (GitHub Actions) runs tests + lint, builds the APK and publishes signed builds to GitHub Releases.
+JDK 17, Android SDK 35. CI (GitHub Actions) runs tests + lint, builds the APK and publishes signed builds to GitHub Releases.
 
 ### Release signing
 Add these repository secrets to sign releases with your own key:
