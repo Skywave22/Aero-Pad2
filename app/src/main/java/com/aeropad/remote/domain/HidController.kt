@@ -41,6 +41,9 @@ interface HidController {
     /** Currently bonded devices, never throws. */
     fun bondedDevices(): List<RemoteDevice>
 
+    /** Cancel pending input and send neutral reports without dropping the link. */
+    fun releaseInputs() {}
+
     /** Fire-and-forget input action. */
     fun send(action: HidAction)
 }

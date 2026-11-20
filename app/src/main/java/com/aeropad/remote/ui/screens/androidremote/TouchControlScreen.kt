@@ -1,7 +1,8 @@
 package com.aeropad.remote.ui.screens.androidremote
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +29,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,7 +66,7 @@ fun TouchControlScreen(
     val isConnected by viewModel.isConnected.collectAsStateWithLifecycle()
     val vibration by viewModel.vibrationsEnabled.collectAsStateWithLifecycle()
     val extended by viewModel.extendedReports.collectAsStateWithLifecycle()
-    val haptic = rememberHaptic(vibration)
+    val haptic by rememberUpdatedState(rememberHaptic(vibration))
 
     var areaSize by remember { mutableStateOf(IntSize.Zero) }
     var finger by remember { mutableStateOf<Offset?>(null) }
@@ -123,28 +125,31 @@ fun TouchControlScreen(
                     .clip(RoundedCornerShape(20.dp))
                     .background(MaterialTheme.colorScheme.surfaceContainer)
                     .onSizeChanged { areaSize = it }
-                    .pointerInput(areaSize) {
-                        if (areaSize.width <= 0 || areaSize.height <= 0) return@pointerInput
-                        detectDragGestures(
-                            onDragStart = { offset ->
-                                finger = offset
-                                haptic()
-                                sendContact(offset, contact = true)
-                            },
-                            onDrag = { change, _ ->
-                                change.consume()
-                                finger = change.position
-                                sendContact(change.position, contact = true)
-                            },
-                            onDragEnd = {
-                                finger?.let { sendContact(it, contact = false) }
-                                finger = null
-                            },
-                            onDragCancel = {
-                                finger?.let { sendContact(it, contact = false) }
+                    .pointerInput(areaSize, extended, isConnected) {
+                        if (!extended || !isConnected || areaSize.width <= 0 || areaSize.height <= 0) return@pointerInput
+                        awaitEachGesture {
+                            val down = awaitFirstDown()
+                            down.consume()
+                            var point = down.position
+                            finger = point
+                            haptic()
+                            sendContact(point, contact = true)
+                            try {
+                                while (true) {
+                                    val touch = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
+                                    if (touch.isConsumed || !touch.pressed) break
+                                    touch.consume()
+                                    if (touch.position != point) {
+                                        point = touch.position
+                                        finger = point
+                                        sendContact(point, contact = true)
+                                    }
+                                }
+                            } finally {
+                                sendContact(point, contact = false)
                                 finger = null
                             }
-                        )
+                        }
                     },
                 contentAlignment = Alignment.Center
             ) {

@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.horizontalScroll
@@ -76,6 +78,7 @@ import com.aeropad.remote.ui.components.GlassCard
 import com.aeropad.remote.ui.components.KeyCard
 import com.aeropad.remote.ui.components.Material3D
 import com.aeropad.remote.ui.components.surface3D
+import com.aeropad.remote.ui.theme.AccentPalette
 import com.aeropad.remote.viewmodel.SettingsViewModel
 
 /**
@@ -94,7 +97,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val app by viewModel.app.collectAsStateWithLifecycle()
-    var query by remember { mutableStateOf("") }
+    var query by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
     // Round 19 — in-app release notes (Settings → About → What's new).
     var showReleaseNotes by remember { mutableStateOf(false) }
     /** Search: a row matches when its label contains the query. */
@@ -130,13 +133,12 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .wrapContentWidth()
+                .widthIn(max = 720.dp)
+                .fillMaxWidth()
                 .padding(horizontal = 16.dp)
-                // UI fix — reserve room for the floating dock. This screen is a
-                // top-level hub so the dock is always drawn over it, but there
-                // was no bottom padding, meaning the last settings rows were
-                // permanently unreachable behind it.
-                .padding(bottom = com.aeropad.remote.ui.components.DockMetrics.contentInset() + 4.dp)
                 .verticalScroll(rememberScrollState())
+                .padding(bottom = 16.dp)
         ) {
             OutlinedTextField(
                 value = query,
@@ -149,7 +151,7 @@ fun SettingsScreen(
             // ---------- GROUP 1: Appearance ----------
             if (matches("appearance", "theme", "light", "dark", "mode")) SettingsGroup("Appearance") {
                 Text(
-                    "White or black — pick how AeroPad looks.",
+                    "Choose a light or dark appearance, or follow Android’s theme.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -188,8 +190,8 @@ fun SettingsScreen(
                 com.aeropad.remote.ui.components.ScrollableChipRow {
                     val isDark = app.theme == ThemeMode.DARK ||
                         (app.theme == ThemeMode.SYSTEM && com.aeropad.remote.ui.theme.LocalAppTheme.current.isDark)
-                    com.aeropad.remote.ui.theme.AccentPalette.entries.forEach { palette ->
-                        val selected = app.accentColor == palette.id
+                    AccentPalette.entries.forEach { palette ->
+                        val selected = AccentPalette.fromId(app.accentColor) == palette
                         val dot = palette.accent(isDark)
                         Box(
                             modifier = Modifier

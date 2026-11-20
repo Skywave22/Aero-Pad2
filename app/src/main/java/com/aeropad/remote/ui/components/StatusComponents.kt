@@ -50,7 +50,7 @@ fun statusVisual(state: HidConnectionState): StatusVisual {
         is HidConnectionState.Initializing ->
             StatusVisual(spec.connecting, "Starting HID engine…", "Registering with Android Bluetooth")
         is HidConnectionState.Idle ->
-            StatusVisual(MaterialTheme.colorScheme.outline, "Ready", "Waiting for a host connection")
+            StatusVisual(MaterialTheme.colorScheme.outline, "Not connected", "Pair this phone or choose a saved host")
         is HidConnectionState.BluetoothDisabled ->
             StatusVisual(spec.error, "Bluetooth is off", "Turn on Bluetooth to continue")
         is HidConnectionState.PermissionMissing ->
@@ -68,9 +68,9 @@ fun statusVisual(state: HidConnectionState): StatusVisual {
  */
 fun contextualTroubleshooting(state: HidConnectionState): List<String> = when (state) {
     is HidConnectionState.PermissionMissing -> listOf(
-        "1. Tap this card or 'Connect to a device' to grant Nearby Devices permission.",
+        "1. Use the permission button below to allow Bluetooth access.",
         "2. If previously denied, open Android Settings → Apps → AeroPad → Permissions.",
-        "3. AeroPad only uses Bluetooth for HID input — never location or network."
+        "3. On Android 10–11, Android requires location permission for Bluetooth discovery."
     )
     is HidConnectionState.BluetoothDisabled -> listOf(
         "1. Turn on Bluetooth in your phone's Quick Settings panel.",
@@ -80,12 +80,12 @@ fun contextualTroubleshooting(state: HidConnectionState): List<String> = when (s
     is HidConnectionState.HidUnsupported -> listOf(
         "1. Verify Bluetooth is turned on and Airplane mode is off.",
         "2. Some custom OEM ROMs disable the Android BluetoothHidDevice profile.",
-        "3. Tap 'Copy diagnostics' below to inspect your device/ROM HID status."
+        "3. Tap 'Copy diagnostics' to inspect your device/ROM HID status."
     )
     is HidConnectionState.Error -> listOf(
         "1. Make sure the host PC/TV is awake and Bluetooth is enabled on both sides.",
         "2. If pairing is stuck, remove/forget the device on BOTH the PC and phone, then re-pair.",
-        "3. In Settings → Advanced, keep 'Extended HID reports' OFF for maximum compatibility."
+        "3. In Settings → Behavior, keep 'Extended HID reports' OFF for maximum compatibility."
     )
     else -> emptyList()
 }

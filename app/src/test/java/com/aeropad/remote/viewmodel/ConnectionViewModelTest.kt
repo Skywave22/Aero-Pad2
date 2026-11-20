@@ -185,7 +185,6 @@ class ConnectionViewModelTest {
         vm.startScan()
         advanceTimeBy(100)
         assertEquals(1, vm.discoveredDevices.value.size)
-        vm.stopScan()
         assertFalse(vm.isScanning.value)
     }
 

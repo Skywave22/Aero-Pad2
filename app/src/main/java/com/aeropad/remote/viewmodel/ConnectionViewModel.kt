@@ -13,15 +13,13 @@ import com.aeropad.remote.model.HidConnectionState
 import com.aeropad.remote.model.RemoteDevice
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -87,7 +85,8 @@ class ConnectionViewModel @Inject constructor(
     val permissionsGranted: StateFlow<Boolean> = _permissionsGranted.asStateFlow()
 
     private var scanJob: Job? = null
-    private var scanTimeoutJob: Job? = null
+    private val _scanError = MutableStateFlow<String?>(null)
+    val scanError = _scanError.asStateFlow()
     /** Generation counter: a stale auto-stop can never kill a newer scan. */
     private var scanGeneration = 0
 
@@ -144,26 +143,30 @@ class ConnectionViewModel @Inject constructor(
         _discoveredDevices.value = emptyList()
         _isScanning.value = true
         val generation = ++scanGeneration
-        scanJob = scanner.scan()
-            .onEach { device ->
-                val current = _discoveredDevices.value
-                if (current.none { it.address == device.address }) {
-                    _discoveredDevices.value = current + device
+        _scanError.value = null
+        scanJob = viewModelScope.launch {
+            try {
+                withTimeoutOrNull(SCAN_DURATION_MS) {
+                    scanner.scan().collect { device ->
+                        val current = _discoveredDevices.value
+                        if (current.none { it.address == device.address }) _discoveredDevices.value = current + device
+                    }
                 }
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (e: Exception) {
+                Timber.w(e, "scan flow error")
+                if (scanGeneration == generation) {
+                    _scanError.value = "Could not scan. Check Bluetooth and permissions, then try again."
+                }
+            } finally {
+                if (scanGeneration == generation) _isScanning.value = false
             }
-            .catch { Timber.w(it, "scan flow error") }
-            .launchIn(viewModelScope)
-        // Auto-stop after the scan window. Generation check prevents a stale
-        // timer (from a previous scan) cancelling a scan the user restarted.
-        scanTimeoutJob = viewModelScope.launch {
-            delay(SCAN_DURATION_MS)
-            if (generation == scanGeneration) stopScan()
         }
     }
 
     fun stopScan() {
-        scanTimeoutJob?.cancel()
-        scanTimeoutJob = null
+        scanGeneration++
         scanJob?.cancel()
         scanJob = null
         _isScanning.value = false

@@ -8,6 +8,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import androidx.core.content.ContextCompat
 import com.aeropad.remote.domain.NearbyScanner
 import com.aeropad.remote.model.RemoteDevice
 import com.aeropad.remote.permission.PermissionManager
@@ -44,6 +45,10 @@ class BluetoothDeviceScanner @Inject constructor(
 
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(ctx: Context?, intent: Intent?) {
+                if (intent?.action == BluetoothAdapter.ACTION_DISCOVERY_FINISHED) {
+                    close()
+                    return
+                }
                 if (intent?.action != BluetoothDevice.ACTION_FOUND) return
                 val device: BluetoothDevice? =
                     @Suppress("DEPRECATION")
@@ -61,22 +66,32 @@ class BluetoothDeviceScanner @Inject constructor(
             }
         }
 
+        // If Android is already scanning, collect that scan rather than restarting it.
+        // ACTION_FOUND/FINISHED are protected broadcasts from the Bluetooth UID.
         runCatching {
-            context.registerReceiver(receiver, IntentFilter(BluetoothDevice.ACTION_FOUND))
+            ContextCompat.registerReceiver(
+                context,
+                receiver,
+                IntentFilter().apply {
+                    addAction(BluetoothDevice.ACTION_FOUND)
+                    addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)
+                },
+                ContextCompat.RECEIVER_EXPORTED
+            )
         }.onFailure {
             Timber.e(it, "registerReceiver failed")
-            close(); return@callbackFlow
+            close(it); return@callbackFlow
         }
 
+        var ownsDiscovery = false
         val started = runCatching {
-            if (adapter.isDiscovering) adapter.cancelDiscovery()
-            adapter.startDiscovery()
+            if (adapter.isDiscovering) true else adapter.startDiscovery().also { ownsDiscovery = it }
         }.getOrDefault(false)
-        Timber.i("discovery started=%s", started)
+        if (!started) close(IllegalStateException("Bluetooth discovery unavailable"))
 
         awaitClose {
             runCatching { context.unregisterReceiver(receiver) }
-            runCatching { adapter.cancelDiscovery() }
+            if (ownsDiscovery) runCatching { adapter.cancelDiscovery() }
             Timber.i("discovery stopped")
         }
     }

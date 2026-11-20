@@ -1,6 +1,7 @@
 package com.aeropad.remote.ui.screens.layouts
 
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -58,6 +59,12 @@ import com.aeropad.remote.ui.components.NotConnectedBanner
 import com.aeropad.remote.ui.widgets.LayoutCanvas
 import com.aeropad.remote.ui.widgets.WidgetEvents
 import com.aeropad.remote.viewmodel.LayoutsViewModel
+import com.aeropad.remote.data.layout.JsonDocumentTooLarge
+import com.aeropad.remote.data.layout.readJsonDocument
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import timber.log.Timber
 
 /**
@@ -85,16 +92,26 @@ fun LayoutsScreen(
 
     val context = LocalContext.current
     val snackbar = remember { SnackbarHostState() }
+    val documentScope = rememberCoroutineScope()
 
     // ---------- SAF: import ----------
     val importLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         if (uri == null) return@rememberLauncherForActivityResult
-        val text = runCatching {
-            context.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() }
-        }.onFailure { Timber.e(it, "import read failed") }.getOrNull()
-        viewModel.importFromJson(text)
+        documentScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    context.contentResolver.openInputStream(uri)?.use { it.readJsonDocument() }
+                        ?: throw java.io.IOException("No input stream")
+                }
+            }
+            result.onSuccess { viewModel.importFromJson(it) }.onFailure { error ->
+                val hint = if (error is JsonDocumentTooLarge) "Choose a JSON file no larger than 1 MiB."
+                    else "Could not read that file. Choose a readable JSON file."
+                snackbar.showSnackbar("Layout import failed. $hint")
+            }
+        }
     }
 
     // ---------- SAF: export ----------
@@ -127,6 +144,7 @@ fun LayoutsScreen(
 
     val activeProfile = active
     if (activeProfile != null) {
+        BackHandler(onBack = viewModel::closeProfile)
         // ---------------- Player (use mode) ----------------
         // Swipe accumulation for combo-profile switching (top strip only,
         // so it never fights trackpad/joystick gestures on the canvas).

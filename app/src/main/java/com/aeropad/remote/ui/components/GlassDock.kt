@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -49,39 +48,6 @@ import androidx.compose.ui.unit.dp
  * Settings. One-handed friendly: thumb-reachable tabs, shown only on
  * top-level destinations so control surfaces keep the full screen.
  */
-/**
- * UI fix — the floating dock is drawn OVER the screen content, so any screen
- * that shows it must reserve at least this much bottom space. Before this,
- * SettingsScreen had no bottom padding at all and its last rows could never be
- * scrolled out from under the dock.
- */
-object DockMetrics {
-    /**
-     * Vertical space the floating dock covers, including its shadow + nav bar.
-     *
-     * Round 11 — this was wrong in landscape: the dock is ~84 dp tall there (the
-     * same pill, no taller), but the layout is only ~340 dp high, so reserving
-     * 100 dp of it shoved content off the bottom while the dock still overlapped
-     * it. The extra 24 dp also came from portrait's system-nav padding, which
-     * does not exist on a landscape phone.
-     */
-    val height = 100.dp
-
-    /**
-     * What the dock actually covers in the current orientation.
-     *
-     * In landscape a phone window is only ~190 dp tall on a small device, so the
-     * full labelled pill took almost half the screen. Landscape uses a compact
-     * icon-only bar instead.
-     */
-    @Composable
-    fun height(): Dp = if (isLandscape()) 62.dp else height
-
-    /** Bottom padding a docked screen should reserve. */
-    @Composable
-    fun contentInset(): Dp = height() + 12.dp
-}
-
 data class DockItem(val route: String, val label: String, val icon: AppIcon)
 
 val DockItems = listOf(
@@ -116,22 +82,22 @@ fun GlassDock(
     onNavigate: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val reduceMotion = LocalReduceMotion.current
     val selectedIndex = DockItems.indexOfFirst { currentRoute?.startsWith(it.route) == true }
         .coerceAtLeast(0)
 
     Box(
         modifier = modifier
+            .widthIn(max = Adaptive.DOCK_MAX_WIDTH)
             .fillMaxWidth()
-            .navigationBarsPadding()
             // Centre + cap the width: stretching a 4-tab pill across a landscape
             // window leaves the tabs stranded at the extremes.
-            .widthIn(max = Adaptive.DOCK_MAX_WIDTH)
             .padding(
-                horizontal = if (isLandscape()) 96.dp else 24.dp,
+                horizontal = if (isLandscape()) 20.dp else 12.dp,
                 vertical = if (isLandscape()) 4.dp else 10.dp
             )
             .shadow(
-                elevation = 22.dp,
+                elevation = 4.dp,
                 shape = RoundedCornerShape(26.dp),
                 clip = false,
                 ambientColor = Color.Black.copy(alpha = 0.35f),
@@ -170,9 +136,9 @@ fun GlassDock(
             // ---------- sliding indicator ----------
             Box(
                 modifier = Modifier
-                    .offset(x = indicatorOffset)
+                    .offset(x = if (reduceMotion) tabWidth * selectedIndex else indicatorOffset)
                     .width(tabWidth)
-                    .height(if (isLandscape()) 40.dp else 50.dp)
+                    .height(if (isLandscape()) 48.dp else 52.dp)
                     .padding(horizontal = 4.dp)
                     .clip(RoundedCornerShape(19.dp))
                     .background(
@@ -221,6 +187,7 @@ private fun DockTab(
         animationSpec = spring(dampingRatio = 0.6f, stiffness = Spring.StiffnessMedium),
         label = "dockScale"
     )
+    val reduceMotion = LocalReduceMotion.current
     val view = LocalView.current
 
     Column(
@@ -228,7 +195,7 @@ private fun DockTab(
         verticalArrangement = Arrangement.Center,
         modifier = Modifier
             .width(width)
-            .heightIn(min = if (isLandscape()) 40.dp else 50.dp)
+            .heightIn(min = if (isLandscape()) 48.dp else 52.dp)
             // A rounded rect, not a circle: clipping a ~65dp-wide tab to a
             // circle used to slice the corners off the label (the dock
             // literally rendered "Layouts" as "ayouts").
@@ -263,7 +230,7 @@ private fun DockTab(
             tint = tint,
             modifier = Modifier
                 .size(22.dp)
-                .graphicsLayer { scaleX = iconScale; scaleY = iconScale }
+                .graphicsLayer { scaleX = if (reduceMotion) 1f else iconScale; scaleY = scaleX }
         )
         if (!isLandscape()) {
             Box(modifier = Modifier.height(3.dp))

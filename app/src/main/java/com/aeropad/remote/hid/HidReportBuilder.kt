@@ -112,7 +112,9 @@ object HidReportBuilder {
     }
 
     /** Neutral gamepad report (no buttons, hat neutral=8, sticks centered). */
-    fun gamepadNeutral(): ByteArray = gamepad(GamepadSnapshot())
+    fun gamepadNeutral(extended: Boolean = true): ByteArray = gamepad(GamepadSnapshot()).let {
+        if (extended) it else it.copyOf(HidDescriptors.SIZE_GAMEPAD_LEGACY)
+    }
 
     /** 0..1 trigger pressure → unsigned axis byte (round 7 Pro triggers). */
     fun triggerToByte(t: Float): Byte =
@@ -138,8 +140,14 @@ class MouseButtonTracker {
     var mask: Int = 0
         private set
 
-    val currentByte: Byte get() = (mask and 0xFF).toByte()
-    val hasHeldButtons: Boolean get() = mask != 0
+    private var clickMask = 0
+
+    val currentByte: Byte get() = ((mask or clickMask) and 0xFF).toByte()
+    val hasHeldButtons: Boolean get() = currentByte != 0.toByte()
+
+    fun setClick(button: MouseButton?) {
+        clickMask = button?.mask?.toInt() ?: 0
+    }
 
     fun onDown(button: MouseButton): Byte {
         mask = mask or (button.mask.toInt() and 0xFF)
@@ -152,9 +160,10 @@ class MouseButtonTracker {
     }
 
     fun withTransientPress(button: MouseButton): Byte =
-        ((mask or (button.mask.toInt() and 0xFF)) and 0xFF).toByte()
+        (currentByte.toInt() or button.mask.toInt()).toByte()
 
     fun clear() {
+        clickMask = 0
         mask = 0
     }
 }

@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -90,6 +92,7 @@ fun DevicesScreen(
     val macros by hostLayouts.macros.collectAsStateWithLifecycle()
     var bindTarget by remember { mutableStateOf<RemoteDevice?>(null) }
     val discovered by viewModel.discoveredDevices.collectAsStateWithLifecycle()
+    val scanError by viewModel.scanError.collectAsStateWithLifecycle()
     val isScanning by viewModel.isScanning.collectAsStateWithLifecycle()
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -102,17 +105,22 @@ fun DevicesScreen(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 viewModel.onPermissionsResult()
+            } else if (event == Lifecycle.Event.ON_STOP) {
+                viewModel.stopScan()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            viewModel.stopScan()
+        }
     }
 
     LaunchedEffect(permissionsGranted) {
         viewModel.initialize()
     }
 
-    val effectiveState = if (!permissionsGranted && state is HidConnectionState.Idle) {
+    val effectiveState = if (!permissionsGranted) {
         HidConnectionState.PermissionMissing
     } else {
         state
@@ -145,10 +153,13 @@ fun DevicesScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .wrapContentWidth()
+                .widthIn(max = 720.dp)
+                .fillMaxWidth()
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                bottom = com.aeropad.remote.ui.components.DockMetrics.contentInset()
+                bottom = 16.dp
             )
         ) {
             item {
@@ -206,7 +217,7 @@ fun DevicesScreen(
                         )
                         if (onOpenConnection != null) {
                             OutlinedButton(onClick = onOpenConnection) {
-                                Text("Open PC Connection")
+                                Text("Open Bluetooth connection")
                             }
                         }
                     }
@@ -247,18 +258,23 @@ fun DevicesScreen(
                     )
                     if (isScanning) {
                         CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                        TextButton(onClick = viewModel::stopScan) { Text("Stop") }
                     } else {
-                        OutlinedButton(onClick = {
-                            if (!permissionsGranted) {
-                                val missing = viewModel.permissionsToRequest()
-                                if (missing.isEmpty()) viewModel.onPermissionsResult()
-                                else permissionLauncher.launch(missing.toTypedArray())
-                            } else {
-                                viewModel.startScan()
-                            }
-                        }) { Text("Scan") }
+                        OutlinedButton(
+                            onClick = viewModel::startScan,
+                            enabled = permissionsGranted && state != HidConnectionState.BluetoothDisabled
+                        ) { Text("Scan") }
                     }
                 }
+            }
+            val discoveryMessage = scanError ?: when {
+                isScanning -> "Looking for nearby devices…"
+                discovered.isEmpty() -> "To find a device, make it discoverable and tap Scan."
+                else -> null
+            }
+            if (discoveryMessage != null) item {
+                Text(discoveryMessage, style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             items(discovered, key = { "d-" + it.address }) { device ->
                 DeviceRow(device, connected = false) {

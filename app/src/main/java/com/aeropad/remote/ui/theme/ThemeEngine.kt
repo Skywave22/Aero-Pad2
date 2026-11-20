@@ -33,24 +33,20 @@ val LocalAppTheme = staticCompositionLocalOf { AeroPadSpecs.DARK }
 /** The two built-in looks. */
 object AeroPadSpecs {
 
-    /** Shared accent: a confident, high-contrast blue. */
-    private val AccentBlue = androidx.compose.ui.graphics.Color(0xFF2563EB)
-    private val AccentBlueBright = androidx.compose.ui.graphics.Color(0xFF5B8DFF)
-
     val LIGHT = AppThemeSpec(
         id = "light",
         name = "Light",
         isDark = false,
-        primary = AccentBlue,
-        onPrimary = androidx.compose.ui.graphics.Color.White,
-        secondary = androidx.compose.ui.graphics.Color(0xFF0E7490),
-        background = androidx.compose.ui.graphics.Color(0xFFF7F8FA),
-        onBackground = androidx.compose.ui.graphics.Color(0xFF111827),
+        primary = AccentPalette.DEFAULT.light,
+        onPrimary = AccentPalette.DEFAULT.onAccentLight,
+        secondary = androidx.compose.ui.graphics.Color(0xFF3D6D66),
+        background = androidx.compose.ui.graphics.Color(0xFFF8F7FB),
+        onBackground = androidx.compose.ui.graphics.Color(0xFF191624),
         surface = androidx.compose.ui.graphics.Color.White,
-        onSurface = androidx.compose.ui.graphics.Color(0xFF111827),
-        surfaceVariant = androidx.compose.ui.graphics.Color(0xFFEEF1F5),
-        onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFF4B5563),
-        outline = androidx.compose.ui.graphics.Color(0xFFD3D9E3),
+        onSurface = androidx.compose.ui.graphics.Color(0xFF191624),
+        surfaceVariant = androidx.compose.ui.graphics.Color(0xFFEFEAF7),
+        onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFF514A61),
+        outline = androidx.compose.ui.graphics.Color(0xFFC8BED7),
         surfaceAlpha = 1f,
         cornerRadius = 20
     )
@@ -59,16 +55,16 @@ object AeroPadSpecs {
         id = "dark",
         name = "Dark",
         isDark = true,
-        primary = AccentBlueBright,
-        onPrimary = androidx.compose.ui.graphics.Color.Black,
-        secondary = androidx.compose.ui.graphics.Color(0xFF22D3EE),
+        primary = AccentPalette.DEFAULT.dark,
+        onPrimary = AccentPalette.DEFAULT.onAccentDark,
+        secondary = androidx.compose.ui.graphics.Color(0xFF8AD5C6),
         background = androidx.compose.ui.graphics.Color.Black,
         onBackground = androidx.compose.ui.graphics.Color(0xFFF3F4F6),
-        surface = androidx.compose.ui.graphics.Color(0xFF121212),
+        surface = androidx.compose.ui.graphics.Color(0xFF15131C),
         onSurface = androidx.compose.ui.graphics.Color(0xFFF3F4F6),
-        surfaceVariant = androidx.compose.ui.graphics.Color(0xFF1C1C1E),
-        onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFF9CA3AF),
-        outline = androidx.compose.ui.graphics.Color(0xFF2E2E33),
+        surfaceVariant = androidx.compose.ui.graphics.Color(0xFF24202F),
+        onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFFBDB4CA),
+        outline = androidx.compose.ui.graphics.Color(0xFF463F53),
         surfaceAlpha = 1f,
         cornerRadius = 20
     )
@@ -145,6 +141,7 @@ fun AeroPadAppTheme(
             surface = spec.surface, onSurface = spec.onSurface,
             surfaceVariant = spec.surfaceVariant, onSurfaceVariant = spec.onSurfaceVariant,
             outline = spec.outline,
+            outlineVariant = spec.outline.copy(alpha = 0.62f).compositeOver(spec.surface),
             error = spec.error, onError = androidx.compose.ui.graphics.Color.White,
             errorContainer = errorContainerC, onErrorContainer = spec.error
         )
@@ -158,6 +155,7 @@ fun AeroPadAppTheme(
             surface = spec.surface, onSurface = spec.onSurface,
             surfaceVariant = spec.surfaceVariant, onSurfaceVariant = spec.onSurfaceVariant,
             outline = spec.outline,
+            outlineVariant = spec.outline.copy(alpha = 0.62f).compositeOver(spec.surface),
             error = spec.error, onError = androidx.compose.ui.graphics.Color.White,
             errorContainer = errorContainerC, onErrorContainer = spec.error
         )

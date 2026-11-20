@@ -1,6 +1,7 @@
 package com.aeropad.remote.ui.components
 
 import android.view.HapticFeedbackConstants
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -10,8 +11,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,22 +25,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.background
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import com.aeropad.remote.model.HapticIntensity
 import com.aeropad.remote.ui.theme.LocalAppTheme
-
-/**
- * Shared building blocks for control screens.
- *
- * SECTION 3B polish:
- *  - [KeyCard] now animates a press-scale (spring) driven by the real
- *    pressed interaction state — instant visual feedback on touch-down.
- *  - Haptics honor BOTH the on/off setting and the intensity setting,
- *    delivered app-wide through [LocalHapticIntensity] (no per-call-site
- *    plumbing needed).
- */
 
 /** Active haptic intensity, provided at the app root. */
 val LocalHapticIntensity = staticCompositionLocalOf { HapticIntensity.MEDIUM }
@@ -68,9 +53,8 @@ fun rememberHaptic(hapticEnabled: Boolean): () -> Unit {
 
 /**
  * A tappable key/button card used across keyboard/numpad/media screens.
- * Press feedback: springy scale-down to 94% while touched (plus the
- * default Material ripple). [height] is a minimum — cards stretch with
- * weight()/fillMaxHeight() so no screen size clips them.
+ * Material uses a restrained outlined surface; Glass and Neon retain press depth.
+ * [height] is the preferred minimum within the parent’s constraints.
  */
 @Composable
 fun KeyCard(
@@ -87,13 +71,14 @@ fun KeyCard(
      * as a tofu box next to the word Power. A vector can never tofu.
      */
     icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    maxLines: Int = 1,
     onClick: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-    // True press-depth: the key tips back and sinks in, and its shadow
-    // collapses while pressed (light-source simulation). Honors Reduce Motion.
-    val elevation = pressedElevation(interactionSource, idle = 6f, pressed = 1f)
-    val shape = MaterialTheme.shapes.medium
+    val shape = MaterialTheme.shapes.small
+    val finish = LocalAppTheme.current.id
+    val quality = LocalQuality3D.current
+    val flat = finish == "light" || finish == "dark" || quality == Quality3D.FLAT
 
     val contentColor = if (emphasized) {
         MaterialTheme.colorScheme.onPrimaryContainer
@@ -102,7 +87,7 @@ fun KeyCard(
     }
 
     val baseModifier = modifier
-        .pressDepth3D(interactionSource)
+        .then(if (flat || !enabled) Modifier else Modifier.pressDepth3D(interactionSource))
         .heightIn(min = height)
         // Clip BEFORE clickable so the ripple follows the rounded key
         // shape — no square corners flashing outside the key on tap.
@@ -111,23 +96,21 @@ fun KeyCard(
             interactionSource = interactionSource,
             indication = androidx.compose.foundation.LocalIndication.current,
             enabled = enabled,
+            role = Role.Button,
             onClick = onClick
         )
 
-    // Solid key: gradient fake-lighting (top-left light source) + dynamic
-    // shadow that collapses while pressed. Emphasized keys (ENTER, LEFT
-    // CLICK…) use the primary container so they stand out instantly.
-    val base = if (emphasized) MaterialTheme.colorScheme.primaryContainer
-    else MaterialTheme.colorScheme.surfaceVariant
-
+    val colors = MaterialTheme.colorScheme
+    val base = if (!enabled) colors.surface else if (emphasized) colors.primaryContainer else colors.surfaceVariant
+    val surfaceModifier = if (flat || !enabled) {
+        Modifier.background(base).border(1.dp, colors.outlineVariant, shape)
+    } else {
+        val elevation = pressedElevation(interactionSource, idle = 4f, pressed = 1f)
+        Modifier.surface3D(base, shape, material = Material3D.GLOSSY, elevation = elevation.dp, quality = quality)
+    }
+    val ink = if (enabled) contentColor else colors.onSurfaceVariant.copy(alpha = 0.65f)
     Box(
-        modifier = baseModifier
-            .surface3D(
-                base = base,
-                shape = shape,
-                material = Material3D.GLOSSY,
-                elevation = elevation.dp
-            ),
+        modifier = baseModifier.then(surfaceModifier),
         contentAlignment = Alignment.Center
     ) {
         androidx.compose.foundation.layout.Row(
@@ -139,7 +122,7 @@ fun KeyCard(
                 androidx.compose.material3.Icon(
                     icon,
                     contentDescription = null,
-                    tint = contentColor,
+                    tint = ink,
                     modifier = Modifier.size(20.dp)
                 )
                 androidx.compose.foundation.layout.Spacer(Modifier.size(6.dp))
@@ -147,52 +130,46 @@ fun KeyCard(
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelLarge,
-                color = contentColor,
+                color = ink,
                 textAlign = TextAlign.Center,
-                maxLines = 1
+                maxLines = maxLines,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
         }
     }
 }
 
-/** Thin banner shown on control screens when not connected. */
+/** The app shell supplies the pairing route; standalone previews remain informational. */
+val LocalOpenConnection = staticCompositionLocalOf<(() -> Unit)?> { null }
+
 @Composable
 fun NotConnectedBanner(visible: Boolean) {
     if (!visible) return
-    // Round 19 — this used to be a full-width errorContainer card: a saturated
-    // red slab above the controls on all 20 screens, before the user had done
-    // anything wrong. Being unpaired is the app's normal starting state, not a
-    // failure, so error red was shouting at people who had simply not
-    // connected yet. It is now one quiet line that reads as information. Real
-    // failures (permission denial, HID unsupported) still surface in full on
-    // Home and on the Connect screen, where they are actionable.
-    //
-    // Round 14 retained: landscape wording is shorter so the note costs one
-    // line of a ~270 dp window instead of three.
-    val compact = com.aeropad.remote.ui.components.isLandscape()
+    val connect = LocalOpenConnection.current
+    val compact = isLandscape()
+    val colors = MaterialTheme.colorScheme
+    val shape = MaterialTheme.shapes.small
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = Modifier.fillMaxWidth()
             .padding(bottom = if (compact) 4.dp else 8.dp)
-            .clip(RoundedCornerShape(10.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
-            .padding(horizontal = 11.dp, vertical = if (compact) 6.dp else 8.dp),
+            .clip(shape)
+            .background(colors.surfaceVariant)
+            .then(if (connect == null) Modifier else Modifier.clickable(
+                onClickLabel = "Open Bluetooth connection", role = Role.Button, onClick = connect
+            ))
+            .heightIn(min = if (compact) 36.dp else 48.dp)
+            .padding(horizontal = 12.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(6.dp)
-                .clip(RoundedCornerShape(3.dp))
-                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f))
-        )
-        Spacer(Modifier.width(9.dp))
         Text(
-            text = if (compact) "Not connected — open Connect to pair."
-            else "Not connected — controls are inactive.",
+            text = if (connect == null) "Not connected — controls are inactive." else "Not connected",
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            color = colors.onSurfaceVariant,
+            modifier = Modifier.weight(1f)
         )
+        if (connect != null) {
+            Spacer(Modifier.width(8.dp))
+            Text("Connect", style = MaterialTheme.typography.labelLarge, color = colors.primary)
+        }
     }
 }

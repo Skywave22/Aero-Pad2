@@ -3,39 +3,48 @@ package com.aeropad.remote.ui.navigation
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.aeropad.remote.domain.RouteGuard
 import com.aeropad.remote.model.GamepadMappingMode
 import com.aeropad.remote.model.HidConnectionState
 import com.aeropad.remote.model.ThemeMode
 import com.aeropad.remote.ui.components.GlassDock
+import com.aeropad.remote.ui.components.LocalOpenConnection
+import com.aeropad.remote.ui.components.isLandscape
+import com.aeropad.remote.ui.theme.AeroIcons
 import com.aeropad.remote.ui.components.OnboardingOverlay
 import com.aeropad.remote.viewmodel.HostLayoutsViewModel
 import com.aeropad.remote.viewmodel.SettingsViewModel
@@ -112,13 +121,18 @@ private val controlScreenLabels = mapOf(
     Routes.PRESENTER to "Presenter",
     Routes.ANDROID to "Android",
     Routes.TOUCH to "Touch",
-    Routes.TEXT to "Text & Clips"
+    Routes.TEXT to "Text & Clips",
+    Routes.NUMPAD to "Numpad",
+    Routes.PC_COMBO to "PC Combo",
+    Routes.MY_LAYOUT to "My Layout",
+    Routes.SHORTCUTS to "Decks"
 )
 
 @Composable
 fun AeroPadApp(
     /** V2 MATRIX 8 — start destination override (launcher shortcuts). */
-    startRoute: String = Routes.HOME
+    startRoute: String = Routes.HOME,
+    onLeaveDestination: () -> Unit = {}
 ) {
     val navController = rememberNavController()
     val settingsViewModel: SettingsViewModel = hiltViewModel()
@@ -200,305 +214,266 @@ fun AeroPadApp(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-
-    // SECTION 3D — card-flip screen transitions: incoming screen rotates in
-    // around the Y axis (12° -> 0°) with a slide, like turning a card.
-    // Under Reduce Motion this collapses to a plain fast fade.
-    val reduceMotion = com.aeropad.remote.ui.components.LocalReduceMotion.current
-    val flipIn = scaleIn(tween(280), initialScale = 0.92f) + fadeIn(tween(280)) +
-        slideInHorizontally(tween(280)) { it / 5 }
-    val flipOut = scaleOut(tween(220), targetScale = 0.94f) + fadeOut(tween(200)) +
-        slideOutHorizontally(tween(280)) { -it / 5 }
-    val flipPopIn = scaleIn(tween(280), initialScale = 0.92f) + fadeIn(tween(280)) +
-        slideInHorizontally(tween(280)) { -it / 5 }
-    val flipPopOut = scaleOut(tween(220), targetScale = 0.94f) + fadeOut(tween(200)) +
-        slideOutHorizontally(tween(280)) { it / 5 }
-    NavHost(
-        navController = navController,
-        // Round 14 — never hand the NavHost a destination that is not a direct
-        // child of the graph: doing so throws IllegalArgumentException and takes
-        // the app down before it draws (found by the feature audit).
-        startDestination = com.aeropad.remote.domain.RouteGuard.sanitize(startRoute),
-        // UI fix — keyboard (IME) insets. The activity runs edge-to-edge and no
-        // screen called imePadding(), so opening the on-screen keyboard covered
-        // the text field on all 11 screens that have one (Keyboard, Text & Clips,
-        // Settings search, Full Board, Macros, Layouts, Layout Editor, Gamepad
-        // Pro, Pad Builder, Voice sheet). Handling it once here — instead of in
-        // every screen — fixes them together, and also keeps the dock clear of
-        // the keyboard because the whole host shrinks with the IME.
-        modifier = Modifier.imePadding(),
-        enterTransition = { if (reduceMotion) fadeIn(tween(120)) else flipIn },
-        exitTransition = { if (reduceMotion) fadeOut(tween(120)) else flipOut },
-        popEnterTransition = { if (reduceMotion) fadeIn(tween(120)) else flipPopIn },
-        popExitTransition = { if (reduceMotion) fadeOut(tween(120)) else flipPopOut }
-    ) {
-        composable(Routes.HOME) {
-            HomeScreen(
-                // launchSingleTop: a double-tap on a tile must never push the
-                // same destination twice (duplicate back-stack entries made
-                // Back feel broken).
-                onNavigate = { route ->
-                    navController.navigate(route) { launchSingleTop = true }
-                }
-            )
-        }
-        composable(Routes.PERMISSIONS) {
-            PermissionScreen(
-                onGranted = {
-                    navController.navigate(Routes.CONNECTION) {
-                        popUpTo(Routes.PERMISSIONS) { inclusive = true }
-                    }
-                },
-                onBack = { navController.popBackStack() }
-            )
-        }
-        composable(Routes.CONNECTION) {
-            ConnectionScreen(
-                onBack = { navController.popBackStack() },
-                onOpenDevices = {
-                    navController.navigate(Routes.DEVICES) { launchSingleTop = true }
-                }
-            )
-        }
-        composable(Routes.DEVICES) {
-            DevicesScreen(
-                onBack = { navController.popBackStack() },
-                onOpenConnection = {
-                    navController.navigate(Routes.CONNECTION) { launchSingleTop = true }
-                }
-            )
-        }
-        composable(Routes.SETTINGS) {
-            SettingsScreen(
-                onBack = { navController.popBackStack() },
-                onOpenHealth = {
-                    navController.navigate(Routes.CONNECTION_HEALTH) { launchSingleTop = true }
-                },
-                onReplayTutorial = {
-                    settingsViewModel.setOnboardingDone(false)
-                }
-            )
-        }
-        composable(Routes.MOUSE) {
-            MouseScreen(
-                onBack = { navController.popBackStack() },
-                onOpenAirMouse = {
-                    navController.navigate(Routes.AIR_MOUSE) { launchSingleTop = true }
-                }
-            )
-        }
-        composable(Routes.KEYBOARD) {
-            KeyboardScreen(
-                onBack = { navController.popBackStack() },
-                onOpenFullBoard = {
-                    navController.navigate(Routes.FULL_KEYBOARD) { launchSingleTop = true }
-                }
-            )
-        }
-        composable(Routes.NUMPAD) { NumpadScreen(onBack = { navController.popBackStack() }) }
-        composable(Routes.MULTIMEDIA) { MultimediaScreen(onBack = { navController.popBackStack() }) }
-        composable(Routes.PRESENTER) { PresenterScreen(onBack = { navController.popBackStack() }) }
-        composable(Routes.GAMEPAD) {
-            GamepadScreen(
-                onBack = { navController.popBackStack() },
-                onOpenBuilder = {
-                    navController.navigate(Routes.GAMEPAD_BUILDER) { launchSingleTop = true }
-                }
-            )
-        }
-        composable(Routes.ANDROID) {
-            AndroidControlScreen(
-                onBack = { navController.popBackStack() },
-                onOpenTouch = {
-                    navController.navigate(Routes.TOUCH) { launchSingleTop = true }
-                }
-            )
-        }
-        composable(Routes.TOUCH) { TouchControlScreen(onBack = { navController.popBackStack() }) }
-        composable(Routes.SHORTCUTS) { ShortcutDeckScreen(onBack = { navController.popBackStack() }) }
-        composable(Routes.TEXT) { TextToolsScreen(onBack = { navController.popBackStack() }) }
-        composable(Routes.MY_LAYOUT) { MyLayoutScreen(onBack = { navController.popBackStack() }) }
-        composable(Routes.CONNECTION_HEALTH) {
-            ConnectionHealthScreen(onBack = { navController.popBackStack() })
-        }
-        composable(Routes.HELP) { HelpScreen(onBack = { navController.popBackStack() }) }
-        composable(Routes.LAYOUTS) {
-            LayoutsScreen(
-                onBack = { navController.popBackStack() },
-                onEdit = { id -> navController.navigate("${Routes.LAYOUT_EDITOR}/$id") },
-                onOpenGamepadBuilder = {
-                    navController.navigate(Routes.GAMEPAD_BUILDER) { launchSingleTop = true }
-                },
-                onOpenPcCombo = {
-                    navController.navigate(Routes.PC_COMBO) { launchSingleTop = true }
-                },
-                onOpenMyLayout = {
-                    navController.navigate(Routes.MY_LAYOUT) { launchSingleTop = true }
-                }
-            )
-        }
-        composable(Routes.MACROS) { MacrosScreen(onBack = { navController.popBackStack() }) }
-        composable(Routes.GAMEPAD_BUILDER) { GamepadBuilderScreen(onBack = { navController.popBackStack() }) }
-        composable(Routes.FULL_KEYBOARD) { FullKeyboardScreen(onBack = { navController.popBackStack() }) }
-        composable(Routes.PC_COMBO) { PcComboScreen(onBack = { navController.popBackStack() }) }
-        composable(Routes.AIR_MOUSE) { AirMouseScreen(onBack = { navController.popBackStack() }) }
-        composable(
-            route = "${Routes.LAYOUT_EDITOR}/{profileId}",
-            arguments = listOf(navArgument("profileId") { type = NavType.LongType })
-        ) {
-            LayoutEditorScreen(onBack = { navController.popBackStack() })
+    // Keep Home as the back-stack root even when launched from a shortcut.
+    var openedStartRoute by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(navController) {
+        if (!openedStartRoute) {
+            openedStartRoute = true
+            val route = RouteGuard.sanitize(startRoute)
+            if (route != Routes.HOME) navController.navigate(route) { launchSingleTop = true }
         }
     }
-
-    // UI fix — tell the current screen how much bottom space the floating dock
-    // is covering, so it can reserve room instead of hiding content behind it.
-    // SettingsScreen previously had NO bottom padding at all, so its final rows
-    // could never be scrolled clear of the dock.
-    // Floating glass dock (top-level hubs only)
-    if (currentRoute in dockRoutes) {
-        GlassDock(
-            currentRoute = currentRoute,
-            onNavigate = { route ->
-                navController.navigate(route) {
-                    popUpTo(Routes.HOME) { saveState = true }
-                    launchSingleTop = true
-                    restoreState = true
-                }
-            },
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
+    val releaseOnLeave by androidx.compose.runtime.rememberUpdatedState(onLeaveDestination)
+    DisposableEffect(navController) {
+        var previous: androidx.navigation.NavBackStackEntry? = null
+        val listener = NavController.OnDestinationChangedListener { controller, _, _ ->
+            val next = controller.currentBackStackEntry
+            if (previous != null && previous !== next) releaseOnLeave()
+            previous = next
+        }
+        navController.addOnDestinationChangedListener(listener)
+        onDispose { navController.removeOnDestinationChangedListener(listener) }
     }
 
-    // ------------------------------------------------------------------
-    // Floating overlay stack (top-right).
-    //
-    // UI fix — the health dot and the Quick-Switch pill used to be two
-    // independent overlays both pinned to Alignment.TopEnd. The health dot
-    // was a 44dp clickable box with NO end padding, so it sat on top of every
-    // screen's TopAppBar action button (the Mouse/Keyboard "tuning" gear) and
-    // swallowed those taps. They also overlapped each other.
-    //
-    // Both now live in ONE Column that starts BELOW the 64dp app bar and is
-    // inset from the right edge, so nothing covers the app-bar actions and the
-    // two overlays can never collide.
-    // ------------------------------------------------------------------
-    val previousControlRoute = if (
-        currentRoute in controlScreenLabels && recentControlRoutes.size >= 2
-    ) {
-        recentControlRoutes.firstOrNull { it != currentRoute }
+    fun openConnection() {
+        val target = if (connState == HidConnectionState.PermissionMissing) Routes.PERMISSIONS else Routes.CONNECTION
+        if (navController.previousBackStackEntry?.destination?.route == target) navController.popBackStack()
+        else navController.navigate(target) { launchSingleTop = true }
+    }
+
+    val previousControlRoute = if (currentRoute in controlScreenLabels) {
+        recentControlRoutes.lastOrNull { it != currentRoute }
     } else null
-    // UI fix — both overlays are only useful while actually controlling a
-    // host, and the "Not connected" banner every control screen shows sits in
-    // exactly this corner. Gating on the connection state means the pill can
-    // never cover that banner, which is what the emulator screenshots showed.
-    val isLive = connState is HidConnectionState.Connected
-    val showQuickSwitch = previousControlRoute != null && isLive
-    val showHealth = isLive && currentRoute != Routes.CONNECTION_HEALTH
-    if (showHealth || showQuickSwitch) {
-        androidx.compose.foundation.layout.Column(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 68.dp, end = 12.dp),
-            horizontalAlignment = Alignment.End,
-            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)
-        ) {
-            // A10 — Quick-Switch pill between the last two control screens.
-            if (showQuickSwitch && previousControlRoute != null) {
-                val label = controlScreenLabels[previousControlRoute] ?: previousControlRoute
-                AssistChip(
-                    onClick = {
-                        navController.navigate(previousControlRoute) { launchSingleTop = true }
-                    },
-                    label = { Text("⇄ $label") }
-                )
+    val showTools = connState.isConnected && currentRoute in controlScreenLabels
+    val compact = isLandscape()
+    val reduceMotion = com.aeropad.remote.ui.components.LocalReduceMotion.current
+    val openHealth: () -> Unit = {
+        navController.navigate(Routes.CONNECTION_HEALTH) { launchSingleTop = true }
+    }
+    val switchControl: (() -> Unit)? = previousControlRoute?.let { target ->
+        {
+            if (navController.previousBackStackEntry?.destination?.route == target) navController.popBackStack()
+            else navController.navigate(target) {
+                currentRoute?.let { popUpTo(it) { inclusive = true } }
+                launchSingleTop = true
             }
-            // ADV S5 — mini health indicator; tap opens the dashboard.
-            if (showHealth) {
-                MiniHealthIndicator(
-                    onOpen = {
-                        navController.navigate(Routes.CONNECTION_HEALTH) {
-                            launchSingleTop = true
+            Unit
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
+        CompositionLocalProvider(LocalOpenConnection provides ::openConnection) {
+            Row(Modifier.fillMaxSize()) {
+                Column(Modifier.weight(1f)) {
+                    NavHost(
+                        navController = navController,
+                        startDestination = Routes.HOME,
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                        enterTransition = { if (reduceMotion) androidx.compose.animation.EnterTransition.None else fadeIn(tween(140)) },
+                        exitTransition = { if (reduceMotion) androidx.compose.animation.ExitTransition.None else fadeOut(tween(100)) }
+                    ) {
+                        composable(Routes.HOME) {
+                            HomeScreen(
+                                // launchSingleTop: a double-tap on a tile must never push the
+                                // same destination twice (duplicate back-stack entries made
+                                // Back feel broken).
+                                onNavigate = { route ->
+                                    navController.navigate(route) { launchSingleTop = true }
+                                }
+                            )
+                        }
+                        composable(Routes.PERMISSIONS) {
+                            PermissionScreen(
+                                onGranted = {
+                                    navController.navigate(Routes.CONNECTION) {
+                                        popUpTo(Routes.PERMISSIONS) { inclusive = true }
+                                    }
+                                },
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
+                        composable(Routes.CONNECTION) {
+                            ConnectionScreen(
+                                onBack = { navController.popBackStack() },
+                                onOpenDevices = {
+                                    if (navController.previousBackStackEntry?.destination?.route == Routes.DEVICES) {
+                                        navController.popBackStack()
+                                    } else navController.navigate(Routes.DEVICES) { launchSingleTop = true }
+                                }
+                            )
+                        }
+                        composable(Routes.DEVICES) {
+                            DevicesScreen(
+                                onBack = { navController.popBackStack() },
+                                onOpenConnection = ::openConnection
+                            )
+                        }
+                        composable(Routes.SETTINGS) {
+                            SettingsScreen(
+                                onBack = { navController.popBackStack() },
+                                onOpenHealth = {
+                                    navController.navigate(Routes.CONNECTION_HEALTH) { launchSingleTop = true }
+                                },
+                                onReplayTutorial = {
+                                    settingsViewModel.setOnboardingDone(false)
+                                }
+                            )
+                        }
+                        composable(Routes.MOUSE) {
+                            MouseScreen(
+                                onBack = { navController.popBackStack() },
+                                onOpenAirMouse = {
+                                    navController.navigate(Routes.AIR_MOUSE) { launchSingleTop = true }
+                                }
+                            )
+                        }
+                        composable(Routes.KEYBOARD) {
+                            KeyboardScreen(
+                                onBack = { navController.popBackStack() },
+                                onOpenFullBoard = {
+                                    navController.navigate(Routes.FULL_KEYBOARD) { launchSingleTop = true }
+                                }
+                            )
+                        }
+                        composable(Routes.NUMPAD) { NumpadScreen(onBack = { navController.popBackStack() }) }
+                        composable(Routes.MULTIMEDIA) { MultimediaScreen(onBack = { navController.popBackStack() }) }
+                        composable(Routes.PRESENTER) { PresenterScreen(onBack = { navController.popBackStack() }) }
+                        composable(Routes.GAMEPAD) {
+                            GamepadScreen(
+                                onBack = { navController.popBackStack() },
+                                onOpenBuilder = {
+                                    navController.navigate(Routes.GAMEPAD_BUILDER) { launchSingleTop = true }
+                                }
+                            )
+                        }
+                        composable(Routes.ANDROID) {
+                            AndroidControlScreen(
+                                onBack = { navController.popBackStack() },
+                                onOpenTouch = {
+                                    navController.navigate(Routes.TOUCH) { launchSingleTop = true }
+                                }
+                            )
+                        }
+                        composable(Routes.TOUCH) { TouchControlScreen(onBack = { navController.popBackStack() }) }
+                        composable(Routes.SHORTCUTS) { ShortcutDeckScreen(onBack = { navController.popBackStack() }) }
+                        composable(Routes.TEXT) { TextToolsScreen(onBack = { navController.popBackStack() }) }
+                        composable(Routes.MY_LAYOUT) { MyLayoutScreen(onBack = { navController.popBackStack() }) }
+                        composable(Routes.CONNECTION_HEALTH) {
+                            ConnectionHealthScreen(onBack = { navController.popBackStack() })
+                        }
+                        composable(Routes.HELP) { HelpScreen(onBack = { navController.popBackStack() }) }
+                        composable(Routes.LAYOUTS) {
+                            LayoutsScreen(
+                                onBack = { navController.popBackStack() },
+                                onEdit = { id -> navController.navigate("${Routes.LAYOUT_EDITOR}/$id") },
+                                onOpenGamepadBuilder = {
+                                    navController.navigate(Routes.GAMEPAD_BUILDER) { launchSingleTop = true }
+                                },
+                                onOpenPcCombo = {
+                                    navController.navigate(Routes.PC_COMBO) { launchSingleTop = true }
+                                },
+                                onOpenMyLayout = {
+                                    navController.navigate(Routes.MY_LAYOUT) { launchSingleTop = true }
+                                }
+                            )
+                        }
+                        composable(Routes.MACROS) { MacrosScreen(onBack = { navController.popBackStack() }) }
+                        composable(Routes.GAMEPAD_BUILDER) { GamepadBuilderScreen(onBack = { navController.popBackStack() }) }
+                        composable(Routes.FULL_KEYBOARD) { FullKeyboardScreen(onBack = { navController.popBackStack() }) }
+                        composable(Routes.PC_COMBO) { PcComboScreen(onBack = { navController.popBackStack() }) }
+                        composable(Routes.AIR_MOUSE) { AirMouseScreen(onBack = { navController.popBackStack() }) }
+                        composable(
+                            route = "${Routes.LAYOUT_EDITOR}/{profileId}",
+                            arguments = listOf(navArgument("profileId") { type = NavType.LongType })
+                        ) {
+                            LayoutEditorScreen(onBack = { navController.popBackStack() })
                         }
                     }
-                )
+
+                    if (showTools && !compact) {
+                        Row(
+                            Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                            horizontalArrangement = Arrangement.End,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (switchControl != null && previousControlRoute != null) {
+                                TextButton(onClick = switchControl) {
+                                    Text("Switch to ${controlScreenLabels.getValue(previousControlRoute)}",
+                                        maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
+                            }
+                            HealthButton(openHealth)
+                        }
+                    }
+                    if (currentRoute in dockRoutes) {
+                        GlassDock(
+                            currentRoute = currentRoute,
+                            onNavigate = { route ->
+                                navController.navigate(route) {
+                                    popUpTo(Routes.HOME) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        )
+                    }
+                }
+                // Reserve width, not height, in short landscape control windows.
+                if (showTools && compact) {
+                    Column {
+                        HealthButton(openHealth)
+                        if (switchControl != null && previousControlRoute != null) {
+                            IconButton(onClick = switchControl) {
+                                Icon(AeroIcons.Combo, "Switch to ${controlScreenLabels.getValue(previousControlRoute)}")
+                            }
+                        }
+                    }
+                }
             }
         }
-    }
 
-
-
-    // V2 PART A — real FPS overlay (Choreographer-measured); toggle in
-    // Settings. Lifecycle-safe: stops measuring the moment it's disabled.
-    if (appSettings.fpsOverlay) {
-        androidx.compose.runtime.DisposableEffect(Unit) {
-            com.aeropad.remote.perf.FrameStats.start()
-            onDispose { com.aeropad.remote.perf.FrameStats.stop() }
+        // V2 PART A — real FPS overlay (Choreographer-measured); toggle in
+        // Settings. Lifecycle-safe: stops measuring the moment it's disabled.
+        if (appSettings.fpsOverlay) {
+            androidx.compose.runtime.DisposableEffect(Unit) {
+                com.aeropad.remote.perf.FrameStats.start()
+                onDispose { com.aeropad.remote.perf.FrameStats.stop() }
+            }
+            val frameStats by com.aeropad.remote.perf.FrameStats.stats.collectAsStateWithLifecycle()
+            androidx.compose.material3.Text(
+                text = "${frameStats.fps} fps" +
+                    if (frameStats.jankPercent > 0) " • ${frameStats.jankPercent}% jank" else "",
+                color = when {
+                    frameStats.jankPercent > 20 -> androidx.compose.ui.graphics.Color(0xFFE74C3C)
+                    frameStats.jankPercent > 5 -> androidx.compose.ui.graphics.Color(0xFFF1C40F)
+                    else -> androidx.compose.ui.graphics.Color(0xFF2ECC71)
+                },
+                style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(top = 42.dp, start = 12.dp)
+                    .background(
+                        androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f),
+                        androidx.compose.foundation.shape.RoundedCornerShape(6.dp)
+                    )
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
+            )
         }
-        val frameStats by com.aeropad.remote.perf.FrameStats.stats.collectAsStateWithLifecycle()
-        androidx.compose.material3.Text(
-            text = "${frameStats.fps} fps" +
-                if (frameStats.jankPercent > 0) " • ${frameStats.jankPercent}% jank" else "",
-            color = when {
-                frameStats.jankPercent > 20 -> androidx.compose.ui.graphics.Color(0xFFE74C3C)
-                frameStats.jankPercent > 5 -> androidx.compose.ui.graphics.Color(0xFFF1C40F)
-                else -> androidx.compose.ui.graphics.Color(0xFF2ECC71)
-            },
-            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(top = 42.dp, start = 12.dp)
-                .background(
-                    androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f),
-                    androidx.compose.foundation.shape.RoundedCornerShape(6.dp)
-                )
-                .padding(horizontal = 6.dp, vertical = 2.dp)
-        )
-    }
 
-    // First-run tutorial overlay
-    OnboardingOverlay(
-        visible = !appSettings.onboardingDone,
-        onFinish = { settingsViewModel.setOnboardingDone() }
-    )
+        // First-run tutorial overlay
+        OnboardingOverlay(
+            visible = !appSettings.onboardingDone,
+            onFinish = { settingsViewModel.setOnboardingDone() }
+        )
     } // Box
 }
 
-/**
- * ADV S5 — tiny always-available health dot (only rendered when connected).
- * Real classification from measured metrics; tap opens the dashboard.
- */
+/** Opens real connection metrics without covering the active control surface. */
 @Composable
-private fun MiniHealthIndicator(onOpen: () -> Unit, modifier: Modifier = Modifier) {
-    val vm: com.aeropad.remote.viewmodel.ConnectionHealthViewModel = hiltViewModel()
-    val connection by vm.connection.collectAsStateWithLifecycle()
-    if (!connection.isConnected) return
-    val snapshot by vm.snapshot.collectAsStateWithLifecycle()
-    val health = com.aeropad.remote.domain.ConnectionHealthTracker.classify(snapshot)
-    val color = when (health) {
-        com.aeropad.remote.domain.ConnectionHealthTracker.Health.GOOD -> androidx.compose.ui.graphics.Color(0xFF2ECC71)
-        com.aeropad.remote.domain.ConnectionHealthTracker.Health.FAIR -> androidx.compose.ui.graphics.Color(0xFFF1C40F)
-        com.aeropad.remote.domain.ConnectionHealthTracker.Health.POOR -> androidx.compose.ui.graphics.Color(0xFFE74C3C)
-    }
-    // CLICK FIX: a 12dp dot is untappable and (worse) blocked taps on
-    // whatever sits under it. The dot stays 12dp visually, but its touch
-    // area is a proper 44dp circle centered on it.
-    androidx.compose.foundation.layout.Box(
-        modifier = modifier
-            // Position is handled by the overlay Column in AeroPadApp; this
-            // only guarantees a 44dp tap target around the 12dp dot.
-            .size(44.dp)
-            // Round 18 — round the touch target's ripple too; a square
-            // highlight around a round dot reads as a rendering bug.
-            .clip(androidx.compose.foundation.shape.CircleShape)
-            .clickable(onClickLabel = "Connection health") { onOpen() },
-        contentAlignment = Alignment.Center
-    ) {
-        androidx.compose.foundation.layout.Box(
-            modifier = Modifier
-                .size(12.dp)
-                .background(color, androidx.compose.foundation.shape.CircleShape)
-                .border(1.dp, androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f), androidx.compose.foundation.shape.CircleShape)
-        )
+private fun HealthButton(onOpen: () -> Unit) {
+    IconButton(onClick = onOpen) {
+        Icon(AeroIcons.Pulse, "Connection health", tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(22.dp))
     }
 }

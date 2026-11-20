@@ -1,12 +1,13 @@
 package com.aeropad.remote.ui.screens.multimedia
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -53,45 +54,55 @@ fun MultimediaScreen(
             )
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = com.aeropad.remote.ui.components.padArrangement(12.dp)
-        ) {
-            NotConnectedBanner(!isConnected)
-
-            Section("Playback")
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                KeyCard("⏮ Prev", Modifier.weight(1f), 64.dp) { haptic(); viewModel.mediaTap(HidConsumer.PREV_TRACK) }
-                KeyCard("⏯ Play/Pause", Modifier.weight(1.4f), 64.dp, emphasized = true) { haptic(); viewModel.mediaTap(HidConsumer.PLAY_PAUSE) }
-                KeyCard("⏭ Next", Modifier.weight(1f), 64.dp) { haptic(); viewModel.mediaTap(HidConsumer.NEXT_TRACK) }
+        BoxWithConstraints(Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+            val split = maxWidth >= 600.dp
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                NotConnectedBanner(!isConnected)
+                if (split) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            PlaybackKeys(viewModel, haptic)
+                        }
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            VolumeAndScreenKeys(viewModel, haptic)
+                        }
+                    }
+                } else {
+                    PlaybackKeys(viewModel, haptic)
+                    VolumeAndScreenKeys(viewModel, haptic)
+                }
             }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                KeyCard("⏹ Stop", Modifier.weight(1f), 56.dp) { haptic(); viewModel.mediaTap(HidConsumer.STOP) }
-            }
-
-            Section("Volume")
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                KeyCard("Vol −", Modifier.weight(1f), 64.dp) { haptic(); viewModel.mediaTap(HidConsumer.VOLUME_DOWN) }
-                KeyCard("Mute", Modifier.weight(1f), 64.dp) { haptic(); viewModel.mediaTap(HidConsumer.MUTE) }
-                KeyCard("Vol +", Modifier.weight(1f), 64.dp) { haptic(); viewModel.mediaTap(HidConsumer.VOLUME_UP) }
-            }
-
-            Section("Screen")
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                KeyCard("☀ −", Modifier.weight(1f), 56.dp) { haptic(); viewModel.mediaTap(HidConsumer.BRIGHTNESS_DOWN) }
-                KeyCard("☀ +", Modifier.weight(1f), 56.dp) { haptic(); viewModel.mediaTap(HidConsumer.BRIGHTNESS_UP) }
-            }
-            Text(
-                text = "Brightness keys work on hosts that support consumer brightness controls (most laptops).",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(Modifier.height(8.dp))
         }
     }
+}
+
+@Composable
+private fun PlaybackKeys(viewModel: RemoteControlViewModel, haptic: () -> Unit) {
+    Section("Playback")
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        KeyCard("Previous", Modifier.weight(1f), maxLines = 2) { haptic(); viewModel.mediaTap(HidConsumer.PREV_TRACK) }
+        KeyCard("Play / Pause", Modifier.weight(1.4f), emphasized = true, maxLines = 2) { haptic(); viewModel.mediaTap(HidConsumer.PLAY_PAUSE) }
+        KeyCard("Next", Modifier.weight(1f)) { haptic(); viewModel.mediaTap(HidConsumer.NEXT_TRACK) }
+    }
+    KeyCard("Stop", Modifier.fillMaxWidth()) { haptic(); viewModel.mediaTap(HidConsumer.STOP) }
+}
+
+@Composable
+private fun VolumeAndScreenKeys(viewModel: RemoteControlViewModel, haptic: () -> Unit) {
+    Section("Volume")
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        KeyCard("Volume −", Modifier.weight(1f), maxLines = 2) { haptic(); viewModel.mediaTap(HidConsumer.VOLUME_DOWN) }
+        KeyCard("Mute", Modifier.weight(1f)) { haptic(); viewModel.mediaTap(HidConsumer.MUTE) }
+        KeyCard("Volume +", Modifier.weight(1f), maxLines = 2) { haptic(); viewModel.mediaTap(HidConsumer.VOLUME_UP) }
+    }
+    Section("Screen")
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        KeyCard("Brightness −", Modifier.weight(1f), maxLines = 2) { haptic(); viewModel.mediaTap(HidConsumer.BRIGHTNESS_DOWN) }
+        KeyCard("Brightness +", Modifier.weight(1f), maxLines = 2) { haptic(); viewModel.mediaTap(HidConsumer.BRIGHTNESS_UP) }
+    }
+    Text("Brightness keys only work on hosts that support them.",
+        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
 @Composable

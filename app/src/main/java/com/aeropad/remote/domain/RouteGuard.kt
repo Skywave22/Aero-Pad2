@@ -27,28 +27,15 @@ object RouteGuard {
         "pc_combo", "air_mouse", "connection_health"
     )
 
-    /** Routes that take a required path argument, with the argument to use. */
-    private val DEFAULT_ARGS = mapOf("layout_editor" to "0")
-
-    /**
-     * Returns a destination that is safe to hand to the NavHost.
-     *
-     * Unknown or blank input falls back to `home`; a route that needs an
-     * argument gets its default one; a route that is already complete with a
-     * path or query is accepted as-is.
-     */
+    /** Resolve only registered routes, and canonicalize the editor's Long argument. */
     fun sanitize(candidate: String?): String {
-        val raw = candidate?.trim().orEmpty()
-        if (raw.isEmpty()) return HOME
-
-        val base = raw.substringBefore('/').substringBefore('?')
-
-        // Routes that take a required argument are not direct children of the
-        // graph, so they must never be handed over bare.
-        DEFAULT_ARGS[base]?.let { fallback ->
-            return if (raw.contains('/') || raw.contains('?')) raw else "$base/$fallback"
+        val raw = candidate?.trim().orEmpty().substringBefore('?')
+        if (raw in TOP_LEVEL) return raw
+        if (raw == "layout_editor") return "layout_editor/0"
+        if (raw.startsWith("layout_editor/")) {
+            val id = raw.substringAfter('/').toLongOrNull()
+            if (id != null && id >= 0) return "layout_editor/$id"
         }
-        if (base in TOP_LEVEL) return raw
         return HOME
     }
 

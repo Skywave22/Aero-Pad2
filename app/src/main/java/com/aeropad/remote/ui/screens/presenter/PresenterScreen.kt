@@ -1,13 +1,15 @@
 package com.aeropad.remote.ui.screens.presenter
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -57,57 +59,58 @@ fun PresenterScreen(
             )
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            NotConnectedBanner(!isConnected)
-
-            // Big prev/next — the main controls, huge touch targets.
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                KeyCard("◀ Previous", Modifier.weight(1f), 160.dp) {
-                    haptic(); viewModel.keyTap(HidKeys.PAGE_UP)
+        BoxWithConstraints(Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+            val split = maxWidth >= 520.dp && maxHeight < 420.dp
+            if (split) {
+                Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        NotConnectedBanner(!isConnected)
+                        SlideControls(Modifier.weight(1f), viewModel, haptic)
+                    }
+                    Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                        PresentationActions(viewModel, haptic)
+                    }
                 }
-                KeyCard("Next ▶", Modifier.weight(1f), 160.dp, emphasized = true) {
-                    haptic(); viewModel.keyTap(HidKeys.PAGE_DOWN)
+            } else {
+                val keyHeight = (maxHeight * 0.3f).coerceIn(64.dp, 180.dp)
+                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    NotConnectedBanner(!isConnected)
+                    SlideControls(Modifier, viewModel, haptic, minHeight = keyHeight)
+                    PresentationActions(viewModel, haptic)
                 }
             }
-
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                KeyCard("Start (F5)", Modifier.weight(1f), 56.dp) {
-                    haptic(); viewModel.keyTap(HidKeys.F5)
-                }
-                KeyCard("From here (Shift+F5)", Modifier.weight(1.3f), 56.dp) {
-                    haptic(); viewModel.keyTap(HidKeys.F5, HidModifiers.LEFT_SHIFT)
-                }
-            }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                KeyCard("Black screen (B)", Modifier.weight(1f), 56.dp) {
-                    haptic(); viewModel.keyTap(HidKeys.B)
-                }
-                KeyCard("White screen (W)", Modifier.weight(1f), 56.dp) {
-                    haptic(); viewModel.keyTap(HidKeys.W)
-                }
-            }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                KeyCard("End (Esc)", Modifier.weight(1f), 56.dp) {
-                    haptic(); viewModel.keyTap(HidKeys.ESCAPE)
-                }
-            }
-            Text(
-                text = "Works with PowerPoint, Google Slides and most presentation apps.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(Modifier.height(4.dp))
         }
+    }
+}
+
+@Composable
+private fun SlideControls(
+    modifier: Modifier,
+    viewModel: RemoteControlViewModel,
+    haptic: () -> Unit,
+    minHeight: androidx.compose.ui.unit.Dp? = null
+) {
+    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        val keys = if (minHeight == null) Modifier.weight(1f).fillMaxHeight() else Modifier.weight(1f)
+        KeyCard("Previous slide", keys, minHeight ?: 48.dp, maxLines = 2) { haptic(); viewModel.keyTap(HidKeys.PAGE_UP) }
+        KeyCard("Next slide", keys, minHeight ?: 48.dp, emphasized = true, maxLines = 2) { haptic(); viewModel.keyTap(HidKeys.PAGE_DOWN) }
+    }
+}
+
+@Composable
+private fun PresentationActions(viewModel: RemoteControlViewModel, haptic: () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            KeyCard("Start (F5)", Modifier.weight(1f)) { haptic(); viewModel.keyTap(HidKeys.F5) }
+            KeyCard("From here", Modifier.weight(1f), maxLines = 2) { haptic(); viewModel.keyTap(HidKeys.F5, HidModifiers.LEFT_SHIFT) }
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            KeyCard("Black screen", Modifier.weight(1f), maxLines = 2) { haptic(); viewModel.keyTap(HidKeys.B) }
+            KeyCard("White screen", Modifier.weight(1f), maxLines = 2) { haptic(); viewModel.keyTap(HidKeys.W) }
+        }
+        KeyCard("End (Esc)", Modifier.fillMaxWidth()) { haptic(); viewModel.keyTap(HidKeys.ESCAPE) }
+        Text("Key support depends on the presentation app on your host.",
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

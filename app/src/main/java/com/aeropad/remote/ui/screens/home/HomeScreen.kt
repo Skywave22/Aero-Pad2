@@ -10,9 +10,6 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -23,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -54,6 +52,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,65 +61,34 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aeropad.remote.model.HidConnectionState
 import com.aeropad.remote.ui.components.statusVisual
-import com.aeropad.remote.ui.components.toComposeColor
 import com.aeropad.remote.ui.navigation.Routes
 import com.aeropad.remote.ui.theme.AeroIcons
 import com.aeropad.remote.viewmodel.ConnectionViewModel
 import com.aeropad.remote.viewmodel.SettingsViewModel
 import kotlinx.coroutines.launch
 
-/**
- * Home — live Bluetooth status plus the control deck.
- *
- * Round 19 (v3.6.1) redesign. The previous version put four competing elements
- * above the first control — title, "Customize" chip, a `v3.6.0` chip, a
- * category tagline — then repeated the connection state twice (status card +
- * a 52 dp Connect button), and finished with a rainbow of eight identical
- * Material icons over a horizontally scrolling row of emoji chips. It was
- * functional and it looked machine-assembled. What replaced it:
- *
- *  - brand mark + wordmark + two quiet icon actions; the version number moved
- *    to Settings, where a version number belongs
- *  - ONE status surface that is also the primary action (no duplicate button)
- *  - grouped colour instead of per-tile rainbow: hue encodes the section
- *  - a drawn icon set ([AeroIcons]) instead of `Icons.Rounded.*`
- *  - Quick Tools as a quiet 4×2 strip of icon chips, not emoji
- *
- * Behaviour is unchanged: stable tile IDs for the Customize dialog, long-press
- * to hide with Undo, per-tile routes, screen-reader labels on every tap target.
- */
-
+/** A dashboard tile keeps a stable ID for saved visibility preferences. */
 private data class HomeTile(
     val id: String,
     val title: String,
     val subtitle: String,
     val icon: ImageVector,
     val route: String,
-    /** Hue for the tile glyph. Grouped by section — see [ControlsHue] etc. */
-    val tint: Long = ControlsHue
+    val isControl: Boolean = true,
+    val legacyTitle: String = title
 )
-
-/**
- * Colour as taxonomy, not decoration.
- *
- * Controls are the app's core and carry the brand hue. Create tools (layout and
- * macro builders) share a green family. System entries stay neutral so they
- * never compete with a control. Within a group the glyph shape does the
- * differentiating — which is why eight wildly different hues are not needed.
- */
-private const val ControlsHue = 0xFF3D8BFF
-private const val ControlsHueAlt = 0xFF6C8CFF
-private const val CreateHue = 0xFF2ED5A5
-private const val SystemHue = 0xFF8B9BB5
 
 private val controlTiles = listOf(
     HomeTile(
@@ -142,8 +110,7 @@ private val controlTiles = listOf(
         title = "Full Board",
         subtitle = "Complete QWERTY keyboard",
         icon = AeroIcons.FullKeyboard,
-        route = Routes.FULL_KEYBOARD,
-        tint = ControlsHueAlt
+        route = Routes.FULL_KEYBOARD
     ),
     HomeTile(
         id = "gamepad",
@@ -162,7 +129,7 @@ private val controlTiles = listOf(
     HomeTile(
         id = "presenter",
         title = "Presenter",
-        subtitle = "Slides, laser & timer",
+        subtitle = "Slide navigation & presentation keys",
         icon = AeroIcons.Presenter,
         route = Routes.PRESENTER
     ),
@@ -185,11 +152,12 @@ private val controlTiles = listOf(
 private val createTiles = listOf(
     HomeTile(
         id = "layouts",
-        title = "Layouts",
+        title = "Custom layouts",
         subtitle = "Custom screens, PC Combo & pads",
         icon = AeroIcons.Grid,
         route = Routes.LAYOUTS,
-        tint = CreateHue
+        isControl = false,
+        legacyTitle = "Layouts"
     ),
     HomeTile(
         id = "macros",
@@ -197,18 +165,19 @@ private val createTiles = listOf(
         subtitle = "Record & replay sequences",
         icon = AeroIcons.Bolt,
         route = Routes.MACROS,
-        tint = CreateHue
+        isControl = false
     )
 )
 
 private val systemTiles = listOf(
     HomeTile(
         id = "settings",
-        title = "Settings",
+        title = "App settings",
         subtitle = "Tune everything",
         icon = AeroIcons.Sliders,
         route = Routes.SETTINGS,
-        tint = SystemHue
+        isControl = false,
+        legacyTitle = "Settings"
     ),
     HomeTile(
         id = "help",
@@ -216,7 +185,7 @@ private val systemTiles = listOf(
         subtitle = "Pairing & troubleshooting",
         icon = AeroIcons.Help,
         route = Routes.HELP,
-        tint = SystemHue
+        isControl = false
     )
 )
 
@@ -232,8 +201,7 @@ private val quickTools = listOf(
     QuickTool("My Layout", AeroIcons.Frame, Routes.MY_LAYOUT),
     QuickTool("Numpad", AeroIcons.FullKeyboard, Routes.NUMPAD),
     QuickTool("Decks", AeroIcons.Deck, Routes.SHORTCUTS),
-    QuickTool("Health", AeroIcons.Pulse, Routes.CONNECTION_HEALTH),
-    QuickTool("Devices", AeroIcons.Laptop, Routes.DEVICES)
+    QuickTool("Connection health", AeroIcons.Pulse, Routes.CONNECTION_HEALTH)
 )
 
 @Composable
@@ -258,7 +226,7 @@ fun HomeScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    val effectiveState = if (!permissionsGranted && state is HidConnectionState.Idle) {
+    val effectiveState = if (!permissionsGranted) {
         HidConnectionState.PermissionMissing
     } else {
         state
@@ -268,15 +236,14 @@ fun HomeScreen(
     val settingsVm: SettingsViewModel = hiltViewModel()
     val app by settingsVm.app.collectAsStateWithLifecycle()
     val hidden = remember(app.hiddenTiles) {
-        app.hiddenTiles.split(',').filter { it.isNotBlank() }.toSet()
+        com.aeropad.remote.domain.CsvListCodec.decode(app.hiddenTiles).toSet()
     }
-    var showCustomize by remember { mutableStateOf(false) }
+    var showCustomize by rememberSaveable { mutableStateOf(false) }
     fun isHidden(tile: HomeTile): Boolean =
-        tile.id in hidden || tile.title in hidden
+        tile.id in hidden || tile.legacyTitle in hidden
     fun visible(tiles: List<HomeTile>) = tiles.filterNot(::isHidden)
     fun hideTile(tile: HomeTile) {
-        val next = (hidden - tile.title) + tile.id
-        settingsVm.setHiddenTiles(next.joinToString(","))
+        settingsVm.setDashboardTileVisible(tile.id, tile.legacyTitle, visible = false)
         scope.launch {
             val res = snackbarHostState.showSnackbar(
                 message = "Hidden '${tile.title}' tile",
@@ -284,14 +251,12 @@ fun HomeScreen(
                 duration = SnackbarDuration.Short
             )
             if (res == SnackbarResult.ActionPerformed) {
-                settingsVm.setHiddenTiles((next - tile.id - tile.title).joinToString(","))
+                settingsVm.setDashboardTileVisible(tile.id, tile.legacyTitle, visible = true)
             }
         }
     }
     fun toggleTile(tile: HomeTile, show: Boolean) {
-        val cleaned = hidden - tile.id - tile.title
-        val next = if (show) cleaned else (cleaned + tile.id)
-        settingsVm.setHiddenTiles(next.joinToString(","))
+        settingsVm.setDashboardTileVisible(tile.id, tile.legacyTitle, show)
     }
 
     // If permissions are already granted, keep the engine warm so the status
@@ -305,30 +270,20 @@ fun HomeScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+                .padding(padding),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             LazyVerticalGrid(
-                // Round 11 — 2 columns in portrait, more on tablets/foldables.
-                columns = GridCells.Fixed(
-                    com.aeropad.remote.ui.components.adaptiveColumns(
-                        portrait = 2, expanded = 3, wide = 4
-                    )
-                ),
+                columns = GridCells.Adaptive(minSize = 144.dp * androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceIn(1f, 1.4f)),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 contentPadding = PaddingValues(
                     start = 18.dp,
                     end = 18.dp,
                     top = 10.dp,
-                    // Round 14 — contentInset() covers the dock pill but not the
-                    // system navigation bar beneath it, so the final row peeked
-                    // through the strip under the pill. Use the real inset
-                    // instead of guessing another magic number.
-                    bottom = com.aeropad.remote.ui.components.DockMetrics.contentInset() +
-                        androidx.compose.foundation.layout.WindowInsets.navigationBars
-                            .asPaddingValues().calculateBottomPadding()
+                    bottom = 16.dp
                 ),
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.widthIn(max = 880.dp).fillMaxSize().testTag("dashboardGrid")
             ) {
                 // ---------- Header ----------
                 item(span = { GridItemSpan(maxLineSpan) }) {
@@ -357,22 +312,14 @@ fun HomeScreen(
                                     text = "AeroPad",
                                     style = MaterialTheme.typography.titleLarge,
                                     color = MaterialTheme.colorScheme.onBackground,
-                                    maxLines = 1
+                                    modifier = Modifier.semantics { heading() }
                                 )
                                 Text(
-                                    text = "Your PC, in your hand",
+                                    text = "Bluetooth remote",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                            IconButton(onClick = { onNavigate(Routes.SETTINGS) }) {
-                                Icon(
-                                    imageVector = AeroIcons.Sliders,
-                                    contentDescription = "Settings",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(20.dp)
                                 )
                             }
                             IconButton(onClick = { showCustomize = true }) {
@@ -387,7 +334,6 @@ fun HomeScreen(
                         Spacer(Modifier.height(12.dp))
                         StatusPill(
                             state = effectiveState,
-                            permissionsGranted = permissionsGranted,
                             onClick = {
                                 view.performHapticFeedback(
                                     android.view.HapticFeedbackConstants.KEYBOARD_TAP
@@ -420,6 +366,12 @@ fun HomeScreen(
                     }
                 }
 
+                if (visible(controlTiles).isEmpty()) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Text("All control tiles are hidden. Use Show / Hide to bring them back.",
+                            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
                 items(visible(controlTiles), key = { it.id }) { tile ->
                     HomeTileCard(tile = tile, onLongPress = { hideTile(tile) }) {
                         onNavigate(tile.route)
@@ -427,7 +379,7 @@ fun HomeScreen(
                 }
 
                 // ---------- Create ----------
-                item(span = { GridItemSpan(maxLineSpan) }) { SectionLabel("Create") }
+                if (visible(createTiles).isNotEmpty()) item(span = { GridItemSpan(maxLineSpan) }) { SectionLabel("Create") }
                 items(visible(createTiles), key = { it.id }) { tile ->
                     HomeTileCard(tile = tile, onLongPress = { hideTile(tile) }) {
                         onNavigate(tile.route)
@@ -435,41 +387,17 @@ fun HomeScreen(
                 }
 
                 // ---------- System ----------
-                item(span = { GridItemSpan(maxLineSpan) }) { SectionLabel("System") }
+                if (visible(systemTiles).isNotEmpty()) item(span = { GridItemSpan(maxLineSpan) }) { SectionLabel("System") }
                 items(visible(systemTiles), key = { it.id }) { tile ->
                     HomeTileCard(tile = tile, onLongPress = { hideTile(tile) }) {
                         onNavigate(tile.route)
                     }
                 }
 
-                // ---------- Quick Tools ----------
-                // Was a horizontally scrolling row of emoji AssistChips: eight
-                // different system emoji, half of them off-screen, on a screen
-                // that otherwise has its own visual language. Now a quiet 4×2
-                // strip that fits without scrolling on any phone.
-                if (quickTools.isNotEmpty()) {
-                    item(span = { GridItemSpan(maxLineSpan) }) { SectionLabel("Quick tools") }
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            quickTools.chunked(4).forEach { row ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    row.forEach { tool ->
-                                        QuickToolChip(
-                                            tool = tool,
-                                            modifier = Modifier.weight(1f),
-                                            onClick = { onNavigate(tool.route) }
-                                        )
-                                    }
-                                    repeat(4 - row.size) {
-                                        Spacer(Modifier.weight(1f))
-                                    }
-                                }
-                            }
-                        }
-                    }
+                // Secondary controls retain their direct dashboard entry points.
+                item(span = { GridItemSpan(maxLineSpan) }) { SectionLabel("Quick tools") }
+                items(quickTools, key = { "tool-${it.route}" }) { tool ->
+                    QuickToolChip(tool = tool, onClick = { onNavigate(tool.route) })
                 }
             }
         }
@@ -507,7 +435,7 @@ fun HomeScreen(
             },
             dismissButton = {
                 if (hidden.isNotEmpty()) {
-                    TextButton(onClick = { settingsVm.setHiddenTiles("") }) {
+                    TextButton(onClick = { settingsVm.resetHiddenTiles() }) {
                         Text("Reset all")
                     }
                 }
@@ -532,7 +460,6 @@ fun HomeScreen(
 @Composable
 private fun StatusPill(
     state: HidConnectionState,
-    permissionsGranted: Boolean,
     onClick: () -> Unit
 ) {
     val visual = statusVisual(state)
@@ -547,20 +474,14 @@ private fun StatusPill(
         state is HidConnectionState.Connecting -> "View"
         state is HidConnectionState.PermissionMissing -> "Allow"
         state is HidConnectionState.BluetoothDisabled -> "Turn on"
-        state is HidConnectionState.Error || state is HidConnectionState.HidUnsupported -> "Fix"
+        state is HidConnectionState.Error || state is HidConnectionState.HidUnsupported -> "Details"
         else -> "Connect"
     }
 
-    val subtitle = when {
-        state is HidConnectionState.PermissionMissing && !permissionsGranted ->
-            "Tap to allow Nearby Devices — needed once"
-        state is HidConnectionState.PermissionMissing -> "Tap to allow Nearby Devices"
-        else -> visual.subtitle
-    }
+    val subtitle = visual.subtitle
 
     val container = when {
         connected -> visual.color.copy(alpha = 0.14f)
-        trouble -> MaterialTheme.colorScheme.surface
         else -> MaterialTheme.colorScheme.surface
     }
     val border = when {
@@ -575,7 +496,7 @@ private fun StatusPill(
             .clip(RoundedCornerShape(14.dp))
             .background(container)
             .border(1.dp, border, RoundedCornerShape(14.dp))
-            .clickable(onClick = onClick)
+            .clickable(role = Role.Button, onClickLabel = actionLabel, onClick = onClick)
             .padding(horizontal = 13.dp, vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -597,9 +518,7 @@ private fun StatusPill(
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         Spacer(Modifier.width(8.dp))
@@ -617,20 +536,13 @@ private fun StatusPill(
     }
 }
 
-/**
- * Round 19 — a section label, not a section banner.
- *
- * The old one was `titleSmall` in the accent colour, competing with the tile
- * titles underneath it. Uppercase micro-type in the muted colour marks the
- * group without shouting.
- */
 @Composable
 private fun SectionLabel(title: String) {
     Text(
-        text = title.uppercase(),
-        style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.3.sp),
-        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
-        modifier = Modifier.padding(top = 16.dp, start = 4.dp)
+        text = title,
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.onSurface,
+        modifier = Modifier.padding(top = 14.dp, start = 2.dp).semantics { heading() }
     )
 }
 
@@ -642,7 +554,7 @@ private fun QuickToolChip(
     onClick: () -> Unit
 ) {
     Column(
-        modifier = modifier
+        modifier = modifier.fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surface)
             .border(
@@ -665,7 +577,7 @@ private fun QuickToolChip(
             text = tool.label,
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
     }
@@ -691,7 +603,7 @@ private fun HomeTileCard(
         animationSpec = tween(110),
         label = "tileScale"
     )
-    val tint = tile.tint.toComposeColor()
+    val tint = if (tile.isControl) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
     val plate = RoundedCornerShape(
         topStart = 11.dp,
         topEnd = 11.dp,
@@ -700,7 +612,7 @@ private fun HomeTileCard(
     )
 
     Box(
-        modifier = Modifier
+        modifier = Modifier.fillMaxWidth()
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
@@ -715,6 +627,7 @@ private fun HomeTileCard(
             .combinedClickable(
                 interactionSource = interactionSource,
                 indication = androidx.compose.foundation.LocalIndication.current,
+                role = Role.Button,
                 onClickLabel = "Open ${tile.title}",
                 onLongClickLabel = "Hide ${tile.title} tile",
                 onClick = onClick,
@@ -742,7 +655,7 @@ private fun HomeTileCard(
                 text = tile.title,
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
             /**

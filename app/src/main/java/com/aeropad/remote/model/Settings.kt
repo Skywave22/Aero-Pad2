@@ -65,7 +65,7 @@ data class AppSettings(
     /** A12 — one-tap power profile (Performance / Balanced / Battery saver). */
     val powerProfile: PowerProfile = PowerProfile.BALANCED,
     /** Round 9 — accent colour id (see AccentPalette). */
-    val accentColor: String = "BLUE"
+    val accentColor: String = "VIOLET"
 )
 
 /** Mouse/trackpad tuning. All percentages 0..100. */

@@ -40,6 +40,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -57,6 +58,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aeropad.remote.model.MouseButton
@@ -92,6 +96,19 @@ fun MouseScreen(
     val spec = LocalAppTheme.current
     val snackbarHostState = remember { SnackbarHostState() }
     var showTuningSheet by remember { mutableStateOf(false) }
+
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val config = androidx.compose.ui.platform.LocalConfiguration.current
+    DisposableEffect(lifecycle, viewModel, config.screenWidthDp, config.screenHeightDp) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_PAUSE) viewModel.releaseDragLock()
+        }
+        lifecycle.addObserver(observer)
+        onDispose {
+            lifecycle.removeObserver(observer)
+            viewModel.releaseDragLock()
+        }
+    }
 
     LaunchedEffect(uiNotice) {
         val msg = uiNotice ?: return@LaunchedEffect
@@ -135,7 +152,7 @@ fun MouseScreen(
                 val precision by viewModel.precisionMode.collectAsStateWithLifecycle()
                 val dragLock by viewModel.dragLock.collectAsStateWithLifecycle()
                 val scrollMode by viewModel.scrollMode.collectAsStateWithLifecycle()
-ScrollableChipRow {
+                ScrollableChipRow {
                     FilterChip(
                         selected = precision,
                         onClick = { viewModel.setPrecisionMode(!precision) },
@@ -143,6 +160,7 @@ ScrollableChipRow {
                     )
                     FilterChip(
                         selected = dragLock,
+                        enabled = isConnected,
                         onClick = { viewModel.toggleDragLock() },
                         label = { Text(if (dragLock) "Drag locked" else "Drag lock") }
                     )
@@ -154,7 +172,7 @@ ScrollableChipRow {
                     if (onOpenAirMouse != null) {
                         AssistChip(
                             onClick = onOpenAirMouse,
-                            label = { Text("🎯 Air Mouse") }
+                            label = { Text("Air Mouse") }
                         )
                     }
                 }

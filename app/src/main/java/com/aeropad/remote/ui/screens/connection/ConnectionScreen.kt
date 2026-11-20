@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -42,7 +44,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.aeropad.remote.service.HidService
 import com.aeropad.remote.model.HidConnectionState
 import com.aeropad.remote.ui.components.ConnectionStatusCard
 import com.aeropad.remote.viewmodel.ConnectionViewModel
@@ -74,22 +75,13 @@ fun ConnectionScreen(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 viewModel.onPermissionsResult()
-                if (viewModel.permissionsGranted.value) {
-                    HidService.start(context)
-                }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    // Boot engine + foreground service when permissions are granted.
-    LaunchedEffect(permissionsGranted) {
-        viewModel.initialize()
-        if (permissionsGranted) {
-            HidService.start(context)
-        }
-    }
+    LaunchedEffect(permissionsGranted) { viewModel.initialize() }
 
     val discoverableLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -97,7 +89,11 @@ fun ConnectionScreen(
         Timber.i("discoverable result=%d", result.resultCode)
     }
 
-    val effectiveState = if (!permissionsGranted && state is HidConnectionState.Idle) {
+    val enableBluetoothLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { viewModel.onPermissionsResult() }
+
+    val effectiveState = if (!permissionsGranted) {
         HidConnectionState.PermissionMissing
     } else {
         state
@@ -107,7 +103,7 @@ fun ConnectionScreen(
         containerColor = androidx.compose.ui.graphics.Color.Transparent,
         topBar = {
             TopAppBar(
-                title = { Text("PC connection") },
+                title = { Text("Bluetooth connection") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
@@ -120,6 +116,9 @@ fun ConnectionScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .wrapContentWidth()
+                .widthIn(max = 720.dp)
+                .fillMaxWidth()
                 .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
@@ -151,6 +150,17 @@ fun ConnectionScreen(
                 Spacer(Modifier.height(12.dp))
             }
 
+            if (effectiveState is HidConnectionState.BluetoothDisabled) {
+                Button(
+                    onClick = {
+                        runCatching { enableBluetoothLauncher.launch(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)) }
+                            .onFailure { Timber.w(it, "Bluetooth enable intent unavailable") }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Turn on Bluetooth") }
+                Spacer(Modifier.height(12.dp))
+            }
+
             // Primary actions
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Button(
@@ -177,13 +187,13 @@ fun ConnectionScreen(
                 ) { Text("Paired devices") }
             }
 
-            if (state is HidConnectionState.Connected) {
+            if (effectiveState is HidConnectionState.Connected || effectiveState is HidConnectionState.Connecting) {
                 Spacer(Modifier.height(12.dp))
                 OutlinedButton(
                     onClick = { viewModel.disconnect() },
                     modifier = Modifier.fillMaxWidth()
-                ) { Text("Disconnect") }
-            } else {
+                ) { Text(if (effectiveState is HidConnectionState.Connecting) "Cancel connection" else "Disconnect") }
+            } else if (effectiveState is HidConnectionState.Idle || effectiveState is HidConnectionState.Error) {
                 // Round 10 — an explicit way back. AeroPad retries by itself,
                 // but when someone walks back to a sleeping PC they should not
                 // have to wait for the next scheduled attempt.
@@ -194,8 +204,7 @@ fun ConnectionScreen(
                 ) { Text("Retry connection now") }
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    "AeroPad keeps retrying on its own — quickly at first, then " +
-                        "every 15–30 s. Waking the phone also triggers a retry.",
+                    "AeroPad can reconnect automatically after a link drops. To choose a host, open Paired devices.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
