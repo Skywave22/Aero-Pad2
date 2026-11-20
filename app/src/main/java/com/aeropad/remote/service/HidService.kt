@@ -81,11 +81,14 @@ class HidService : Service() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
+    private var foregroundStarted = false
+
     override fun onCreate() {
         super.onCreate()
         createChannel()
         // Foreground immediately — required within 5s of startForegroundService().
-        if (!startInForeground(buildNotification("Starting…"))) {
+        foregroundStarted = startInForeground(buildNotification("Starting…"))
+        if (!foregroundStarted) {
             return
         }
         // Keep the notification in sync with the connection state machine.
@@ -123,6 +126,7 @@ class HidService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (!foregroundStarted) return START_NOT_STICKY
         when (intent?.action) {
             ACTION_RECONNECT -> {
                 hidController.start()
@@ -135,11 +139,10 @@ class HidService : Service() {
     }
 
     override fun onDestroy() {
-        // Round 16 — the runner was started in onCreate and never stopped, so
-        // connect/disconnect triggers kept firing after the service died. The
-        // runner guards double-start, but the lifetime claim in its comment
-        // ("alive exactly as long as the HID link") was only true one way.
-        runCatching { hostTriggers.stop() }
+        if (foregroundStarted) {
+            hostTriggers.stop()
+            hidController.stop()
+        }
         serviceScope.cancel()
         Timber.i("HidService destroyed")
         super.onDestroy()

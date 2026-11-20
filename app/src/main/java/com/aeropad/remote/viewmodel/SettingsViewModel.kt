@@ -43,7 +43,8 @@ class SettingsViewModel @Inject constructor(
     }
 
     val app: StateFlow<AppSettings> = store.appSettings
-        .stateIn(viewModelScope, SharingStarted.Eagerly, AppSettings())
+        // Do not briefly open the tutorial before persisted preferences arrive.
+        .stateIn(viewModelScope, SharingStarted.Eagerly, AppSettings(onboardingDone = true))
 
     val mouse: StateFlow<MouseSettings> = store.mouseSettings
         .stateIn(viewModelScope, SharingStarted.Eagerly, MouseSettings())
@@ -61,7 +62,11 @@ class SettingsViewModel @Inject constructor(
     fun setUiStyle(style: String) = updateApp { it.copy(uiStyle = style) }
     /** Round 9 — accent colour (see AccentPalette). */
     fun setAccentColor(id: String) = updateApp { it.copy(accentColor = id) }
-    fun setHiddenTiles(csv: String) = updateApp { it.copy(hiddenTiles = csv) }
+    fun resetHiddenTiles() = updateApp { it.copy(hiddenTiles = "") }
+    fun setDashboardTileVisible(id: String, legacyTitle: String, visible: Boolean) = updateApp { current ->
+        val hidden = com.aeropad.remote.domain.CsvListCodec.decode(current.hiddenTiles).toSet() - id - legacyTitle
+        current.copy(hiddenTiles = (if (visible) hidden else hidden + id).joinToString(","))
+    }
     fun setExtendedReports(value: Boolean) = updateApp { it.copy(extendedReports = value) }
     fun setFullscreen(value: Boolean) = updateApp { it.copy(fullscreenMode = value) }
     fun setKeepScreenOn(value: Boolean) = updateApp { it.copy(keepScreenOn = value) }

@@ -16,6 +16,7 @@ import com.aeropad.remote.model.PowerProfile
 import com.aeropad.remote.model.RemoteDevice
 import com.aeropad.remote.permission.PermissionManager
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -23,7 +24,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import timber.log.Timber
 import java.util.concurrent.Executors
 import javax.inject.Inject
@@ -60,18 +64,13 @@ class HidEngine @Inject constructor(
         const val SDP_PROVIDER = "AeroPad"
         /** HID subclass: 0xC0 = combo keyboard+pointing device. */
         const val SUBCLASS_COMBO: Byte = 0xC0.toByte()
-        const val KEY_TAP_DELAY_MS = 8L
         /** Kept for the status UI (attempt N of M in the fast phase). */
         const val RECONNECT_MAX_ATTEMPTS = 4
         /** How long to wait for the stack to answer a connect attempt. */
         const val CONNECT_RESULT_WAIT_MS = 3_000L
-        const val RECONNECT_BASE_DELAY_MS = 1000L
         /** Round 6: "Connecting…" can never hang forever anymore. */
         const val CONNECT_TIMEOUT_MS = 15_000L
-        // Round 8 — anti-flap: detect connect/drop ping-pong and break it.
-        const val CONNECT_DEBOUNCE_MS = 3_000L
-        const val STABLE_LINK_MS = 5_000L
-        const val MAX_FLAPS = 3
+        const val REGISTRATION_TIMEOUT_MS = 10_000L
         /** Round 10 — gentle idle keep-alive so power-hungry host stacks
          *  (notably some Android HID hosts) never see a "silent" link. */
         const val KEEPALIVE_MS = 4_000L
@@ -98,8 +97,15 @@ class HidEngine @Inject constructor(
 
     private var hidDevice: BluetoothHidDevice? = null
     private var connectedDevice: BluetoothDevice? = null
+    private val inputSession = HidInputSession(checkNotNull(scope.coroutineContext[kotlinx.coroutines.Job]))
+    private val keyboardReports = Mutex()
+    private var heldKeyboardReport: ByteArray? = null
+    private val consumerReports = Mutex()
+    private val systemReports = Mutex()
+    private val mouseClicks = Mutex()
+    private var connectingDevice: BluetoothDevice? = null
     private var pendingConnect: BluetoothDevice? = null
-    private var appRegistered = false
+    @Volatile private var appRegistered = false
     private var proxyRequested = false
     private var userInitiatedDisconnect = false
     private var reconnectAttempts = 0
@@ -112,10 +118,14 @@ class HidEngine @Inject constructor(
     private var stopped = false
     private var btReceiverRegistered = false
     private var connectWatchdog: kotlinx.coroutines.Job? = null
-    private var connectingSinceMs = 0L
+    private var registrationWatchdog: kotlinx.coroutines.Job? = null
+    private var profileWatchdog: kotlinx.coroutines.Job? = null
+    private var cancelledConnection: BluetoothDevice? = null
     private var connectedAtMs = 0L
-    private var flapCount = 0
-    private var extendedReports = false
+    private var wantExtendedReports = false
+    @Volatile private var extendedReports = false
+    private var registrationCallback: BluetoothHidDevice.Callback? = null
+    private var profileListener: BluetoothProfile.ServiceListener? = null
     private var keepAlive: kotlinx.coroutines.Job? = null
     // C1 / C2 / M7 / A1 — single authoritative mouse button mask.
     private val mouseButtons = MouseButtonTracker()
@@ -125,32 +135,6 @@ class HidEngine @Inject constructor(
     private var keepAliveIntervalMs: Long = KEEPALIVE_MS
     // A6 — last 20 state transitions for diagnostics export.
     private val transitionLog = ArrayDeque<String>()
-
-    init {
-        scope.launch {
-            settingsStore.appSettings.collect { a ->
-                val changed = a.extendedReports != extendedReports
-                extendedReports = a.extendedReports
-                keepAliveIntervalMs = when (a.powerProfile) {
-                    PowerProfile.PERFORMANCE -> 3_000L
-                    PowerProfile.BALANCED -> 4_000L
-                    PowerProfile.BATTERY_SAVER -> 8_000L
-                }
-                if (changed && appRegistered) {
-                    Timber.i("extendedReports toggled — re-registering HID app")
-                    connectedDevice = null
-                    mouseButtons.clear()
-                    runCatching { hidDevice?.unregisterApp() }
-                    registerApp()
-                }
-            }
-        }
-        scope.launch {
-            settingsStore.keyboardSettings.collect { k ->
-                keyTapDelayMs = k.sanitized().keyTapDelayMs.toLong()
-            }
-        }
-    }
 
     private val _state = MutableStateFlow<HidConnectionState>(HidConnectionState.Idle)
     override val state: StateFlow<HidConnectionState> = _state.asStateFlow()
@@ -176,7 +160,7 @@ class HidEngine @Inject constructor(
     fun recentStateTransitions(): List<String> = synchronized(transitionLog) { transitionLog.toList() }
 
     /** A6 — whether the extended HID descriptor is currently active. */
-    fun isExtendedDescriptorActive(): Boolean = extendedReports
+    fun isExtendedDescriptorActive(): Boolean = appRegistered && extendedReports
 
     /** ADV S5 — real measured connection-health metrics (public read). */
     val health = com.aeropad.remote.domain.ConnectionHealthTracker()
@@ -198,10 +182,17 @@ class HidEngine @Inject constructor(
      * proxy and registers our combined HID app. Safe to call repeatedly.
      */
     override fun start() {
+        scope.launch { startOnHidThread() }
+    }
+
+    private fun startOnHidThread() {
         stopped = false
         ensureBtStateReceiver()
         when {
             !permissionManager.hasAllBluetoothPermissions() -> {
+                cancelReconnect()
+                retireProxy()
+                clearLink("Bluetooth permission missing")
                 updateState(HidConnectionState.PermissionMissing)
                 Timber.w("HidEngine.start: missing Bluetooth permissions")
                 return
@@ -211,37 +202,54 @@ class HidEngine @Inject constructor(
                 return
             }
             !safeIsEnabled() -> {
+                cancelReconnect()
+                retireProxy()
+                clearLink("Bluetooth off")
                 updateState(HidConnectionState.BluetoothDisabled)
                 return
             }
         }
-        if (hidDevice != null && appRegistered) {
-            Timber.d("HidEngine.start: already registered")
+        if (hidDevice != null) {
+            if (!appRegistered) registerApp()
             return
         }
         if (proxyRequested) return
 
         updateState(HidConnectionState.Initializing)
+        val listener = HidProfileListener()
+        profileListener = listener
         proxyRequested = try {
-            bluetoothAdapter?.getProfileProxy(context, serviceListener, BluetoothProfile.HID_DEVICE) == true
+            bluetoothAdapter?.getProfileProxy(context, listener, BluetoothProfile.HID_DEVICE) == true
         } catch (t: Throwable) {
             Timber.e(t, "getProfileProxy failed")
             false
         }
         if (!proxyRequested) {
+            profileListener = null
             updateState(HidConnectionState.HidUnsupported("Android refused the HID Device profile on this phone."))
+        } else {
+            profileWatchdog?.cancel()
+            profileWatchdog = scope.launch {
+                delay(REGISTRATION_TIMEOUT_MS)
+                if (profileListener === listener && proxyRequested) {
+                    profileListener = null
+                    proxyRequested = false
+                    updateState(HidConnectionState.Error("Android did not open the Bluetooth HID profile. Try again."))
+                }
+            }
         }
     }
 
     /** Fully tears down registration + proxy. Called from service shutdown. */
     override fun stop() {
+        scope.launch { stopOnHidThread() }
+    }
+
+    private fun stopOnHidThread() {
         stopped = true
         userInitiatedDisconnect = true
-        reconnectJob?.cancel()
-        reconnectJob = null
-        connectWatchdog?.cancel()
-        keepAlive?.cancel()
-        mouseButtons.clear()
+        cancelReconnect()
+        resetInputsOnHidThread()
         if (btReceiverRegistered) {
             runCatching { context.unregisterReceiver(btStateReceiver) }
                 .onFailure { Timber.w(it, "unregisterReceiver failed") }
@@ -251,13 +259,10 @@ class HidEngine @Inject constructor(
             .onFailure { Timber.w(it, "disconnect during stop failed") }
         runCatching { hidDevice?.unregisterApp() }
             .onFailure { Timber.w(it, "unregisterApp failed") }
-        runCatching { bluetoothAdapter?.closeProfileProxy(BluetoothProfile.HID_DEVICE, hidDevice) }
-            .onFailure { Timber.w(it, "closeProfileProxy failed") }
-        hidDevice = null
-        connectedDevice = null
+        retireProxy()
+        clearLink("service stopped")
         pendingConnect = null
-        appRegistered = false
-        proxyRequested = false
+        cancelledConnection = null
         updateState(HidConnectionState.Idle)
         Timber.i("HidEngine stopped")
     }
@@ -267,64 +272,77 @@ class HidEngine @Inject constructor(
     // ------------------------------------------------------------------
 
     /** User-initiated connect: resets backoff + flap counters. */
-    fun connect(device: BluetoothDevice) {
+    private fun connect(device: BluetoothDevice) {
+        cancelReconnect()
         reconnectAttempts = 0
-        flapCount = 0
+        flapGuard.forgive()
         autoConnect(device)
     }
 
-    /**
-     * Round 8 — anti-flap connect core. Duplicate connects to the same host
-     * inside the debounce window are ignored (the #1 cause of
-     * connect/disconnect ping-pong is stacking connect() calls on a link
-     * that is still settling), and the watchdog no longer force-tears the
-     * stack on timeout.
-     */
+    /** Only one outgoing connection may be in progress; a new target waits its turn. */
     private fun autoConnect(device: BluetoothDevice) {
+        if (connectedDevice == device || connectingDevice == device) return
         userInitiatedDisconnect = false
-        val now = System.currentTimeMillis()
-        val cur = _state.value
-        if (cur is HidConnectionState.Connecting &&
-            cur.device.address == device.address &&
-            now - connectingSinceMs < CONNECT_DEBOUNCE_MS
-        ) {
-            Timber.d("connect(%s) debounced", device.address)
-            return
-        }
-        if (connectedDevice?.address == device.address) {
-            Timber.d("connect(%s): already connected", device.address)
-            return
-        }
+        if (cancelledConnection == device) cancelledConnection = null
         val hd = hidDevice
+        val currentHost = connectedDevice
+        if (hd != null && currentHost != null) {
+            // Android exposes a single active HID host. Wait for the old link
+            // to go down before attempting the next one.
+            val alreadySwitching = pendingConnect != null
+            pendingConnect = device
+            if (alreadySwitching) return
+            resetInputsOnHidThread()
+            if (!runCatching { hd.disconnect(currentHost) }.getOrDefault(false)) {
+                pendingConnect = null
+                Timber.w("Could not disconnect the current HID host to switch devices")
+            } else {
+                connectWatchdog?.cancel()
+                connectWatchdog = scope.launch {
+                    delay(CONNECT_TIMEOUT_MS)
+                    if (connectedDevice == currentHost) pendingConnect = null
+                }
+            }
+            return
+        }
         if (hd == null || !appRegistered) {
             Timber.d("connect: engine not ready, queueing %s", device.address)
             pendingConnect = device
-            start()
+            startOnHidThread()
             return
         }
-        connectingSinceMs = now
+        if (connectingDevice != null && connectingDevice != device) {
+            pendingConnect = device
+            return
+        }
+        connectingDevice = device
         updateState(HidConnectionState.Connecting(device.toRemote()))
         val ok = runCatching { hd.connect(device) }
             .onFailure { Timber.e(it, "connect() threw") }
             .getOrDefault(false)
         if (!ok) {
+            connectingDevice = null
+            connectWatchdog?.cancel()
             updateState(HidConnectionState.Error("Could not start connection to ${device.safeName()}."))
             return
         }
-        // Round 6 watchdog — reports the stall but never yanks the stack.
+        watchConnect(device)
+    }
+
+    private fun watchConnect(device: BluetoothDevice) {
         connectWatchdog?.cancel()
         connectWatchdog = scope.launch {
             delay(CONNECT_TIMEOUT_MS)
-            if (connectedDevice == null && _state.value is HidConnectionState.Connecting) {
-                Timber.w("connect watchdog timed out for %s", device.address)
-                _reconnectStatus.value = null
-                updateState(
-                    HidConnectionState.Error(
-                        "Connection to ${device.safeName()} timed out. " +
-                            "Make sure the host is paired and awake, then try again."
-                    )
-                )
+            if (connectingDevice != device) return@launch
+            connectingDevice = null
+            if (userInitiatedDisconnect) {
+                updateState(HidConnectionState.Idle)
+            } else {
+                updateState(HidConnectionState.Error(
+                    "Connection to ${device.safeName()} timed out. Make sure the host is paired and awake, then try again."
+                ))
             }
+            connectPendingHost()
         }
     }
 
@@ -333,31 +351,73 @@ class HidEngine @Inject constructor(
      * Uses getRemoteDevice so even a host that is mid-pairing can be targeted.
      */
     override fun connectTo(address: String) {
-        val device = runCatching { bluetoothAdapter?.getRemoteDevice(address) }
-            .onFailure { Timber.e(it, "getRemoteDevice(%s) failed", address) }
-            .getOrNull()
-        if (device == null) {
-            updateState(HidConnectionState.Error("Device $address not found."))
-            return
+        scope.launch {
+            val device = runCatching { bluetoothAdapter?.getRemoteDevice(address) }.getOrNull()
+            if (device != null) connect(device)
+            else if (connectedDevice == null) updateState(HidConnectionState.Error("Device not found."))
         }
-        connect(device)
     }
 
-    /** Round 7 — Quick Connect: re-target the most recent host. */
     override fun reconnectLast() {
-        val target = lastHostDevice ?: return
-        userInitiatedDisconnect = false
-        connect(target)
+        scope.launch { lastHostDevice?.let(::connect) }
     }
 
-    /** User-initiated disconnect — suppresses auto-reconnect. */
     override fun disconnect() {
-        userInitiatedDisconnect = true
+        scope.launch {
+            userInitiatedDisconnect = true
+            pendingConnect = null
+            cancelReconnect()
+            resetInputsOnHidThread()
+            val dev = connectedDevice ?: connectingDevice ?: return@launch
+            cancelledConnection = dev
+            runCatching { hidDevice?.disconnect(dev) }
+                .onFailure { Timber.w(it, "disconnect() threw") }
+        }
+    }
+
+    override fun releaseInputs() {
+        scope.launch { resetInputsOnHidThread() }
+    }
+
+    private fun resetInputsOnHidThread() {
+        inputSession.reset()
         mouseButtons.clear()
-        val hd = hidDevice ?: return
-        val dev = connectedDevice ?: return
-        runCatching { hd.disconnect(dev) }
-            .onFailure { Timber.w(it, "disconnect() threw") }
+        heldKeyboardReport = null
+        if (connectedDevice == null) return
+        report(HidDescriptors.REPORT_ID_KEYBOARD, HidReportBuilder.keyboardRelease())
+        report(HidDescriptors.REPORT_ID_MOUSE, HidReportBuilder.mouse())
+        report(HidDescriptors.REPORT_ID_CONSUMER, HidReportBuilder.consumerRelease())
+        report(HidDescriptors.REPORT_ID_SYSTEM, HidReportBuilder.systemRelease())
+        report(HidDescriptors.REPORT_ID_GAMEPAD, ReportPool.gamepadInto(GamepadSnapshot(), extendedReports))
+        if (extendedReports) report(HidDescriptors.REPORT_ID_TOUCH, HidReportBuilder.touch(false, 0, 0))
+    }
+
+    private fun clearLink(reason: String): Boolean {
+        val wasConnected = connectedDevice != null
+        connectedDevice = null
+        connectingDevice = null
+        connectWatchdog?.cancel()
+        keepAlive?.cancel()
+        resetInputsOnHidThread()
+        if (wasConnected) {
+            health.markDisconnected()
+            history.onDisconnected("BLUETOOTH", reason)
+        }
+        return wasConnected
+    }
+
+    private fun cancelReconnect() {
+        reconnectJob?.cancel()
+        reconnectJob = null
+        _reconnectStatus.value = null
+        _reconnectNextAtMs.value = null
+    }
+
+    private fun connectPendingHost(): Boolean {
+        val target = pendingConnect ?: return false
+        pendingConnect = null
+        autoConnect(target)
+        return true
     }
 
     /** Bonded devices for the picker UI (never throws). */
@@ -381,52 +441,40 @@ class HidEngine @Inject constructor(
      * Returns immediately — never blocks the UI thread.
      */
     override fun send(action: HidAction) {
-        scope.launch { executeAction(action) }
+        scope.launch(inputSession.job) {
+            if (connectedDevice != null) executeAction(action)
+        }
     }
 
     private suspend fun executeAction(action: HidAction) {
         try {
             when (action) {
-                is HidAction.KeyTap -> {
+                is HidAction.KeyTap -> keyboardReports.withLock {
                     report(HidDescriptors.REPORT_ID_KEYBOARD, HidReportBuilder.keyboard(action.modifiers, listOf(action.key)))
                     delay(keyTapDelayMs)
+                    releaseKeyboardTap()
+                }
+                is HidAction.KeyDown -> keyboardReports.withLock {
+                    val payload = HidReportBuilder.keyboard(action.modifiers, listOf(action.key))
+                    heldKeyboardReport = payload
+                    report(HidDescriptors.REPORT_ID_KEYBOARD, payload)
+                }
+                is HidAction.KeyRelease -> keyboardReports.withLock {
+                    heldKeyboardReport = null
                     report(HidDescriptors.REPORT_ID_KEYBOARD, HidReportBuilder.keyboardRelease())
                 }
-                is HidAction.KeyDown ->
-                    report(HidDescriptors.REPORT_ID_KEYBOARD, HidReportBuilder.keyboard(action.modifiers, listOf(action.key)))
-                is HidAction.KeyRelease ->
-                    report(HidDescriptors.REPORT_ID_KEYBOARD, HidReportBuilder.keyboardRelease())
-                is HidAction.TypeText -> typeText(action.text)
+                is HidAction.TypeText -> keyboardReports.withLock { typeText(action.text) }
                 is HidAction.MouseMove ->
                     // C1 fix + V2 PART A pooled buffer: include held mouse buttons on every move!
                     report(
                         HidDescriptors.REPORT_ID_MOUSE,
                         ReportPool.mouseInto(mouseButtons.currentByte, action.dx, action.dy, 0)
                     )
-                is HidAction.MouseClick -> {
-                    report(
-                        HidDescriptors.REPORT_ID_MOUSE,
-                        HidReportBuilder.mouse(buttons = mouseButtons.withTransientPress(action.button))
-                    )
-                    delay(keyTapDelayMs)
-                    report(
-                        HidDescriptors.REPORT_ID_MOUSE,
-                        HidReportBuilder.mouse(buttons = mouseButtons.currentByte)
-                    )
-                }
-                is HidAction.MouseDoubleClick -> {
-                    repeat(2) {
-                        report(
-                            HidDescriptors.REPORT_ID_MOUSE,
-                            HidReportBuilder.mouse(buttons = mouseButtons.withTransientPress(action.button))
-                        )
-                        delay(keyTapDelayMs)
-                        report(
-                            HidDescriptors.REPORT_ID_MOUSE,
-                            HidReportBuilder.mouse(buttons = mouseButtons.currentByte)
-                        )
-                        delay(30L)
-                    }
+                is HidAction.MouseClick -> mouseClicks.withLock { clickMouse(action.button) }
+                is HidAction.MouseDoubleClick -> mouseClicks.withLock {
+                    clickMouse(action.button)
+                    delay(30L)
+                    clickMouse(action.button)
                 }
                 is HidAction.MouseDown ->
                     // C1 / A1: set button bit in persistent engine state.
@@ -455,12 +503,12 @@ class HidEngine @Inject constructor(
                             dy = action.dy
                         )
                     )
-                is HidAction.MediaTap -> {
+                is HidAction.MediaTap -> consumerReports.withLock {
                     report(HidDescriptors.REPORT_ID_CONSUMER, HidReportBuilder.consumer(action.usage))
                     delay(keyTapDelayMs)
                     report(HidDescriptors.REPORT_ID_CONSUMER, HidReportBuilder.consumerRelease())
                 }
-                is HidAction.SystemTap -> {
+                is HidAction.SystemTap -> systemReports.withLock {
                     report(HidDescriptors.REPORT_ID_SYSTEM, HidReportBuilder.system(action.bits))
                     delay(keyTapDelayMs)
                     report(HidDescriptors.REPORT_ID_SYSTEM, HidReportBuilder.systemRelease())
@@ -479,25 +527,37 @@ class HidEngine @Inject constructor(
                     report(HidDescriptors.REPORT_ID_TOUCH, HidReportBuilder.touch(action.contact, tx, ty))
                 }
             }
-        } catch (t: Throwable) {
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (t: Exception) {
             // Absolute last line of defense: an action must never crash the app.
             Timber.e(t, "executeAction(%s) failed", action::class.simpleName)
         }
+    }
+
+    private suspend fun clickMouse(button: MouseButton) {
+        mouseButtons.setClick(button)
+        report(HidDescriptors.REPORT_ID_MOUSE, HidReportBuilder.mouse(buttons = mouseButtons.currentByte))
+        delay(keyTapDelayMs)
+        mouseButtons.setClick(null)
+        report(HidDescriptors.REPORT_ID_MOUSE, HidReportBuilder.mouse(buttons = mouseButtons.currentByte))
+    }
+
+    private fun releaseKeyboardTap() {
+        report(HidDescriptors.REPORT_ID_KEYBOARD, heldKeyboardReport ?: HidReportBuilder.keyboardRelease())
     }
 
     /** Types a string as individual keystrokes, handling repeated chars correctly. */
     private suspend fun typeText(text: String) {
         for (char in text) {
             val stroke = CharToHidMapper.map(char)
-            if (stroke == null) {
-                Timber.w("typeText: unmappable char '%s' skipped", char)
-                continue
-            }
+            if (stroke == null) continue
             report(HidDescriptors.REPORT_ID_KEYBOARD, HidReportBuilder.keyboard(stroke.modifiers, listOf(stroke.key)))
             delay(keyTapDelayMs)
             report(HidDescriptors.REPORT_ID_KEYBOARD, HidReportBuilder.keyboardRelease())
             delay(keyTapDelayMs)
         }
+        if (heldKeyboardReport != null) releaseKeyboardTap()
     }
 
     /** Sends one raw report; false (and log) on any failure. Never throws.
@@ -519,33 +579,51 @@ class HidEngine @Inject constructor(
     // Framework callbacks
     // ------------------------------------------------------------------
 
-    private val serviceListener = object : BluetoothProfile.ServiceListener {
+    private inner class HidProfileListener : BluetoothProfile.ServiceListener {
         override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
             if (profile != BluetoothProfile.HID_DEVICE) return
-            Timber.i("HID_DEVICE proxy connected")
-            hidDevice = proxy as? BluetoothHidDevice
-            proxyRequested = false
-            registerApp()
+            scope.launch {
+                if (stopped || profileListener !== this@HidProfileListener || !safeIsEnabled()) {
+                    runCatching { bluetoothAdapter?.closeProfileProxy(profile, proxy) }
+                    return@launch
+                }
+                profileWatchdog?.cancel()
+                hidDevice = proxy as? BluetoothHidDevice
+                proxyRequested = false
+                if (hidDevice == null) {
+                    profileListener = null
+                    updateState(HidConnectionState.HidUnsupported("Android returned an incompatible Bluetooth profile."))
+                    return@launch
+                }
+                registerApp()
+            }
         }
 
         override fun onServiceDisconnected(profile: Int) {
             if (profile != BluetoothProfile.HID_DEVICE) return
-            Timber.w("HID_DEVICE proxy disconnected")
-            hidDevice = null
-            connectedDevice = null
-            mouseButtons.clear()
-            appRegistered = false
-            proxyRequested = false
-            updateState(HidConnectionState.Idle)
-            // Round 6 — the BT stack restarts the profile when the adapter is
-            // toggled; re-arm instead of leaving the engine dead until app restart.
-            if (!stopped) {
-                scope.launch {
-                    delay(1000)
-                    if (!stopped && hidDevice == null && !proxyRequested) start()
+            scope.launch {
+                if (profileListener !== this@HidProfileListener) return@launch
+                retireProxy()
+                clearLink("HID profile lost")
+                updateState(if (safeIsEnabled()) HidConnectionState.Idle else HidConnectionState.BluetoothDisabled)
+                delay(1000)
+                if (!stopped && profileListener == null && safeIsEnabled()) {
+                    startOnHidThread()
+                    startReconnectLoop(reason = "HID profile lost")
                 }
             }
         }
+    }
+
+    private fun retireProxy() {
+        profileWatchdog?.cancel()
+        registrationWatchdog?.cancel()
+        profileListener = null
+        registrationCallback = null
+        appRegistered = false
+        proxyRequested = false
+        runCatching { hidDevice?.let { bluetoothAdapter?.closeProfileProxy(BluetoothProfile.HID_DEVICE, it) } }
+        hidDevice = null
     }
 
     /**
@@ -554,40 +632,32 @@ class HidEngine @Inject constructor(
      * unregistered until the app was force-stopped.
      */
     private val btStateReceiver = object : android.content.BroadcastReceiver() {
-        override fun onReceive(c: android.content.Context?, intent: android.content.Intent?) {
-            // Round 10 — wake triggers. A link that died while the phone was in
-            // Doze used to stay dead until the user did something; unlocking or
-            // simply turning the screen on is the strongest possible signal that
-            // they want to use the remote again, so retry immediately.
-            when (intent?.action) {
-                android.content.Intent.ACTION_SCREEN_ON,
-                android.content.Intent.ACTION_USER_PRESENT -> {
-                    if (connectedDevice == null &&
-                        !userInitiatedDisconnect &&
-                        lastHostDevice != null
-                    ) {
-                        Timber.i("screen woke with no link — retrying immediately")
-                        retryNow()
+        override fun onReceive(context: Context?, intent: android.content.Intent?) {
+            val action = intent?.action ?: return
+            val adapterState = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR)
+            scope.launch {
+                if (stopped) return@launch
+                when (action) {
+                    android.content.Intent.ACTION_SCREEN_ON, android.content.Intent.ACTION_USER_PRESENT -> {
+                        if (connectedDevice == null && !userInitiatedDisconnect && lastHostDevice != null) {
+                            retryOnHidThread()
+                        }
                     }
-                    return
-                }
-            }
-            when (intent?.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR)) {
-                BluetoothAdapter.STATE_OFF -> {
-                    Timber.w("Bluetooth adapter turned off")
-                    connectWatchdog?.cancel()
-                    connectedDevice = null
-                    mouseButtons.clear()
-                    appRegistered = false
-                    updateState(HidConnectionState.BluetoothDisabled)
-                }
-                BluetoothAdapter.STATE_ON -> {
-                    Timber.i("Bluetooth adapter turned on — re-initializing HID engine")
-                    proxyRequested = false
-                    start()
-                    // Round 10 — resume the link we lost when the radio went off.
-                    if (lastHostDevice != null && !userInitiatedDisconnect) {
-                        retryNow()
+                    BluetoothAdapter.ACTION_STATE_CHANGED -> when (adapterState) {
+                        BluetoothAdapter.STATE_OFF -> {
+                            if (safeIsEnabled()) return@launch
+                            cancelReconnect()
+                            retireProxy()
+                            clearLink("Bluetooth off")
+                            updateState(HidConnectionState.BluetoothDisabled)
+                        }
+                        BluetoothAdapter.STATE_ON -> {
+                            if (!safeIsEnabled()) return@launch
+                            startOnHidThread()
+                            if (lastHostDevice != null && pendingConnect == null && !userInitiatedDisconnect) {
+                                startReconnectLoop(reason = "Bluetooth on", immediate = true)
+                            }
+                        }
                     }
                 }
             }
@@ -597,7 +667,6 @@ class HidEngine @Inject constructor(
     private fun ensureBtStateReceiver() {
         if (btReceiverRegistered) return
         val filter = android.content.IntentFilter().apply {
-            addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
             // Round 10 — wake triggers (neither needs a permission).
             addAction(android.content.Intent.ACTION_SCREEN_ON)
             addAction(android.content.Intent.ACTION_USER_PRESENT)
@@ -613,122 +682,162 @@ class HidEngine @Inject constructor(
                 filter,
                 androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
             )
+            try {
+                // Android Bluetooth broadcasts can originate from the privileged
+                // Bluetooth app UID, not the system UID. This action is protected.
+                androidx.core.content.ContextCompat.registerReceiver(
+                    context,
+                    btStateReceiver,
+                    android.content.IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED),
+                    androidx.core.content.ContextCompat.RECEIVER_EXPORTED
+                )
+            } catch (e: Exception) {
+                runCatching { context.unregisterReceiver(btStateReceiver) }
+                throw e
+            }
         }.isSuccess
         if (!btReceiverRegistered) Timber.w("could not register BT state receiver")
     }
 
-    private fun registerApp() {
+    private fun applyDescriptorPreference() {
+        if (!appRegistered || extendedReports == wantExtendedReports) return
         val hd = hidDevice ?: return
-        // Round 9: default = the proven-stable 3.3.0 descriptor; the
-        // extended one (touch digitizer + analog triggers) is opt-in.
-        val descriptor = if (extendedReports) HidDescriptors.COMBINED else HidDescriptors.LEGACY
-        val sdp = BluetoothHidDeviceAppSdpSettings(
-            SDP_NAME, SDP_DESCRIPTION, SDP_PROVIDER,
-            SUBCLASS_COMBO, descriptor
-        )
-        val ok = runCatching { hd.registerApp(sdp, null, null, hidExecutor, hidCallback) }
-            .onFailure { Timber.e(it, "registerApp threw") }
-            .getOrDefault(false)
-        if (!ok) {
-            updateState(
-                HidConnectionState.HidUnsupported(
-                    "Android refused HID registration. This phone or ROM may not support HID Device mode."
-                )
-            )
+        resetInputsOnHidThread()
+        if (runCatching { hd.unregisterApp() }.getOrDefault(false)) {
+            appRegistered = false
+            clearLink("HID report mode changed")
+            updateState(HidConnectionState.Initializing)
+            // Re-register only after Android acknowledges unregistering.
+            registrationCallback?.let(::watchRegistration)
+        } else {
+            Timber.w("Android refused to change the HID report mode")
         }
     }
 
-    private val hidCallback = object : BluetoothHidDevice.Callback() {
+    private fun registerApp() {
+        if (registrationCallback != null || stopped) return
+        val hd = hidDevice ?: return
+        // Round 9: default = the proven-stable 3.3.0 descriptor; the
+        // extended one (touch digitizer + analog triggers) is opt-in.
+        extendedReports = wantExtendedReports
+        val descriptor = if (extendedReports) HidDescriptors.COMBINED else HidDescriptors.LEGACY
+        val callback = HidRegistrationCallback()
+        registrationCallback = callback
+        updateState(HidConnectionState.Initializing)
+        val ok = runCatching {
+            val sdp = BluetoothHidDeviceAppSdpSettings(SDP_NAME, SDP_DESCRIPTION, SDP_PROVIDER, SUBCLASS_COMBO, descriptor)
+            hd.registerApp(sdp, null, null, hidExecutor, callback)
+        }
+            .onFailure { Timber.e(it, "registerApp threw") }
+            .getOrDefault(false)
+        if (!ok) {
+            registrationCallback = null
+            updateState(HidConnectionState.HidUnsupported(
+                "Android refused HID registration. This phone or ROM may not support HID Device mode."
+            ))
+        } else {
+            watchRegistration(callback)
+        }
+    }
+
+    private fun watchRegistration(callback: BluetoothHidDevice.Callback) {
+        registrationWatchdog?.cancel()
+        registrationWatchdog = scope.launch {
+            delay(REGISTRATION_TIMEOUT_MS)
+            if (registrationCallback === callback) {
+                runCatching { hidDevice?.unregisterApp() }
+                retireProxy()
+                updateState(HidConnectionState.Error("Android did not finish Bluetooth HID setup. Try again."))
+            }
+        }
+    }
+
+    private inner class HidRegistrationCallback : BluetoothHidDevice.Callback() {
 
         override fun onAppStatusChanged(pluggedDevice: BluetoothDevice?, registered: Boolean) {
-            Timber.i("onAppStatusChanged registered=%s", registered)
+            if (registrationCallback !== this) return
+            registrationWatchdog?.cancel()
             appRegistered = registered
             if (!registered) {
-                connectedDevice = null
-                mouseButtons.clear()
-                if (_state.value !is HidConnectionState.HidUnsupported) {
+                registrationCallback = null
+                clearLink("HID app unregistered")
+                if (!safeIsEnabled()) {
+                    updateState(HidConnectionState.BluetoothDisabled)
+                } else if (extendedReports != wantExtendedReports || pendingConnect != null) {
+                    registerApp()
+                    if (!userInitiatedDisconnect) startReconnectLoop(reason = "HID report mode changed")
+                } else {
                     updateState(HidConnectionState.Idle)
-                }
-                // Round 10 — this used to be a dead end: the app lost its HID
-                // registration (ROM cleanup, radio reset, host stack restart)
-                // and nothing ever re-registered it. Now the loop takes over.
-                if (!stopped && !userInitiatedDisconnect) {
-                    startReconnectLoop(reason = "HID app unregistered")
+                    if (!userInitiatedDisconnect) startReconnectLoop(reason = "HID app unregistered")
                 }
                 return
             }
-            updateState(HidConnectionState.Idle)
-            // Flush a queued connect request, if any.
-            pendingConnect?.let { queued ->
-                pendingConnect = null
-                connect(queued)
+            if (extendedReports != wantExtendedReports) {
+                applyDescriptorPreference()
+                if (!appRegistered) return
             }
+            if (connectedDevice == null) updateState(HidConnectionState.Idle)
+            connectPendingHost()
         }
 
         override fun onConnectionStateChanged(device: BluetoothDevice?, btState: Int) {
-            Timber.i("onConnectionStateChanged state=%d device=%s", btState, device?.address)
+            if (registrationCallback !== this || !appRegistered || device == null) return
             when (btState) {
                 BluetoothProfile.STATE_CONNECTED -> {
+                    if (connectedDevice == device) return
+                    if (connectedDevice != null ||
+                        (connectingDevice != null && connectingDevice != device) ||
+                        cancelledConnection == device
+                    ) {
+                        runCatching { hidDevice?.disconnect(device) }
+                        return
+                    }
                     connectWatchdog?.cancel()
+                    connectingDevice = null
+                    inputSession.reset()
                     connectedDevice = device
                     mouseButtons.clear()
-                    connectedAtMs = System.currentTimeMillis()
-                    device?.let { startKeepAlive(it) }
+                    connectedAtMs = android.os.SystemClock.elapsedRealtime()
+                    startKeepAlive(device)
                     lastHostDevice = device
+                    userInitiatedDisconnect = false
                     reconnectAttempts = 0
-                    flapGuard.onStableLink()
-                    reconnectJob?.cancel()
-                    reconnectJob = null
-                    _reconnectStatus.value = null           // ADV S5
-                    _reconnectNextAtMs.value = null
-                    health.markConnected()                   // ADV S5
-                    device?.let {
-                        history.onConnected("BLUETOOTH", it.safeName())   // #41
-                        updateState(HidConnectionState.Connected(it.toRemote()))
+                    cancelReconnect()
+                    health.markConnected()
+                    history.onConnected("BLUETOOTH", device.safeName())
+                    updateState(HidConnectionState.Connected(device.toRemote()))
+                    connectPendingHost()
+                }
+                BluetoothProfile.STATE_CONNECTING -> {
+                    if (connectedDevice == null && (connectingDevice == null || connectingDevice == device)) {
+                        if (connectingDevice == null && cancelledConnection != device) {
+                            connectingDevice = device
+                            watchConnect(device)
+                            updateState(HidConnectionState.Connecting(device.toRemote()))
+                        }
                     }
                 }
-                BluetoothProfile.STATE_CONNECTING ->
-                    device?.let { updateState(HidConnectionState.Connecting(it.toRemote())) }
                 BluetoothProfile.STATE_DISCONNECTED -> {
-                    keepAlive?.cancel()
-                    mouseButtons.clear()
-                    val wasConnected = connectedDevice != null
-                    connectedDevice = null
-                    updateState(HidConnectionState.Idle)
-                    if (wasConnected) {
-                        health.markDisconnected()   // ADV S5
-                        history.onDisconnected("BLUETOOTH",
-                            if (userInitiatedDisconnect) "user disconnect" else "link dropped")  // #41
+                    if (cancelledConnection == device) cancelledConnection = null
+                    if (connectedDevice != device && connectingDevice != device) return
+                    val reason = when {
+                        userInitiatedDisconnect -> "user disconnect"
+                        pendingConnect != null -> "host switched"
+                        else -> "link dropped"
                     }
+                    val wasConnected = clearLink(reason)
+                    updateState(HidConnectionState.Idle)
+                    if (connectPendingHost()) return
                     if (wasConnected && !userInitiatedDisconnect) {
-                        // Round 8 — break the connect/drop ping-pong.
-                        // Round 10 — but never punish permanently: a flapping
-                        // link now *rests* (60 s, doubling to a 15-min cap) and
-                        // then resumes on its own, because "the host was mid-
-                        // wake" is exactly the case the user wants fixed.
-                        val heldMs = System.currentTimeMillis() - connectedAtMs
-                        val rest = flapGuard.onDrop(heldMs, System.currentTimeMillis())
+                        val heldMs = android.os.SystemClock.elapsedRealtime() - connectedAtMs
+                        val rest = flapGuard.onDrop(heldMs, android.os.SystemClock.elapsedRealtime())
                         if (rest != null) {
-                            Timber.w("link flapping — resting %dms before retrying", rest.restMs)
-                            _reconnectStatus.value = null
-                            updateState(
-                                HidConnectionState.Error(
-                                    "The link keeps dropping right after connecting. " +
-                                        "AeroPad will keep retrying every " +
-                                        "${rest.restMs / 1000}s — keep the host awake " +
-                                        "and nearby. Re-pair if it keeps happening."
-                                )
-                            )
-                            scope.launch {
-                                delay(rest.restMs)
-                                if (connectedDevice == null && !userInitiatedDisconnect) {
-                                    updateState(HidConnectionState.Idle)
-                                    startReconnectLoop(reason = "after flapping rest")
-                                }
-                            }
-                        } else {
-                            startReconnectLoop(reason = "link dropped")
+                            updateState(HidConnectionState.Error(
+                                "The link keeps dropping. AeroPad will retry in ${rest.restMs / 1000}s. " +
+                                    "Keep the host awake and nearby, or re-pair it."
+                            ))
                         }
+                        startReconnectLoop(reason = "link dropped")
                     }
                 }
                 // STATE_DISCONNECTING: transient; we wait for DISCONNECTED.
@@ -742,6 +851,7 @@ class HidEngine @Inject constructor(
          * suddenly disconnected" symptom on Android hosts.
          */
         override fun onGetReport(device: BluetoothDevice?, type: Byte, id: Byte, bufferSize: Int) {
+            if (registrationCallback !== this) return
             val hd = hidDevice ?: return
             runCatching {
                 val payload: ByteArray = when (id.toInt()) {
@@ -750,10 +860,7 @@ class HidEngine @Inject constructor(
                     HidDescriptors.REPORT_ID_CONSUMER -> HidReportBuilder.consumerRelease()
                     HidDescriptors.REPORT_ID_SYSTEM -> HidReportBuilder.systemRelease()
                     HidDescriptors.REPORT_ID_GAMEPAD ->
-                        // Fresh array, not the pooled buffer: this is a control
-                        // channel reply, and nothing should hand the shared
-                        // report buffer to the framework.
-                        HidReportBuilder.gamepad(GamepadSnapshot())
+                        HidReportBuilder.gamepadNeutral(extendedReports)
                     HidDescriptors.REPORT_ID_TOUCH ->
                         if (!extendedReports) ByteArray(0)
                         else HidReportBuilder.touch(contact = false, x = 0, y = 0)
@@ -773,10 +880,11 @@ class HidEngine @Inject constructor(
         }
 
         override fun onVirtualCableUnplug(device: BluetoothDevice?) {
-            Timber.i("onVirtualCableUnplug %s", device?.address)
-            userInitiatedDisconnect = true // host asked us to unplug: do not fight it
-            connectedDevice = null
-            mouseButtons.clear()
+            if (registrationCallback !== this || device == null || device != connectedDevice) return
+            userInitiatedDisconnect = true
+            pendingConnect = null
+            cancelReconnect()
+            clearLink("host unplugged")
             updateState(HidConnectionState.Idle)
         }
     }
@@ -835,7 +943,7 @@ class HidEngine @Inject constructor(
                     appRegistered = appRegistered,
                     hasRememberedHost = lastHostDevice != null,
                     userInitiatedDisconnect = userInitiatedDisconnect,
-                    resting = flapGuard.isResting(System.currentTimeMillis())
+                    resting = flapGuard.isResting(android.os.SystemClock.elapsedRealtime())
                 )
                 when (decision) {
                     com.aeropad.remote.domain.ReconnectDecision.Action.STOP -> break
@@ -892,15 +1000,7 @@ class HidEngine @Inject constructor(
     /** Re-register the HID app after the system or a ROM dropped it. */
     private fun reRegisterApp() {
         if (appRegistered) return
-        val hd = hidDevice
-        if (hd == null) {
-            // The proxy itself is gone — rebuild it from scratch.
-            proxyRequested = false
-            start()
-            return
-        }
-        runCatching { hd.unregisterApp() }
-        registerApp()
+        if (hidDevice == null) startOnHidThread() else registerApp()
     }
 
     /**
@@ -909,18 +1009,18 @@ class HidEngine @Inject constructor(
      * fast-phase attempt immediately.
      */
     override fun retryNow() {
+        scope.launch { retryOnHidThread() }
+    }
+
+    private fun retryOnHidThread() {
         userInitiatedDisconnect = false
         flapGuard.forgive()
         reconnectAttempts = 0
-        reconnectJob?.cancel()
-        reconnectJob = null
-        _reconnectStatus.value = null
-        _reconnectNextAtMs.value = null
+        cancelReconnect()
         if (lastHostDevice == null) {
             // Nothing remembered yet — make sure the engine is at least ready.
             if (!appRegistered) {
-                proxyRequested = if (hidDevice != null) proxyRequested else false
-                start()
+                startOnHidThread()
             }
             return
         }
@@ -942,4 +1042,24 @@ class HidEngine @Inject constructor(
 
     private fun BluetoothDevice.safeBonded(): Boolean =
         runCatching { bondState == BluetoothDevice.BOND_BONDED }.getOrDefault(false)
+
+    init {
+        scope.launch {
+            settingsStore.appSettings.collect { a ->
+                wantExtendedReports = a.extendedReports
+                keepAliveIntervalMs = when (a.powerProfile) {
+                    PowerProfile.PERFORMANCE -> 3_000L
+                    PowerProfile.BALANCED -> 4_000L
+                    PowerProfile.BATTERY_SAVER -> 8_000L
+                }
+                applyDescriptorPreference()
+            }
+        }
+        scope.launch {
+            settingsStore.keyboardSettings.collect { k ->
+                keyTapDelayMs = k.sanitized().keyTapDelayMs.toLong()
+            }
+        }
+    }
+
 }

@@ -32,9 +32,18 @@ class RouteGuardTest {
     }
 
     @Test
-    fun `whitespace and query strings survive`() {
+    fun `surrounding whitespace and unregistered queries are ignored`() {
         assertEquals("mouse", RouteGuard.sanitize("  mouse  "))
-        assertEquals("home", RouteGuard.sanitize("home?tab=2").let { if (it.startsWith("home")) "home" else it })
+        assertEquals("home", RouteGuard.sanitize("home?tab=2"))
+        assertEquals("layout_editor/12", RouteGuard.sanitize("layout_editor/12?preview=true"))
+    }
+
+    @Test
+    fun `unregistered paths and malformed profile ids fall back to home`() {
+        listOf("mouse/extra", "layout_editor/", "layout_editor/abc", "layout_editor/1/2",
+            "layout_editor/-1", "layout_editor/9223372036854775808").forEach {
+            assertEquals("home", RouteGuard.sanitize(it))
+        }
     }
 
     @Test

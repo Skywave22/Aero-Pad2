@@ -64,6 +64,19 @@ class HidReportBuilderTest {
         assertEquals(0x03.toByte(), report[0])
     }
 
+    @Test
+    fun `mouse click stays pressed during movement without clearing a different held button`() {
+        val buttons = MouseButtonTracker()
+        buttons.onDown(MouseButton.LEFT)
+        buttons.setClick(MouseButton.RIGHT)
+        assertEquals(0x03.toByte(), buttons.currentByte)
+        buttons.setClick(null)
+        assertEquals(MouseButton.LEFT.mask, buttons.currentByte)
+        buttons.setClick(MouseButton.MIDDLE)
+        buttons.clear()
+        assertEquals(0.toByte(), buttons.currentByte)
+    }
+
     // ---------- Consumer ----------
 
     @Test
@@ -88,6 +101,13 @@ class HidReportBuilderTest {
         assertEquals(0.toByte(), report[1])                       // buttons hi
         assertEquals(DpadDirection.NONE.hatValue.toByte(), report[2])
         assertEquals(127.toByte(), report[3])                     // centered axis
+    }
+
+    @Test
+    fun `neutral legacy gamepad reply does not contain extended trigger bytes`() {
+        val report = HidReportBuilder.gamepadNeutral(extended = false)
+        assertEquals(HidDescriptors.SIZE_GAMEPAD_LEGACY, report.size)
+        assertArrayEquals(HidReportBuilder.gamepadNeutral().copyOf(report.size), report)
     }
 
     @Test

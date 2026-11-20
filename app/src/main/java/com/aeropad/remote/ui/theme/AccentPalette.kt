@@ -51,8 +51,7 @@ enum class AccentPalette(
         id = "AMBER", label = "Amber",
         light = Color(0xFFB45309), dark = Color(0xFFFBBF24),
         secondaryLight = Color(0xFF0F766E), secondaryDark = Color(0xFF34D399),
-        // Amber needs dark text even on the light variant for contrast.
-        onAccentLight = Color(0xFF2A1700), onAccentDark = Color(0xFF241800)
+        onAccentLight = Color.White, onAccentDark = Color(0xFF241800)
     ),
     ROSE(
         id = "ROSE", label = "Rose",
@@ -73,8 +72,8 @@ enum class AccentPalette(
     fun onAccent(dark: Boolean): Color = if (dark) onAccentDark else onAccentLight
 
     companion object {
-        /** Default keeps the established AeroPad blue for existing users. */
-        val DEFAULT = BLUE
+        /** New installations use Violet; stored Blue selections still resolve to Blue. */
+        val DEFAULT = VIOLET
 
         /** Unknown or missing ids fall back to the default instead of throwing. */
         fun fromId(id: String?): AccentPalette =

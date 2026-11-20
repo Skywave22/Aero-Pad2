@@ -430,6 +430,11 @@ class GamepadBuilderViewModel @Inject constructor(
     }
 
     fun stopPlaying() {
+        suspendPlayingInput()
+        _playing.value = null
+    }
+
+    fun suspendPlayingInput() {
         cancelRuntimeJobs()
         setMotionEnabled(false)
         setFlickEnabled(false)   // V2 M3 — stop accelerometer on exit
@@ -437,7 +442,6 @@ class GamepadBuilderViewModel @Inject constructor(
         setProximityEnabled(false) // V2 M3 — stop proximity on exit
         setStrafeEnabled(false)  // V2 M2 — stop auto-strafe on exit
         neutralizeHid()
-        _playing.value = null
     }
 
     /**

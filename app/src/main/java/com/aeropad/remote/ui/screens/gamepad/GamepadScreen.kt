@@ -44,7 +44,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
@@ -107,20 +109,29 @@ fun GamepadScreen(
 
     // Gyro aim / tilt steering: sensors live only while enabled.
     val motionOn = gamepadSettings.gyroAim || gamepadSettings.tiltSteer
-    LaunchedEffect(motionOn) {
-        if (!motionOn) {
-            viewModel.motionSource.stop()
-            return@LaunchedEffect
-        }
-        viewModel.motionSource.start()
-        viewModel.motionSource.motion.collect { m ->
-            viewModel.onMotion(m.steer, m.aimX, m.aimY)
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val config = androidx.compose.ui.platform.LocalConfiguration.current
+    LaunchedEffect(lifecycle, viewModel, config.screenWidthDp, config.screenHeightDp) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            try {
+                kotlinx.coroutines.awaitCancellation()
+            } finally {
+                viewModel.resetGamepad()
+            }
         }
     }
-
-    // Neutralize everything when this screen goes away.
-    DisposableEffect(Unit) {
-        onDispose { viewModel.resetGamepad() }
+    LaunchedEffect(lifecycle, motionOn, isConnected) {
+        if (!motionOn || !isConnected) return@LaunchedEffect
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            viewModel.motionSource.start()
+            try {
+                viewModel.motionSource.motion.collect { m ->
+                    viewModel.onMotion(m.steer, m.aimX, m.aimY)
+                }
+            } finally {
+                viewModel.motionSource.stop()
+            }
+        }
     }
 
     // Round 14 — landscape a 64 dp app bar + a 50 dp banner left the pad ~156 dp

@@ -130,7 +130,7 @@ class DataStoreSettings @Inject constructor(
             hiddenTiles = p[Keys.HIDDEN_TILES] ?: "",
             extendedReports = p[Keys.EXTENDED_REPORTS] ?: false,
             powerProfile = p[Keys.POWER_PROFILE].toEnum(PowerProfile.BALANCED),
-            accentColor = p[Keys.ACCENT_COLOR] ?: "BLUE"
+            accentColor = p[Keys.ACCENT_COLOR] ?: AppSettings().accentColor
         )
 
     override val mouseSettings: Flow<MouseSettings> = safePrefs.map { p -> mouseFrom(p) }

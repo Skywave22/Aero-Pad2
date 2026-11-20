@@ -136,6 +136,12 @@ class RemoteControlViewModel @Inject constructor(
     // AEROPAD v1.0 #22 — click-and-drag lock: LEFT held until unlocked.
     private val _dragLock = kotlinx.coroutines.flow.MutableStateFlow(false)
     val dragLock: kotlinx.coroutines.flow.StateFlow<Boolean> = _dragLock
+    fun releaseDragLock() {
+        if (!_dragLock.value) return
+        _dragLock.value = false
+        sendAction(HidAction.MouseUp(MouseButton.LEFT))
+    }
+
     fun toggleDragLock() {
         if (_dragLock.value) {
             _dragLock.value = false
@@ -443,6 +449,7 @@ class RemoteControlViewModel @Inject constructor(
                     _dragLock.value = false
                     _scrollMode.value = false
                     lastFallbackStickKey = null
+                    gamepadState = GamepadSnapshot()
                     // F3 — never leave a modifier latched across a reconnect.
                     keyboardModifiers.clear()
                 }

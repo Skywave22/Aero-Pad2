@@ -201,7 +201,8 @@ class PointerFeelTest {
     }
 
     @Test
-    fun `the default palette keeps the original AeroPad blue`() {
-        assertEquals("BLUE", AccentPalette.DEFAULT.id)
+    fun `the default is violet and saved blue still resolves to blue`() {
+        assertEquals("VIOLET", AccentPalette.DEFAULT.id)
+        assertEquals(AccentPalette.BLUE, AccentPalette.fromId("BLUE"))
     }
 }

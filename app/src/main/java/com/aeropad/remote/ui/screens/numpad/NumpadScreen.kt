@@ -1,13 +1,15 @@
 package com.aeropad.remote.ui.screens.numpad
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -62,33 +64,30 @@ fun NumpadScreen(
             )
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            NotConnectedBanner(!isConnected)
-            rows.forEach { row ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    row.forEach { (label, key) ->
-                        // fillMaxHeight: keys scale with the weighted row, so
-                        // the grid never overflows on small screens.
-                        KeyCard(
-                            label = label,
-                            modifier = Modifier.weight(1f).fillMaxHeight(),
-                            emphasized = label == "Enter"
-                        ) { haptic(); viewModel.keyTap(key) }
+        BoxWithConstraints(Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+            // Preserve the familiar key layout; scroll only if rows would be smaller than 48 dp.
+            val minimumHeight = (rows.size * 48 + (rows.size - 1) * 8 + if (isConnected) 0 else 64).dp
+            val scroll = maxHeight < minimumHeight
+            Column(
+                modifier = Modifier.fillMaxSize().then(if (scroll) Modifier.verticalScroll(rememberScrollState()) else Modifier),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                NotConnectedBanner(!isConnected)
+                rows.forEach { row ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().then(if (scroll) Modifier.heightIn(min = 48.dp) else Modifier.weight(1f)),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        row.forEach { (label, key) ->
+                            KeyCard(
+                                label = label,
+                                modifier = Modifier.weight(1f).then(if (scroll) Modifier else Modifier.fillMaxHeight()),
+                                emphasized = label == "Enter"
+                            ) { haptic(); viewModel.keyTap(key) }
+                        }
                     }
                 }
             }
-            Spacer(Modifier.height(4.dp))
         }
     }
 }

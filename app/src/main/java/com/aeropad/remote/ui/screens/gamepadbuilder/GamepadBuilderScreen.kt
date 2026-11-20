@@ -1,6 +1,7 @@
 package com.aeropad.remote.ui.screens.gamepadbuilder
 
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -66,6 +67,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -96,6 +100,12 @@ import com.aeropad.remote.viewmodel.GamepadBuilderViewModel
 import com.aeropad.remote.ui.components.GlassCard
 import com.aeropad.remote.ui.components.cornerBrackets
 import com.aeropad.remote.ui.theme.LocalAppTheme
+import com.aeropad.remote.data.layout.JsonDocumentTooLarge
+import com.aeropad.remote.data.layout.readJsonDocument
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import timber.log.Timber
 
 /**
@@ -109,6 +119,10 @@ fun GamepadBuilderScreen(
 ) {
     val playing by viewModel.playing.collectAsStateWithLifecycle()
     val draft by viewModel.draft.collectAsStateWithLifecycle()
+
+    BackHandler(enabled = playing != null || draft != null) {
+        if (playing != null) viewModel.stopPlaying() else viewModel.closeDraft()
+    }
 
     when {
         playing != null -> GamepadPlayer(viewModel)
@@ -134,15 +148,25 @@ private fun ProfileList(onBack: () -> Unit, viewModel: GamepadBuilderViewModel) 
     val exportPayload by viewModel.exportPayload.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val snackbar = remember { SnackbarHostState() }
+    val documentScope = rememberCoroutineScope()
 
     val importLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         if (uri == null) return@rememberLauncherForActivityResult
-        val text = runCatching {
-            context.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() }
-        }.onFailure { Timber.e(it, "gamepad import read failed") }.getOrNull()
-        viewModel.importFromJson(text)
+        documentScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    context.contentResolver.openInputStream(uri)?.use { it.readJsonDocument() }
+                        ?: throw java.io.IOException("No input stream")
+                }
+            }
+            result.onSuccess { viewModel.importFromJson(it) }.onFailure { error ->
+                val hint = if (error is JsonDocumentTooLarge) "Choose a JSON file no larger than 1 MiB."
+                    else "Could not read that file. Choose a readable JSON file."
+                snackbar.showSnackbar("Gamepad import failed. $hint")
+            }
+        }
     }
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json")
@@ -373,11 +397,16 @@ private fun GamepadPlayer(viewModel: GamepadBuilderViewModel) {
     val lastPressed by viewModel.lastPressed.collectAsStateWithLifecycle()
     val profile = playing ?: return
 
-    // BUG FIX: if the user leaves via system back (route pop), the composable
-    // is disposed without stopPlaying() — neutralize HID state so no button
-    // stays pressed on the host. neutralizeHid() is idempotent.
-    androidx.compose.runtime.DisposableEffect(Unit) {
-        onDispose { viewModel.neutralizeHid() }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    androidx.compose.runtime.DisposableEffect(lifecycle, viewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_PAUSE) viewModel.suspendPlayingInput()
+        }
+        lifecycle.addObserver(observer)
+        onDispose {
+            lifecycle.removeObserver(observer)
+            viewModel.suspendPlayingInput()
+        }
     }
 
     val events = remember {

@@ -2,7 +2,11 @@ package com.aeropad.remote
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dagger.hilt.android.testing.HiltAndroidRule
@@ -29,33 +33,42 @@ class HomeScreenUiTest {
     @Before
     fun setUp() {
         hiltRule.inject()
+        if (composeRule.onAllNodesWithText("Skip").fetchSemanticsNodes().isNotEmpty()) {
+            composeRule.onNodeWithText("Skip").performClick()
+        }
     }
 
     @Test
     fun homeShowsAppTitleAndTiles() {
         composeRule.onNodeWithText("AeroPad").assertIsDisplayed()
-        // Round 19 — the old "Connect to a device" button and the status card
-        // above it were merged into one tap-to-act status row, so the button
-        // label no longer exists. The section labels and the brand tagline are
-        // the stable things to assert on.
-        composeRule.onNodeWithText("Your PC, in your hand").assertIsDisplayed()
-        composeRule.onNodeWithText("CONTROLS").assertIsDisplayed()
+        composeRule.onNodeWithText("Bluetooth remote").assertIsDisplayed()
+        composeRule.onNodeWithText("Controls").assertIsDisplayed()
         composeRule.onNodeWithText("Mouse").assertIsDisplayed()
         composeRule.onNodeWithText("Keyboard").assertIsDisplayed()
-        composeRule.onNodeWithText("Layouts").assertIsDisplayed()
+        composeRule.onNodeWithTag("dashboardGrid").performScrollToNode(hasText("Macros"))
         composeRule.onNodeWithText("Macros").assertIsDisplayed()
     }
 
     @Test
-    fun settingsTileOpensSettings() {
+    fun settingsDockOpensSettings() {
         composeRule.onNodeWithText("Settings").performClick()
         composeRule.onNodeWithText("Appearance").assertIsDisplayed()
-        composeRule.onNodeWithText("Mouse & trackpad").assertIsDisplayed()
+        composeRule.onNodeWithText("Search settings").assertIsDisplayed()
     }
 
     @Test
     fun helpTileOpensHelp() {
+        composeRule.onNodeWithTag("dashboardGrid").performScrollToNode(hasText("Help"))
         composeRule.onNodeWithText("Help").performClick()
         composeRule.onNodeWithText("PC can't find my phone").assertIsDisplayed()
+    }
+    @Test
+    fun disconnectedControlOffersPairing() {
+        composeRule.onNodeWithText("Mouse").performClick()
+        composeRule.onNodeWithText("Not connected").assertIsDisplayed()
+        composeRule.onNodeWithText("Connect").performClick()
+        val bluetooth = composeRule.onAllNodesWithText("Bluetooth connection").fetchSemanticsNodes()
+        val permissions = composeRule.onAllNodesWithText("Bluetooth permissions").fetchSemanticsNodes()
+        check(bluetooth.isNotEmpty() || permissions.isNotEmpty())
     }
 }

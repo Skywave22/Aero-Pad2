@@ -119,7 +119,7 @@ class FlapGuard(
     fun onDrop(heldMs: Long, nowMs: Long): Rest? {
         if (heldMs >= stableLinkMs) {
             // It worked for a while — this is a normal drop, not a flap.
-            flaps = 0
+            onStableLink()
             return null
         }
         flaps++

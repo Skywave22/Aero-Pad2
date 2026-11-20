@@ -115,8 +115,11 @@ fun PermissionScreen(
             Spacer(Modifier.height(12.dp))
             Text(
                 text = "AeroPad acts as a Bluetooth keyboard and mouse for your PC. " +
-                    "Android requires Nearby Devices permissions to connect and to make your phone visible to the PC. " +
-                    "No data leaves your devices.",
+                    if (android.os.Build.VERSION.SDK_INT >= 31) {
+                        "Allow Nearby Devices to discover and connect to a host."
+                    } else {
+                        "Android 10 and 11 require location permission for nearby Bluetooth discovery."
+                    },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
