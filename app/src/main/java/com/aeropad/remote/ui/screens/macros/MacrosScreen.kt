@@ -41,8 +41,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import com.aeropad.remote.ui.components.StudioTopBar
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
@@ -99,7 +98,7 @@ fun MacrosScreen(
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
-            TopAppBar(
+            StudioTopBar(
                 title = {
                     Text(
                         text = if (spec.monoFont) "MACROS" else "Macros",
@@ -112,7 +111,6 @@ fun MacrosScreen(
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
                 actions = {
                     // AEROPAD v1.0 #28 — panic button: instant macro cancel.
                     val isRunning by viewModel.isRunning.collectAsStateWithLifecycle()
@@ -365,7 +363,7 @@ private fun MacroEditor(viewModel: MacrosViewModel) {
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
-            TopAppBar(
+            StudioTopBar(
                 title = {
                     Text(
                         text = if (themeSpec.monoFont) {
@@ -390,7 +388,6 @@ private fun MacroEditor(viewModel: MacrosViewModel) {
                         Icon(Icons.Rounded.Save, contentDescription = "Save")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
         }
     ) { padding ->

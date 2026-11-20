@@ -40,7 +40,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import com.aeropad.remote.ui.components.StudioTopBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -152,7 +152,7 @@ fun LayoutsScreen(
         Scaffold(
         containerColor = androidx.compose.ui.graphics.Color.Transparent,
             topBar = {
-                TopAppBar(
+                StudioTopBar(
                     title = { Text(activeProfile.spec.name) },
                     navigationIcon = {
                         IconButton(onClick = { viewModel.closeProfile() }) {
@@ -219,7 +219,7 @@ fun LayoutsScreen(
         containerColor = androidx.compose.ui.graphics.Color.Transparent,
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
-            TopAppBar(
+            StudioTopBar(
                 title = { Text("Layouts") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

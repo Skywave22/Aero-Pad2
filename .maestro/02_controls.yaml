@@ -1,6 +1,6 @@
-# AeroPad — every control screen opens and renders its primary surface.
+# Open shortcuts via the complete Controls library.
 appId: com.aeropad.remote
-name: 02 control screens
+name: 02 control library
 ---
 - launchApp:
     clearState: true
@@ -9,39 +9,14 @@ name: 02 control screens
       visible: "Skip"
     commands:
       - tapOn: "Skip"
-
-- tapOn: "Mouse"
-- assertVisible: "Not connected"
+- tapOn: "Controls"
+- assertVisible: "Control library"
+- tapOn: "Trackpad"
+- assertVisible: "TRACKPAD AREA"
 - back
-
 - tapOn: "Keyboard"
 - assertVisible: "Not connected"
 - back
-
-- scrollUntilVisible:
-    element:
-      text: "Gamepad"
-    direction: DOWN
-- tapOn: "Gamepad"
-- assertVisible: "Not connected"
-- back
-
-- scrollUntilVisible:
-    element:
-      text: "Multimedia"
-    direction: DOWN
-- tapOn: "Multimedia"
-- assertVisible: "Not connected"
-- back
-
-- scrollUntilVisible:
-    element:
-      text: "Presenter"
-    direction: DOWN
-- tapOn: "Presenter"
-- assertVisible: "Not connected"
-- back
-
 - scrollUntilVisible:
     element:
       text: "Text & Clips"
@@ -49,3 +24,23 @@ name: 02 control screens
 - tapOn: "Text & Clips"
 - assertVisible: "Not connected"
 - back
+- scrollUntilVisible:
+    element:
+      text: "Gamepad"
+    direction: DOWN
+- tapOn: "Gamepad"
+- assertVisible: "Not connected"
+- back
+- scrollUntilVisible:
+    element:
+      text: "Media remote"
+    direction: DOWN
+- tapOn: "Media remote"
+- assertVisible: "Not connected"
+- back
+- scrollUntilVisible:
+    element:
+      text: "Presenter"
+    direction: DOWN
+- tapOn: "Presenter"
+- assertVisible: "Not connected"

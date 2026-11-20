@@ -1,6 +1,6 @@
-# Home and all dashboard sections must remain reachable with the dock visible.
+# Studio Home, live pairing entry and all four hubs.
 appId: com.aeropad.remote
-name: 01 launch and home
+name: 01 launch and studio home
 ---
 - launchApp:
     clearState: true
@@ -10,19 +10,18 @@ name: 01 launch and home
     commands:
       - tapOn: "Skip"
 - assertVisible: "AeroPad"
-- assertVisible: "Bluetooth remote"
-- assertVisible: "Controls"
-- assertVisible: "Mouse"
-- assertVisible: "Keyboard"
+- assertVisible: "Control center"
 - assertVisible: "Settings"
-- assertNotVisible: "v3.6.1"
 - scrollUntilVisible:
     element:
-      text: "Custom layouts"
+      text: "Quick controls"
     direction: DOWN
+- tapOn: "View all"
+- assertVisible: "Control library"
+- tapOn: "Home"
 - scrollUntilVisible:
     element:
-      text: "Help"
+      text: "Studio tools"
     direction: DOWN
 - scrollUntilVisible:
     element:
@@ -30,5 +29,5 @@ name: 01 launch and home
     direction: DOWN
 - scrollUntilVisible:
     element:
-      text: "AeroPad"
-    direction: UP
+      text: "Help"
+    direction: DOWN

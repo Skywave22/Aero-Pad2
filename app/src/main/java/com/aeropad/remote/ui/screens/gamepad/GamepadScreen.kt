@@ -42,7 +42,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import com.aeropad.remote.ui.components.StudioTopBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
@@ -142,7 +142,7 @@ fun GamepadScreen(
     Scaffold(
         containerColor = androidx.compose.ui.graphics.Color.Transparent,
         topBar = {
-            if (!fullBleedPad) TopAppBar(
+            if (!fullBleedPad) StudioTopBar(
                 title = { Text("Gamepad") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

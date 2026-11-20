@@ -1,6 +1,6 @@
-# AeroPad — landscape walk.
+# Check that the full dashboard and its live controls are reachable in landscape.
 appId: com.aeropad.remote
-name: 03 landscape
+name: 03 studio landscape
 ---
 - launchApp:
     clearState: true
@@ -9,17 +9,15 @@ name: 03 landscape
       visible: "Skip"
     commands:
       - tapOn: "Skip"
-
 - setOrientation: LANDSCAPE_LEFT
-
 - assertVisible: "AeroPad"
-- assertVisible: "Mouse"
-
-# Scroll to the very bottom; the Quick Tools strip must be fully reachable.
 - scrollUntilVisible:
     element:
-      text: "Quick tools"
+      text: "Gamepad"
     direction: DOWN
+- tapOn: "Gamepad"
+- assertVisible: "Not connected"
+- back
 - scrollUntilVisible:
     element:
       text: "Air Mouse"
@@ -28,14 +26,4 @@ name: 03 landscape
     element:
       text: "Connection health"
     direction: DOWN
-
-# Open a control screen in landscape — the gamepad is the tightest layout.
-- scrollUntilVisible:
-    element:
-      text: "Gamepad"
-    direction: UP
-- tapOn: "Gamepad"
-- assertVisible: "Not connected"
-- back
-
 - setOrientation: PORTRAIT

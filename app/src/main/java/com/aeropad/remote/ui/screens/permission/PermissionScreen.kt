@@ -26,7 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import com.aeropad.remote.ui.components.StudioTopBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -80,7 +80,7 @@ fun PermissionScreen(
         containerColor = androidx.compose.ui.graphics.Color.Transparent,
         topBar = {
             if (onBack != null) {
-                TopAppBar(
+                StudioTopBar(
                     title = { Text("Permissions") },
                     navigationIcon = {
                         IconButton(onClick = onBack) {

@@ -17,17 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.unit.dp
 
-/**
- * AeroPad theme system — pure and simple.
- *
- * There are exactly TWO looks: **Light** (clean white) and **Dark**
- * (pure black, OLED-friendly). No theme gallery, no skins, no schedules —
- * the user picks Light / Dark / Follow system in Settings and that's it.
- *
- * [LocalAppTheme] carries the active [AppThemeSpec] design tokens to every
- * composable; [AeroPadAppTheme] bridges the tokens into Material 3 so all
- * screens are styled consistently from one place.
- */
+/** Studio design tokens shared by Material, Glass and Neon finishes. */
 val LocalAppTheme = staticCompositionLocalOf { AeroPadSpecs.DARK }
 
 /** The two built-in looks. */
@@ -40,15 +30,15 @@ object AeroPadSpecs {
         primary = AccentPalette.DEFAULT.light,
         onPrimary = AccentPalette.DEFAULT.onAccentLight,
         secondary = androidx.compose.ui.graphics.Color(0xFF3D6D66),
-        background = androidx.compose.ui.graphics.Color(0xFFF8F7FB),
-        onBackground = androidx.compose.ui.graphics.Color(0xFF191624),
-        surface = androidx.compose.ui.graphics.Color.White,
-        onSurface = androidx.compose.ui.graphics.Color(0xFF191624),
-        surfaceVariant = androidx.compose.ui.graphics.Color(0xFFEFEAF7),
-        onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFF514A61),
-        outline = androidx.compose.ui.graphics.Color(0xFFC8BED7),
+        background = androidx.compose.ui.graphics.Color(0xFFFCF5F3),
+        onBackground = androidx.compose.ui.graphics.Color(0xFF19161C),
+        surface = androidx.compose.ui.graphics.Color(0xFFFFFBFA),
+        onSurface = androidx.compose.ui.graphics.Color(0xFF19161C),
+        surfaceVariant = androidx.compose.ui.graphics.Color(0xFFF2E9F4),
+        onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFF544B5C),
+        outline = androidx.compose.ui.graphics.Color(0xFFC3B5C6),
         surfaceAlpha = 1f,
-        cornerRadius = 20
+        cornerRadius = 16
     )
 
     val DARK = AppThemeSpec(
@@ -60,13 +50,13 @@ object AeroPadSpecs {
         secondary = androidx.compose.ui.graphics.Color(0xFF8AD5C6),
         background = androidx.compose.ui.graphics.Color.Black,
         onBackground = androidx.compose.ui.graphics.Color(0xFFF3F4F6),
-        surface = androidx.compose.ui.graphics.Color(0xFF15131C),
+        surface = androidx.compose.ui.graphics.Color(0xFF1A1723),
         onSurface = androidx.compose.ui.graphics.Color(0xFFF3F4F6),
-        surfaceVariant = androidx.compose.ui.graphics.Color(0xFF24202F),
+        surfaceVariant = androidx.compose.ui.graphics.Color(0xFF2A2436),
         onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFFBDB4CA),
         outline = androidx.compose.ui.graphics.Color(0xFF463F53),
         surfaceAlpha = 1f,
-        cornerRadius = 20
+        cornerRadius = 16
     )
 
     fun byMode(dark: Boolean): AppThemeSpec = if (dark) DARK else LIGHT
@@ -140,6 +130,7 @@ fun AeroPadAppTheme(
             background = spec.background, onBackground = spec.onBackground,
             surface = spec.surface, onSurface = spec.onSurface,
             surfaceVariant = spec.surfaceVariant, onSurfaceVariant = spec.onSurfaceVariant,
+            surfaceContainer = spec.surfaceVariant,
             outline = spec.outline,
             outlineVariant = spec.outline.copy(alpha = 0.62f).compositeOver(spec.surface),
             error = spec.error, onError = androidx.compose.ui.graphics.Color.White,
@@ -154,6 +145,7 @@ fun AeroPadAppTheme(
             background = spec.background, onBackground = spec.onBackground,
             surface = spec.surface, onSurface = spec.onSurface,
             surfaceVariant = spec.surfaceVariant, onSurfaceVariant = spec.onSurfaceVariant,
+            surfaceContainer = spec.surfaceVariant,
             outline = spec.outline,
             outlineVariant = spec.outline.copy(alpha = 0.62f).compositeOver(spec.surface),
             error = spec.error, onError = androidx.compose.ui.graphics.Color.White,
@@ -206,6 +198,7 @@ private fun animateColorScheme(target: androidx.compose.material3.ColorScheme): 
         surface = c(target.surface),
         onSurface = c(target.onSurface),
         surfaceVariant = c(target.surfaceVariant),
+        surfaceContainer = c(target.surfaceContainer),
         onSurfaceVariant = c(target.onSurfaceVariant),
         outline = c(target.outline),
         error = c(target.error),

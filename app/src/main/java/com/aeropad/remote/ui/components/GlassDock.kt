@@ -1,249 +1,80 @@
 package com.aeropad.remote.ui.components
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.aeropad.remote.ui.navigation.Routes
+import com.aeropad.remote.ui.theme.AeroIcons
 
-/**
- * Floating bottom dock — the app's four hubs: Home, Layouts, Devices,
- * Settings. One-handed friendly: thumb-reachable tabs, shown only on
- * top-level destinations so control surfaces keep the full screen.
- */
-data class DockItem(val route: String, val label: String, val icon: AppIcon)
+private data class DockItem(val route: String, val label: String, val icon: AppIcon)
 
-val DockItems = listOf(
-    DockItem("home", "Home", AppIcon.HOME),
-    DockItem("layouts", "Layouts", AppIcon.LAYOUTS),
-    DockItem("devices", "Devices", AppIcon.DEVICES),
-    DockItem("settings", "Settings", AppIcon.SETTINGS)
+private val dockItems = listOf(
+    DockItem(Routes.HOME, "Home", AppIcon.HOME),
+    DockItem(Routes.CONTROLS, "Controls", AppIcon.PAD_BUILDER),
+    DockItem(Routes.LAYOUTS, "Layouts", AppIcon.LAYOUTS),
+    DockItem(Routes.SETTINGS, "Settings", AppIcon.SETTINGS)
 )
 
-/**
- * Modern floating dock.
- *
- * What changed and why:
- *  - A **sliding indicator** now travels between tabs instead of each tab
- *    flashing its own background. Motion tells the user where they came from,
- *    which a per-tab highlight cannot do.
- *  - The bar is a full-width pill with a hairline border and a soft two-stage
- *    shadow, so it reads as a raised surface on any wallpaper — the old one
- *    disappeared on dark wallpapers because it was a flat `surface` colour.
- *  - The selected icon scales up slightly and switches to a filled glyph with
- *    a primary label; unselected tabs stay quiet so the eye lands on one place.
- *  - Every tap still fires a haptic tick, and `Role.Tab` + `selectable` keep
- *    TalkBack announcing "selected".
- *
- * The indicator is positioned from the measured width (BoxWithConstraints)
- * rather than from an assumed tab size, so it stays aligned on any screen
- * width, in landscape, and under display-size scaling.
- */
+/** In-flow Studio tab bar. Control surfaces use the available height without this bar. */
 @Composable
-fun GlassDock(
-    currentRoute: String?,
-    onNavigate: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val reduceMotion = LocalReduceMotion.current
-    val selectedIndex = DockItems.indexOfFirst { currentRoute?.startsWith(it.route) == true }
-        .coerceAtLeast(0)
-
-    Box(
-        modifier = modifier
-            .widthIn(max = Adaptive.DOCK_MAX_WIDTH)
-            .fillMaxWidth()
-            // Centre + cap the width: stretching a 4-tab pill across a landscape
-            // window leaves the tabs stranded at the extremes.
-            .padding(
-                horizontal = if (isLandscape()) 20.dp else 12.dp,
-                vertical = if (isLandscape()) 4.dp else 10.dp
-            )
-            .shadow(
-                elevation = 4.dp,
-                shape = RoundedCornerShape(26.dp),
-                clip = false,
-                ambientColor = Color.Black.copy(alpha = 0.35f),
-                spotColor = Color.Black.copy(alpha = 0.45f)
-            )
-            .clip(RoundedCornerShape(26.dp))
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        MaterialTheme.colorScheme.surface,
-                        MaterialTheme.colorScheme.surface.copy(alpha = 0.98f)
-                    )
-                )
-            )
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
-                shape = RoundedCornerShape(26.dp)
-            )
-            .padding(
-                horizontal = 8.dp,
-                vertical = if (isLandscape()) 3.dp else 7.dp
-            )
-    ) {
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-            val tabWidth = maxWidth / DockItems.size
-            val indicatorOffset by animateDpAsState(
-                targetValue = tabWidth * selectedIndex,
-                animationSpec = spring(
-                    dampingRatio = 0.78f,
-                    stiffness = Spring.StiffnessMediumLow
-                ),
-                label = "dockIndicator"
-            )
-
-            // ---------- sliding indicator ----------
-            Box(
-                modifier = Modifier
-                    .offset(x = if (reduceMotion) tabWidth * selectedIndex else indicatorOffset)
-                    .width(tabWidth)
-                    .height(if (isLandscape()) 48.dp else 52.dp)
-                    .padding(horizontal = 4.dp)
-                    .clip(RoundedCornerShape(19.dp))
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.20f),
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
-                            )
-                        )
-                    )
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                DockItems.forEachIndexed { index, item ->
-                    DockTab(
-                        item = item,
-                        selected = index == selectedIndex &&
-                            currentRoute?.startsWith(item.route) == true,
-                        width = tabWidth,
-                        onClick = { onNavigate(item.route) }
-                    )
+fun GlassDock(currentRoute: String?, onNavigate: (String) -> Unit, modifier: Modifier = Modifier, hapticsEnabled: Boolean = true) {
+    val compact = isLandscape()
+    val colors = MaterialTheme.colorScheme
+    val pack = LocalIconPack.current
+    val haptic = rememberHaptic(hapticsEnabled)
+    val activePlate = colors.primary.copy(alpha = 0.26f).compositeOver(colors.surface)
+    Column(modifier.fillMaxWidth().background(colors.surface), horizontalAlignment = Alignment.CenterHorizontally) {
+        HorizontalDivider(color = colors.outlineVariant)
+        Row(Modifier.widthIn(max = 640.dp).fillMaxWidth().selectableGroup().padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically) {
+            dockItems.forEach { item ->
+                val selected = currentRoute == item.route
+                val tint = if (selected) colors.primary else colors.onSurfaceVariant
+                Column(Modifier.weight(1f)
+                    .heightIn(min = if (compact) 48.dp else 64.dp)
+                    .clip(MaterialTheme.shapes.medium)
+                    .selectable(selected = selected, role = Role.Tab, onClick = { if (!selected) { haptic(); onNavigate(item.route) } })
+                    .then(if (compact) Modifier.semantics { contentDescription = item.label } else Modifier)
+                    .padding(horizontal = 3.dp, vertical = 5.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterVertically)) {
+                    Box(Modifier.fillMaxWidth(.85f).height(if (compact) 32.dp else 34.dp)
+                        .clip(CircleShape).then(if (selected) Modifier.background(activePlate) else Modifier),
+                        contentAlignment = Alignment.Center) {
+                        val image = if (item.route == Routes.LAYOUTS && pack == IconPack.ROUNDED) AeroIcons.Deck
+                            else iconFor(item.icon, if (pack == IconPack.ROUNDED) IconPack.OUTLINED else pack)
+                        Icon(image, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
+                    }
+                    if (!compact) Text(item.label, color = tint, style = MaterialTheme.typography.labelSmall,
+                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium, textAlign = TextAlign.Center)
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun DockTab(
-    item: DockItem,
-    selected: Boolean,
-    width: androidx.compose.ui.unit.Dp,
-    onClick: () -> Unit
-) {
-    val tint by animateColorAsState(
-        targetValue = if (selected) MaterialTheme.colorScheme.primary
-        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
-        label = "dockTint"
-    )
-    val iconScale by animateFloatAsState(
-        targetValue = if (selected) 1.08f else 1f,
-        animationSpec = spring(dampingRatio = 0.6f, stiffness = Spring.StiffnessMedium),
-        label = "dockScale"
-    )
-    val reduceMotion = LocalReduceMotion.current
-    val view = LocalView.current
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-        modifier = Modifier
-            .width(width)
-            .heightIn(min = if (isLandscape()) 48.dp else 52.dp)
-            // A rounded rect, not a circle: clipping a ~65dp-wide tab to a
-            // circle used to slice the corners off the label (the dock
-            // literally rendered "Layouts" as "ayouts").
-            .clip(RoundedCornerShape(19.dp))
-            // Round 11 — landscape hides the text label to save height, which
-            // left the tab as a bare icon: TalkBack had nothing to say and no
-            // test could find it. The label becomes the tab's accessible name
-            // exactly when it is not drawn.
-            .then(
-                if (isLandscape()) Modifier.semantics { this.contentDescription = item.label }
-                else Modifier
-            )
-            .selectable(
-                selected = selected,
-                role = Role.Tab,
-                onClick = {
-                    if (!selected) {
-                        view.performHapticFeedback(
-                            android.view.HapticFeedbackConstants.KEYBOARD_TAP
-                        )
-                        onClick()
-                    }
-                }
-            )
-            .padding(vertical = 4.dp)
-    ) {
-        Icon(
-            iconFor(item.icon, LocalIconPack.current),
-            // The visible label already names the tab — announcing it twice
-            // makes TalkBack say "Home, Home".
-            contentDescription = null,
-            tint = tint,
-            modifier = Modifier
-                .size(22.dp)
-                .graphicsLayer { scaleX = if (reduceMotion) 1f else iconScale; scaleY = scaleX }
-        )
-        if (!isLandscape()) {
-            Box(modifier = Modifier.height(3.dp))
-        }
-        // Landscape is ~190 dp tall on a small phone: the icon is enough, and
-        // TalkBack still announces the label through the tab's semantics.
-        if (!isLandscape()) Text(
-            item.label,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-            color = tint,
-            maxLines = 1,
-            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-        )
     }
 }

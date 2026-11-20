@@ -41,9 +41,11 @@ class HomeScreenUiTest {
     @Test
     fun homeShowsAppTitleAndTiles() {
         composeRule.onNodeWithText("AeroPad").assertIsDisplayed()
-        composeRule.onNodeWithText("Bluetooth remote").assertIsDisplayed()
+        composeRule.onNodeWithText("Control center").assertIsDisplayed()
         composeRule.onNodeWithText("Controls").assertIsDisplayed()
-        composeRule.onNodeWithText("Mouse").assertIsDisplayed()
+        composeRule.onNodeWithTag("dashboardGrid").performScrollToNode(hasText("Trackpad"))
+        composeRule.onNodeWithText("Trackpad").assertIsDisplayed()
+        composeRule.onNodeWithTag("dashboardGrid").performScrollToNode(hasText("Keyboard"))
         composeRule.onNodeWithText("Keyboard").assertIsDisplayed()
         composeRule.onNodeWithTag("dashboardGrid").performScrollToNode(hasText("Macros"))
         composeRule.onNodeWithText("Macros").assertIsDisplayed()
@@ -64,11 +66,22 @@ class HomeScreenUiTest {
     }
     @Test
     fun disconnectedControlOffersPairing() {
-        composeRule.onNodeWithText("Mouse").performClick()
+        composeRule.onNodeWithTag("dashboardGrid").performScrollToNode(hasText("Trackpad"))
+        composeRule.onNodeWithText("Trackpad").performClick()
         composeRule.onNodeWithText("Not connected").assertIsDisplayed()
         composeRule.onNodeWithText("Connect").performClick()
         val bluetooth = composeRule.onAllNodesWithText("Bluetooth connection").fetchSemanticsNodes()
         val permissions = composeRule.onAllNodesWithText("Bluetooth permissions").fetchSemanticsNodes()
         check(bluetooth.isNotEmpty() || permissions.isNotEmpty())
+    }
+    @Test
+    fun viewAllAndDockBothOpenTheControlLibrary() {
+        composeRule.onNodeWithTag("dashboardGrid").performScrollToNode(hasText("View all"))
+        composeRule.onNodeWithText("View all").performClick()
+        composeRule.onNodeWithText("Control library").assertIsDisplayed()
+        composeRule.onNodeWithText("Pointer & typing").assertIsDisplayed()
+        composeRule.onNodeWithText("Home").performClick()
+        composeRule.onNodeWithText("Controls").performClick()
+        composeRule.onNodeWithText("Control library").assertIsDisplayed()
     }
 }

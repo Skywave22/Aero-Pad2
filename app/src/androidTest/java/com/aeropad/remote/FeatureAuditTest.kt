@@ -49,7 +49,7 @@ class FeatureAuditTest {
 
     /** Every destination in Routes — including the two dialogs-as-screens. */
     private val routes = listOf(
-        "home", "layouts", "layout_editor", "my_layout", "keyboard", "full_keyboard",
+        "home", "controls", "layouts", "layout_editor", "my_layout", "keyboard", "full_keyboard",
         "numpad", "mouse", "air_mouse", "gamepad", "gamepad_builder", "multimedia",
         "presenter", "android_remote", "touch_screen", "text_clips", "macros",
         "shortcut_decks", "pc_combo", "devices", "connection", "permissions",

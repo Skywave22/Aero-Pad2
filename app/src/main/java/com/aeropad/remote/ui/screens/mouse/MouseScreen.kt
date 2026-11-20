@@ -37,8 +37,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import com.aeropad.remote.ui.components.StudioTopBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -48,11 +47,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
@@ -70,7 +67,10 @@ import com.aeropad.remote.ui.components.KeyCard
 import com.aeropad.remote.ui.components.HintBar
 import com.aeropad.remote.ui.components.NotConnectedBanner
 import com.aeropad.remote.ui.components.rememberHaptic
+import com.aeropad.remote.ui.components.studioGrid
 import com.aeropad.remote.ui.theme.LocalAppTheme
+import com.aeropad.remote.ui.theme.StudioIndexStyle
+import com.aeropad.remote.ui.theme.StudioTone
 import com.aeropad.remote.viewmodel.RemoteControlViewModel
 import com.aeropad.remote.viewmodel.SettingsViewModel
 
@@ -121,8 +121,8 @@ fun MouseScreen(
         containerColor = Color.Transparent,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = { Text(if (spec.monoFont) "MOUSE" else "Mouse") },
+            StudioTopBar(
+                title = { Text(if (spec.monoFont) "TRACKPAD" else "Trackpad") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
@@ -134,7 +134,6 @@ fun MouseScreen(
                         Icon(Icons.Rounded.Settings, contentDescription = "Mouse tuning")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
         }
     ) { padding ->
@@ -184,8 +183,9 @@ fun MouseScreen(
                 // ---------- Trackpad ----------
                 GlassCard(
                     modifier = Modifier
-                        .weight(1f).shadow3DPad()
+                        .weight(1f)
                         .fillMaxHeight()
+                        .clip(MaterialTheme.shapes.medium)
                         .onSizeChanged { padWidthPx = it.width.toFloat() }
                         .pointerInput(Unit) {
                             // Two-finger tap = right click (laptop trackpad
@@ -227,33 +227,11 @@ fun MouseScreen(
                             }
                         }
                 ) {
-                    // Specular streak overlay running diagonally
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.linearGradient(
-                                    colors = listOf(
-                                        Color.White.copy(alpha = 0.0f),
-                                        Color.White.copy(alpha = 0.08f),
-                                        Color.White.copy(alpha = 0.0f)
-                                    ),
-                                    start = Offset(0f, 0f),
-                                    end = Offset(300f, 850f)
-                                )
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        // STITCH REDESIGN — ghosted watermark caption.
-                        Text(
-                            text = "TRACKPAD AREA",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                letterSpacing = androidx.compose.ui.unit.TextUnit(
-                                    3f, androidx.compose.ui.unit.TextUnitType.Sp)
-                            ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
+                    val colors = MaterialTheme.colorScheme
+                    Box(Modifier.fillMaxSize().background(StudioTone.VIOLET.container(spec.isDark))
+                        .studioGrid(colors.onSurfaceVariant.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
+                        Text("TRACKPAD AREA", style = StudioIndexStyle, color = colors.onSurfaceVariant,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                     }
                 }
 
@@ -455,6 +433,3 @@ private fun MouseButtonsColumn(
         }
     }
 }
-
-private fun Modifier.shadow3DPad(): Modifier =
-    this.graphicsLayer { shadowElevation = 8f * density }

@@ -20,7 +20,7 @@ object RouteGuard {
 
     /** Destinations registered directly on the root graph in AeroPadApp. */
     val TOP_LEVEL = setOf(
-        "home", "permissions", "connection", "devices", "mouse", "keyboard",
+        "home", "controls", "permissions", "connection", "devices", "mouse", "keyboard",
         "numpad", "multimedia", "presenter", "gamepad", "android_remote",
         "touch_screen", "shortcut_decks", "text_clips", "my_layout", "settings",
         "help", "layouts", "macros", "gamepad_builder", "full_keyboard",

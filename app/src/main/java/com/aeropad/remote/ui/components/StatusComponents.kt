@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.os.Build
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Bluetooth
 import androidx.compose.material.icons.rounded.WarningAmber
@@ -29,6 +29,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -36,6 +37,8 @@ import androidx.compose.ui.unit.dp
 import com.aeropad.remote.BuildConfig
 import com.aeropad.remote.model.HidConnectionState
 import com.aeropad.remote.ui.theme.LocalAppTheme
+import com.aeropad.remote.ui.theme.StudioIndexStyle
+import com.aeropad.remote.ui.theme.StudioPalette
 
 data class StatusVisual(val color: Color, val title: String, val subtitle: String)
 
@@ -134,50 +137,35 @@ fun ConnectionStatusCard(
     val context = LocalContext.current
     var copied by remember(state) { mutableStateOf(false) }
 
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(20.dp))
-            .padding(16.dp)
-    ) {
-        Column {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .background(visual.color, CircleShape)
-                )
-                Spacer(Modifier.size(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = visual.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = visual.subtitle,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                // UI fix — this always drew a red Bluetooth logo, even for
-                // permission and ROM problems where Bluetooth is not the
-                // issue. Show a warning glyph for actionable/error states so
-                // the icon matches the message.
-                Icon(
-                    imageVector = when (state) {
-                        is HidConnectionState.PermissionMissing,
-                        is HidConnectionState.HidUnsupported,
-                        is HidConnectionState.Error -> Icons.Rounded.WarningAmber
-                        else -> Icons.Rounded.Bluetooth
-                    },
-                    contentDescription = null,
-                    tint = visual.color,
-                    modifier = Modifier.size(22.dp)
-                )
+    val colors = MaterialTheme.colorScheme
+    val signal = when (state) {
+        is HidConnectionState.Connected -> StudioPalette.Lime
+        is HidConnectionState.Connecting, HidConnectionState.Initializing -> Color(0xFFFFD69A)
+        is HidConnectionState.Error, is HidConnectionState.HidUnsupported -> Color(0xFFFFB7B7)
+        else -> StudioPalette.BlueprintCaption
+    }
+    val shape = MaterialTheme.shapes.medium
+    Column(modifier.fillMaxWidth().clip(shape).background(colors.surface).border(1.dp, colors.outlineVariant, shape)) {
+        Column(Modifier.fillMaxWidth().background(StudioPalette.Blueprint)
+            .studioGrid(StudioPalette.BlueprintInk.copy(alpha = 0.07f)).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Box(Modifier.size(6.dp).background(signal, CircleShape))
+                Text("CONNECTION HUB", style = StudioIndexStyle, color = StudioPalette.BlueprintCaption)
             }
-            if (tips.isNotEmpty()) {
-                Spacer(Modifier.height(10.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(Modifier.weight(1f)) {
+                    Text(visual.title, style = MaterialTheme.typography.headlineSmall, color = StudioPalette.BlueprintInk)
+                    Text(visual.subtitle, style = MaterialTheme.typography.bodyMedium, color = StudioPalette.BlueprintCaption)
+                }
+                Icon(when (state) {
+                    HidConnectionState.PermissionMissing, is HidConnectionState.HidUnsupported, is HidConnectionState.Error -> Icons.Rounded.WarningAmber
+                    else -> Icons.Rounded.Bluetooth
+                }, contentDescription = null, tint = signal, modifier = Modifier.size(22.dp))
+            }
+        }
+        if (tips.isNotEmpty()) {
+            Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
                 tips.forEach { line ->
                     Text(
                         text = line,

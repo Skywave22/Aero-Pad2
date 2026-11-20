@@ -63,7 +63,7 @@ import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import com.aeropad.remote.ui.components.StudioTopBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -188,7 +188,7 @@ private fun ProfileList(onBack: () -> Unit, viewModel: GamepadBuilderViewModel) 
         containerColor = Color.Transparent,
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
-            TopAppBar(
+            StudioTopBar(
                 title = { Text("Gamepad Builder") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -437,7 +437,7 @@ private fun GamepadPlayer(viewModel: GamepadBuilderViewModel) {
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
-            TopAppBar(
+            StudioTopBar(
                 title = {
                     Text(
                         profile.spec.name +
@@ -696,7 +696,7 @@ private fun GamepadEditor(viewModel: GamepadBuilderViewModel) {
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
-            TopAppBar(
+            StudioTopBar(
                 title = { Text(spec.name) },
                 navigationIcon = {
                     IconButton(onClick = { viewModel.closeDraft() }) {

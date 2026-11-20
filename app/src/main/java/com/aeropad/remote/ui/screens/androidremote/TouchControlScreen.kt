@@ -23,7 +23,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import com.aeropad.remote.ui.components.StudioTopBar
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.aeropad.remote.ui.components.NotConnectedBanner
+import com.aeropad.remote.ui.components.studioGrid
 import com.aeropad.remote.ui.components.rememberHaptic
 import com.aeropad.remote.viewmodel.RemoteControlViewModel
 import kotlin.math.roundToInt
@@ -82,7 +83,7 @@ fun TouchControlScreen(
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
-            TopAppBar(
+            StudioTopBar(
                 title = { Text("Touch Screen") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -124,6 +125,7 @@ fun TouchControlScreen(
                     .weight(1f)
                     .clip(RoundedCornerShape(20.dp))
                     .background(MaterialTheme.colorScheme.surfaceContainer)
+                    .studioGrid(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.12f))
                     .onSizeChanged { areaSize = it }
                     .pointerInput(areaSize, extended, isConnected) {
                         if (!extended || !isConnected || areaSize.width <= 0 || areaSize.height <= 0) return@pointerInput
@@ -153,11 +155,11 @@ fun TouchControlScreen(
                     },
                 contentAlignment = Alignment.Center
             ) {
+                val crosshair = MaterialTheme.colorScheme.primary.copy(alpha = 0.23f)
                 // Crosshair guides — mirrors the host's X/Y axes.
                 androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
-                    val tint = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.06f)
-                    drawLine(tint, Offset(size.width / 2f, 0f), Offset(size.width / 2f, size.height), 2f)
-                    drawLine(tint, Offset(0f, size.height / 2f), Offset(size.width, size.height / 2f), 2f)
+                    drawLine(crosshair, Offset(size.width / 2f, 0f), Offset(size.width / 2f, size.height), 2f)
+                    drawLine(crosshair, Offset(0f, size.height / 2f), Offset(size.width, size.height / 2f), 2f)
                 }
 
                 if (finger == null) {

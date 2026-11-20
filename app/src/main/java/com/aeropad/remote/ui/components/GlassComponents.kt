@@ -37,7 +37,7 @@ fun GlassCard(
     Box(
         modifier = modifier
             .background(MaterialTheme.colorScheme.surface, shape)
-            .border(borderWidth, MaterialTheme.colorScheme.outline.copy(alpha = 0.55f), shape)
+            .border(borderWidth, MaterialTheme.colorScheme.outlineVariant, shape)
     ) {
         content()
     }
@@ -127,7 +127,7 @@ fun HintBar(text: String, modifier: Modifier = Modifier) {
             )
     ) {
         androidx.compose.material3.Text(
-            text = "💡 $text",
+            text = text,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)

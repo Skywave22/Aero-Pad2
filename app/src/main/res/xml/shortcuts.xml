@@ -10,7 +10,7 @@
         android:shortcutShortLabel="@string/shortcut_keyboard">
         <intent
             android:action="com.aeropad.remote.OPEN_KEYBOARD"
-            android:targetPackage="com.aeropad.remote"
+            android:targetPackage="@string/shortcut_target_package"
             android:targetClass="com.aeropad.remote.MainActivity" />
     </shortcut>
     <shortcut
@@ -20,7 +20,7 @@
         android:shortcutShortLabel="@string/shortcut_mouse">
         <intent
             android:action="com.aeropad.remote.OPEN_MOUSE"
-            android:targetPackage="com.aeropad.remote"
+            android:targetPackage="@string/shortcut_target_package"
             android:targetClass="com.aeropad.remote.MainActivity" />
     </shortcut>
     <shortcut
@@ -30,7 +30,7 @@
         android:shortcutShortLabel="@string/shortcut_gamepad">
         <intent
             android:action="com.aeropad.remote.OPEN_GAMEPAD"
-            android:targetPackage="com.aeropad.remote"
+            android:targetPackage="@string/shortcut_target_package"
             android:targetClass="com.aeropad.remote.MainActivity" />
     </shortcut>
     <shortcut
@@ -40,7 +40,7 @@
         android:shortcutShortLabel="@string/shortcut_media">
         <intent
             android:action="com.aeropad.remote.OPEN_MEDIA"
-            android:targetPackage="com.aeropad.remote"
+            android:targetPackage="@string/shortcut_target_package"
             android:targetClass="com.aeropad.remote.MainActivity" />
     </shortcut>
 </shortcuts>

@@ -55,6 +55,7 @@ import androidx.navigation.navArgument
 import com.aeropad.remote.ui.screens.connection.ConnectionScreen
 import com.aeropad.remote.ui.screens.devices.DevicesScreen
 import com.aeropad.remote.ui.screens.home.HomeScreen
+import com.aeropad.remote.ui.screens.controls.ControlsScreen
 import com.aeropad.remote.ui.screens.permission.PermissionScreen
 import com.aeropad.remote.ui.screens.gamepad.GamepadScreen
 import com.aeropad.remote.ui.screens.fullkeyboard.FullKeyboardScreen
@@ -85,6 +86,7 @@ import com.aeropad.remote.ui.screens.settings.SettingsScreen
  */
 object Routes {
     const val HOME = "home"
+    const val CONTROLS = "controls"
     const val PERMISSIONS = "permissions"
     const val CONNECTION = "connection"
     const val DEVICES = "devices"
@@ -112,12 +114,12 @@ object Routes {
 }
 
 private val controlScreenLabels = mapOf(
-    Routes.MOUSE to "Mouse",
+    Routes.MOUSE to "Trackpad",
     Routes.AIR_MOUSE to "Air Mouse",
     Routes.KEYBOARD to "Keyboard",
     Routes.FULL_KEYBOARD to "Full Board",
     Routes.GAMEPAD to "Gamepad",
-    Routes.MULTIMEDIA to "Media",
+    Routes.MULTIMEDIA to "Media remote",
     Routes.PRESENTER to "Presenter",
     Routes.ANDROID to "Android",
     Routes.TOUCH to "Touch",
@@ -159,7 +161,7 @@ fun AeroPadApp(
 
     // UI/UX redesign: dock shows only on the four top-level hubs so control
     // surfaces (mouse/keyboard/gamepad...) keep the full screen.
-    val dockRoutes = setOf(Routes.HOME, Routes.LAYOUTS, Routes.DEVICES, Routes.SETTINGS)
+    val dockRoutes = setOf(Routes.HOME, Routes.CONTROLS, Routes.LAYOUTS, Routes.SETTINGS)
 
     // A4 + V2 MATRIX 5 b2 — Auto-apply per-host tuning overrides on connect + spoken alerts.
     val view = androidx.compose.ui.platform.LocalView.current
@@ -280,6 +282,13 @@ fun AeroPadApp(
                                 onNavigate = { route ->
                                     navController.navigate(route) { launchSingleTop = true }
                                 }
+                            )
+                        }
+                        composable(Routes.CONTROLS) {
+                            ControlsScreen(
+                                onBack = { navController.popBackStack() },
+                                onOpenDevices = { navController.navigate(Routes.DEVICES) { launchSingleTop = true } },
+                                onNavigate = { route -> navController.navigate(route) { launchSingleTop = true } }
                             )
                         }
                         composable(Routes.PERMISSIONS) {
@@ -415,7 +424,8 @@ fun AeroPadApp(
                                     restoreState = true
                                 }
                             },
-                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                            modifier = Modifier.align(Alignment.CenterHorizontally),
+                            hapticsEnabled = appSettings.touchVibrations
                         )
                     }
                 }

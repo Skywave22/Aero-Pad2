@@ -243,17 +243,17 @@ class ScreenshotTourTest {
 
         // Control surfaces — these are the screens that used to crash.
         val controls = listOf(
-            "Mouse" to "04-mouse",
+            "Trackpad" to "04-mouse",
             "Keyboard" to "05-keyboard",
             "Gamepad" to "06-gamepad",
-            "Multimedia" to "07-multimedia",
+            "Media remote" to "07-multimedia",
             "Presenter" to "08-presenter",
             "Android" to "09-android",
             "Text & Clips" to "10-text-clips"
         )
         for ((label, name) in controls) {
             scrollToTop()
-            if (tap(label)) {
+            if (findAndTapExact(label, maxScrolls = 6)) {
                 shot(name)
                 back()
             } else {
@@ -261,7 +261,7 @@ class ScreenshotTourTest {
             }
         }
 
-        // Hubs (these show the floating dock).
+        // Hubs (the Studio tabs stay in flow beneath the content).
         scrollToTop()
         if (tap("Layouts")) {
             shot("11-layouts")
@@ -271,9 +271,10 @@ class ScreenshotTourTest {
             back()
         }
         scrollToTop()
-        if (tap("Devices")) {
+        if (tap("Controls") && tapAny("Devices")) {
             shot("13-devices")
             back()
+            tap("Home")
         }
         scrollToTop()
         if (tap("Settings")) {
@@ -387,7 +388,7 @@ class ScreenshotTourTest {
         openByShortcut(null)
 
         // Top-level hubs, reached through the dock (no scrolling needed).
-        val hubs = listOf("Layouts" to "L06-layouts", "Devices" to "L07-devices", "Settings" to "L08-settings")
+        val hubs = listOf("Layouts" to "L06-layouts", "Controls" to "L07-controls", "Settings" to "L08-settings")
         hubs.forEach { (hub, name) ->
             if (tapAny(hub)) {
                 shot(name)

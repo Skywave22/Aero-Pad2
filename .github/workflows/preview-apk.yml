@@ -1,0 +1,56 @@
+name: AeroPad Preview APK
+
+on:
+  push:
+    branches: ['arena/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: preview-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx3g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v3
+
+      - name: Assemble installable preview
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug -PstudioPreview=true --stacktrace
+          mkdir -p preview
+          cp app/build/outputs/apk/debug/app-debug.apk preview/AeroPad-Preview.apk
+
+      - name: Verify APK and package
+        run: |
+          tools=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)
+          "$tools/apksigner" verify preview/AeroPad-Preview.apk
+          "$tools/aapt" dump badging preview/AeroPad-Preview.apk > preview-badging.txt
+          grep -F "package: name='com.aeropad.remote.preview'" preview-badging.txt
+          grep -F "application: label='AeroPad Preview'" preview-badging.txt
+
+      - name: Upload preview APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AeroPad-Preview-APK
+          path: preview/AeroPad-Preview.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Installation note
+        run: |
+          echo 'Download **AeroPad-Preview-APK** from Artifacts, extract the ZIP, and install **AeroPad-Preview.apk**. It installs as **AeroPad Preview** beside production AeroPad. No release was published.' >> "$GITHUB_STEP_SUMMARY"

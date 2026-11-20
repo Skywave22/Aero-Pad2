@@ -78,6 +78,12 @@ object AeroIcons {
         poly(9.4f, 6.5f, 9.4f, 15.5f, 11.8f, 13.4f, 13.4f, 17.2f, 15.2f, 16.4f, 13.6f, 12.7f, 16.9f, 12.2f)
     }
 
+    /** Diagonal arrow for launching setup from the dashboard. */
+    val Open: ImageVector = vector("StudioOpen") {
+        poly(5f, 6f, 19f, 6f, 19f, 20f, 16.5f, 20f, 16.5f, 10.2f,
+            6.7f, 20f, 5f, 18.3f, 14.8f, 8.5f, 5f, 8.5f)
+    }
+
     /** Trackpad: cut-corner body with a scroll slot and a press bar. */
     val Mouse: ImageVector = vector("AeroMouse") {
         poly(9f, 2f, 15f, 2f, 18f, 6f, 18f, 18f, 15f, 22f, 9f, 22f, 6f, 18f, 6f, 6f)

@@ -1,16 +1,12 @@
 package com.aeropad.remote.ui.screens.home
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -18,21 +14,25 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.KeyboardArrowRight
-import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -51,626 +51,270 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aeropad.remote.R
+import com.aeropad.remote.domain.CsvListCodec
+import com.aeropad.remote.domain.StudioConnection
+import com.aeropad.remote.domain.dashboardConnection
 import com.aeropad.remote.model.HidConnectionState
-import com.aeropad.remote.ui.components.statusVisual
+import com.aeropad.remote.ui.components.rememberHaptic
+import com.aeropad.remote.ui.components.studioGrid
 import com.aeropad.remote.ui.navigation.Routes
+import com.aeropad.remote.ui.screens.controls.IllustratedControlCard
+import com.aeropad.remote.ui.screens.controls.StudioCatalog
+import com.aeropad.remote.ui.screens.controls.StudioEntry
+import com.aeropad.remote.ui.screens.controls.StudioEntryCard
 import com.aeropad.remote.ui.theme.AeroIcons
+import com.aeropad.remote.ui.theme.StudioIndexStyle
+import com.aeropad.remote.ui.theme.StudioPalette
 import com.aeropad.remote.viewmodel.ConnectionViewModel
 import com.aeropad.remote.viewmodel.SettingsViewModel
 import kotlinx.coroutines.launch
 
-/** A dashboard tile keeps a stable ID for saved visibility preferences. */
-private data class HomeTile(
-    val id: String,
-    val title: String,
-    val subtitle: String,
-    val icon: ImageVector,
-    val route: String,
-    val isControl: Boolean = true,
-    val legacyTitle: String = title
-)
-
-private val controlTiles = listOf(
-    HomeTile(
-        id = "mouse",
-        title = "Mouse",
-        subtitle = "Trackpad, scroll & air mouse",
-        icon = AeroIcons.Mouse,
-        route = Routes.MOUSE
-    ),
-    HomeTile(
-        id = "keyboard",
-        title = "Keyboard",
-        subtitle = "Keys, shortcuts & numpad",
-        icon = AeroIcons.Keyboard,
-        route = Routes.KEYBOARD
-    ),
-    HomeTile(
-        id = "full_keyboard",
-        title = "Full Board",
-        subtitle = "Complete QWERTY keyboard",
-        icon = AeroIcons.FullKeyboard,
-        route = Routes.FULL_KEYBOARD
-    ),
-    HomeTile(
-        id = "gamepad",
-        title = "Gamepad",
-        subtitle = "Pad & motion control",
-        icon = AeroIcons.Gamepad,
-        route = Routes.GAMEPAD
-    ),
-    HomeTile(
-        id = "multimedia",
-        title = "Multimedia",
-        subtitle = "Media, volume & transport",
-        icon = AeroIcons.Media,
-        route = Routes.MULTIMEDIA
-    ),
-    HomeTile(
-        id = "presenter",
-        title = "Presenter",
-        subtitle = "Slide navigation & presentation keys",
-        icon = AeroIcons.Presenter,
-        route = Routes.PRESENTER
-    ),
-    HomeTile(
-        id = "android_remote",
-        title = "Android",
-        subtitle = "Remote for phones & TVs",
-        icon = AeroIcons.Screen,
-        route = Routes.ANDROID
-    ),
-    HomeTile(
-        id = "text_clips",
-        title = "Text & Clips",
-        subtitle = "Clipboard, snippets & decks",
-        icon = AeroIcons.TextLines,
-        route = Routes.TEXT
-    )
-)
-
-private val createTiles = listOf(
-    HomeTile(
-        id = "layouts",
-        title = "Custom layouts",
-        subtitle = "Custom screens, PC Combo & pads",
-        icon = AeroIcons.Grid,
-        route = Routes.LAYOUTS,
-        isControl = false,
-        legacyTitle = "Layouts"
-    ),
-    HomeTile(
-        id = "macros",
-        title = "Macros",
-        subtitle = "Record & replay sequences",
-        icon = AeroIcons.Bolt,
-        route = Routes.MACROS,
-        isControl = false
-    )
-)
-
-private val systemTiles = listOf(
-    HomeTile(
-        id = "settings",
-        title = "App settings",
-        subtitle = "Tune everything",
-        icon = AeroIcons.Sliders,
-        route = Routes.SETTINGS,
-        isControl = false,
-        legacyTitle = "Settings"
-    ),
-    HomeTile(
-        id = "help",
-        title = "Help",
-        subtitle = "Pairing & troubleshooting",
-        icon = AeroIcons.Help,
-        route = Routes.HELP,
-        isControl = false
-    )
-)
-
-private val allDashboardTiles = controlTiles + createTiles + systemTiles
-
-/** Quick Tools — secondary screens that used to be emoji AssistChips. */
-private data class QuickTool(val label: String, val icon: ImageVector, val route: String)
-
-private val quickTools = listOf(
-    QuickTool("Air Mouse", AeroIcons.AirMouse, Routes.AIR_MOUSE),
-    QuickTool("PC Combo", AeroIcons.Combo, Routes.PC_COMBO),
-    QuickTool("Pad Builder", AeroIcons.GamepadPlus, Routes.GAMEPAD_BUILDER),
-    QuickTool("My Layout", AeroIcons.Frame, Routes.MY_LAYOUT),
-    QuickTool("Numpad", AeroIcons.FullKeyboard, Routes.NUMPAD),
-    QuickTool("Decks", AeroIcons.Deck, Routes.SHORTCUTS),
-    QuickTool("Connection health", AeroIcons.Pulse, Routes.CONNECTION_HEALTH)
-)
-
 @Composable
-fun HomeScreen(
-    onNavigate: (String) -> Unit,
-    viewModel: ConnectionViewModel = hiltViewModel()
-) {
+fun HomeScreen(onNavigate: (String) -> Unit, viewModel: ConnectionViewModel = hiltViewModel()) {
     val state by viewModel.connectionState.collectAsStateWithLifecycle()
     val permissionsGranted by viewModel.permissionsGranted.collectAsStateWithLifecycle()
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val view = LocalView.current
-    val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.onPermissionsResult()
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
-
-    val effectiveState = if (!permissionsGranted) {
-        HidConnectionState.PermissionMissing
-    } else {
-        state
-    }
-
-    // M2 + M3 + P9.7 — personalized dashboard keyed by stable HomeTile.id.
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     val settingsVm: SettingsViewModel = hiltViewModel()
     val app by settingsVm.app.collectAsStateWithLifecycle()
-    val hidden = remember(app.hiddenTiles) {
-        com.aeropad.remote.domain.CsvListCodec.decode(app.hiddenTiles).toSet()
-    }
+    val haptic = rememberHaptic(app.touchVibrations)
+    val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     var showCustomize by rememberSaveable { mutableStateOf(false) }
-    fun isHidden(tile: HomeTile): Boolean =
-        tile.id in hidden || tile.legacyTitle in hidden
-    fun visible(tiles: List<HomeTile>) = tiles.filterNot(::isHidden)
-    fun hideTile(tile: HomeTile) {
-        settingsVm.setDashboardTileVisible(tile.id, tile.legacyTitle, visible = false)
-        scope.launch {
-            val res = snackbarHostState.showSnackbar(
-                message = "Hidden '${tile.title}' tile",
-                actionLabel = "Undo",
-                duration = SnackbarDuration.Short
-            )
-            if (res == SnackbarResult.ActionPerformed) {
-                settingsVm.setDashboardTileVisible(tile.id, tile.legacyTitle, visible = true)
+    val hidden = remember(app.hiddenTiles) { CsvListCodec.decode(app.hiddenTiles).toSet() }
+    val customizable = StudioCatalog.customizable
+    fun isHidden(entry: StudioEntry) = entry.route in hidden || entry.legacyTitle in hidden
+    fun hideAction(entry: StudioEntry): (() -> Unit)? {
+        if (entry !in customizable) return null
+        return {
+            settingsVm.setDashboardTileVisible(entry.route, entry.legacyTitle, visible = false)
+            scope.launch {
+                if (snackbar.showSnackbar("Hidden '${entry.title}'", "Undo", duration = SnackbarDuration.Short)
+                    == SnackbarResult.ActionPerformed
+                ) settingsVm.setDashboardTileVisible(entry.route, entry.legacyTitle, visible = true)
             }
         }
     }
-    fun toggleTile(tile: HomeTile, show: Boolean) {
-        settingsVm.setDashboardTileVisible(tile.id, tile.legacyTitle, show)
+    fun connect() {
+        haptic()
+        onNavigate(if (!permissionsGranted || state == HidConnectionState.PermissionMissing) Routes.PERMISSIONS else Routes.CONNECTION)
     }
 
-    // If permissions are already granted, keep the engine warm so the status
-    // pill is truthful before the user ever visits the Connection screen.
+    DisposableEffect(lifecycle, viewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) viewModel.onPermissionsResult()
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
     LaunchedEffect(permissionsGranted) { viewModel.initialize() }
 
-    Scaffold(
-        containerColor = Color.Transparent,
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 144.dp * androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceIn(1f, 1.4f)),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                contentPadding = PaddingValues(
-                    start = 18.dp,
-                    end = 18.dp,
-                    top = 10.dp,
-                    bottom = 16.dp
-                ),
-                modifier = Modifier.widthIn(max = 880.dp).fillMaxSize().testTag("dashboardGrid")
-            ) {
-                // ---------- Header ----------
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(RoundedCornerShape(11.dp))
-                                    .background(MaterialTheme.colorScheme.primary),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = AeroIcons.Mark,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
-                            Spacer(Modifier.width(11.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "AeroPad",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    color = MaterialTheme.colorScheme.onBackground,
-                                    modifier = Modifier.semantics { heading() }
-                                )
-                                Text(
-                                    text = "Bluetooth remote",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                            IconButton(onClick = { showCustomize = true }) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Tune,
-                                    contentDescription = "Choose dashboard tiles",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                        Spacer(Modifier.height(12.dp))
-                        StatusPill(
-                            state = effectiveState,
-                            onClick = {
-                                view.performHapticFeedback(
-                                    android.view.HapticFeedbackConstants.KEYBOARD_TAP
-                                )
-                                if (!permissionsGranted) onNavigate(Routes.PERMISSIONS)
-                                else onNavigate(Routes.CONNECTION)
-                            }
-                        )
-                    }
-                }
+    val connection = dashboardConnection(state, permissionsGranted)
+    val connected = permissionsGranted && state.isConnected
+    val quick = StudioCatalog.quick.filterNot(::isHidden)
+    val studio = StudioCatalog.studioTools.filterNot(::isHidden)
+    val more = StudioCatalog.homeSecondary.filterNot(::isHidden)
+    val workspace = StudioCatalog.workspace.filterNot(::isHidden)
 
-                // ---------- Controls ----------
-                item(span = { GridItemSpan(maxLineSpan) }) { SectionLabel("Controls") }
-                if (hidden.isNotEmpty()) {
+    Scaffold(containerColor = Color.Transparent, snackbarHost = { SnackbarHost(snackbar) }) { padding ->
+        Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.TopCenter) {
+            BoxWithConstraints(Modifier.widthIn(max = 880.dp).fillMaxSize()) {
+                val fontScale = LocalDensity.current.fontScale
+                val columns = when {
+                    maxWidth >= 756.dp && fontScale <= 1.25f -> 4
+                    maxWidth >= 304.dp && fontScale <= 1.45f -> 2
+                    else -> 1
+                }
+                val regular = maxWidth >= 350.dp && fontScale <= 1.25f
+                val inset = if (maxWidth < 350.dp) 16.dp else 24.dp
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(columns),
+                    contentPadding = PaddingValues(start = inset, end = inset, top = 16.dp, bottom = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxSize().testTag("dashboardGrid")
+                ) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "${hidden.size} ${if (hidden.size == 1) "tile" else "tiles"} hidden",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.weight(1f)
-                            )
-                            TextButton(onClick = { showCustomize = true }) {
-                                Text("Show / Hide")
-                            }
-                        }
+                        StudioHeader(connection.badge, connected, roomForBadge = regular && maxWidth >= (if (connection.badge.length >= 10) 412.dp else 384.dp),
+                            compact = !regular, onConnect = ::connect)
                     }
-                }
-
-                if (visible(controlTiles).isEmpty()) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
-                        Text("All control tiles are hidden. Use Show / Hide to bring them back.",
-                            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        HomeTitle(compact = !regular, onCustomize = { showCustomize = true })
                     }
-                }
-                items(visible(controlTiles), key = { it.id }) { tile ->
-                    HomeTileCard(tile = tile, onLongPress = { hideTile(tile) }) {
-                        onNavigate(tile.route)
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        ConnectionHero(connection, showArt = regular, onConnect = ::connect)
                     }
-                }
-
-                // ---------- Create ----------
-                if (visible(createTiles).isNotEmpty()) item(span = { GridItemSpan(maxLineSpan) }) { SectionLabel("Create") }
-                items(visible(createTiles), key = { it.id }) { tile ->
-                    HomeTileCard(tile = tile, onLongPress = { hideTile(tile) }) {
-                        onNavigate(tile.route)
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        StudioSection("Quick controls", modifier = Modifier.padding(top = 10.dp), action = "View all",
+                            onAction = { onNavigate(Routes.CONTROLS) })
                     }
-                }
-
-                // ---------- System ----------
-                if (visible(systemTiles).isNotEmpty()) item(span = { GridItemSpan(maxLineSpan) }) { SectionLabel("System") }
-                items(visible(systemTiles), key = { it.id }) { tile ->
-                    HomeTileCard(tile = tile, onLongPress = { hideTile(tile) }) {
-                        onNavigate(tile.route)
+                    items(quick, key = { it.route }) { entry ->
+                        IllustratedControlCard(entry, onClick = { onNavigate(entry.route) }, onHide = hideAction(entry))
                     }
-                }
-
-                // Secondary controls retain their direct dashboard entry points.
-                item(span = { GridItemSpan(maxLineSpan) }) { SectionLabel("Quick tools") }
-                items(quickTools, key = { "tool-${it.route}" }) { tool ->
-                    QuickToolChip(tool = tool, onClick = { onNavigate(tool.route) })
+                    if (quick.isEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
+                        TextButton(onClick = { showCustomize = true }) { Text("Show shortcuts") }
+                    }
+                    item(span = { GridItemSpan(maxLineSpan) }) { StudioSection("Studio tools", Modifier.padding(top = 8.dp)) }
+                    items(studio, key = { it.route }) { entry ->
+                        StudioEntryCard(entry, onClick = { onNavigate(entry.route) }, onHide = hideAction(entry))
+                    }
+                    if (more.isNotEmpty()) item(span = { GridItemSpan(maxLineSpan) }) { StudioSection("More controls", Modifier.padding(top = 8.dp)) }
+                    items(more, key = { it.route }) { entry ->
+                        StudioEntryCard(entry, onClick = { onNavigate(entry.route) }, onHide = hideAction(entry))
+                    }
+                    item(span = { GridItemSpan(maxLineSpan) }) { StudioSection("Workspace", Modifier.padding(top = 8.dp)) }
+                    items(workspace, key = { it.route }) { entry ->
+                        StudioEntryCard(entry, onClick = { onNavigate(entry.route) }, onHide = hideAction(entry))
+                    }
                 }
             }
         }
     }
-
-    // P9.7 + M2 + M3 — Customize dashboard dialog: toggle any tile on/off.
     if (showCustomize) {
         AlertDialog(
-            onDismissRequest = { showCustomize = false },
-            title = { Text("Customize dashboard") },
+            onDismissRequest = { showCustomize = false }, title = { Text("Customize dashboard") },
             text = {
-                Column(
-                    modifier = Modifier.verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        text = "Toggle which tiles appear on Home (or long-press any tile to hide it):",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    allDashboardTiles.forEach { tile ->
-                        val shown = !isHidden(tile)
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(tile.title, modifier = Modifier.weight(1f))
-                            Switch(
-                                checked = shown,
-                                onCheckedChange = { toggleTile(tile, it) }
-                            )
+                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Choose which shortcuts appear on Home. The Controls tab always shows the complete library.",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    customizable.forEach { entry ->
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Text(entry.title, Modifier.weight(1f))
+                            Switch(checked = !isHidden(entry),
+                                onCheckedChange = { settingsVm.setDashboardTileVisible(entry.route, entry.legacyTitle, it) },
+                                modifier = Modifier.semantics { contentDescription = "Show ${entry.title} on Home" })
                         }
                     }
                 }
             },
-            dismissButton = {
-                if (hidden.isNotEmpty()) {
-                    TextButton(onClick = { settingsVm.resetHiddenTiles() }) {
-                        Text("Reset all")
-                    }
+            dismissButton = { if (hidden.isNotEmpty()) TextButton(onClick = { settingsVm.resetHiddenTiles() }) { Text("Reset all") } },
+            confirmButton = { TextButton(onClick = { showCustomize = false }) { Text("Done") } }
+        )
+    }
+}
+
+@Composable
+private fun StudioHeader(status: String, connected: Boolean, roomForBadge: Boolean, compact: Boolean, onConnect: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Column {
+        Row(Modifier.fillMaxWidth().padding(vertical = if (compact) 4.dp else 8.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(Modifier.size(if (compact) 36.dp else 48.dp).clip(RoundedCornerShape(14.dp)).background(StudioPalette.BrandPlate),
+                contentAlignment = Alignment.Center) {
+                Image(painterResource(R.drawable.ic_studio_mark), contentDescription = null,
+                    modifier = Modifier.size(if (compact) 25.dp else 34.dp))
+            }
+            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("AeroPad", style = if (compact) MaterialTheme.typography.titleLarge else MaterialTheme.typography.headlineMedium.copy(fontSize = 31.sp, lineHeight = 36.sp),
+                    color = colors.onBackground, modifier = Modifier.weight(1f, fill = false))
+                if (roomForBadge) {
+                    Text("STUDIO", style = StudioIndexStyle, color = colors.onSurfaceVariant,
+                        modifier = Modifier.border(1.dp, colors.outline, RoundedCornerShape(5.dp)).padding(horizontal = 6.dp, vertical = 2.dp))
                 }
-            },
-            confirmButton = {
-                TextButton(onClick = { showCustomize = false }) { Text("Done") }
             }
-        )
-    }
-}
-
-/**
- * The single connection surface on Home.
- *
- * Replaces the old `ConnectionStatusCard` (a bordered card carrying a headline,
- * a sub-line, a 12 dp dot, an optional warning glyph and — when permissions
- * were missing — a numbered three-step paragraph) plus the 52 dp Connect
- * button underneath it. One row: state dot, state, the one thing to do next,
- * and a chevron. The colour is reserved for state: neutral while idle, green
- * only while genuinely connected, red only on a real failure.
- */
-@Composable
-private fun StatusPill(
-    state: HidConnectionState,
-    onClick: () -> Unit
-) {
-    val visual = statusVisual(state)
-    val connected = state is HidConnectionState.Connected
-    val trouble = state is HidConnectionState.Error ||
-        state is HidConnectionState.HidUnsupported ||
-        state is HidConnectionState.BluetoothDisabled ||
-        state is HidConnectionState.PermissionMissing
-
-    val actionLabel = when {
-        state is HidConnectionState.Connected -> "Manage"
-        state is HidConnectionState.Connecting -> "View"
-        state is HidConnectionState.PermissionMissing -> "Allow"
-        state is HidConnectionState.BluetoothDisabled -> "Turn on"
-        state is HidConnectionState.Error || state is HidConnectionState.HidUnsupported -> "Details"
-        else -> "Connect"
-    }
-
-    val subtitle = visual.subtitle
-
-    val container = when {
-        connected -> visual.color.copy(alpha = 0.14f)
-        else -> MaterialTheme.colorScheme.surface
-    }
-    val border = when {
-        connected -> visual.color.copy(alpha = 0.42f)
-        trouble -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.85f)
-        else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
-    }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(container)
-            .border(1.dp, border, RoundedCornerShape(14.dp))
-            .clickable(role = Role.Button, onClickLabel = actionLabel, onClick = onClick)
-            .padding(horizontal = 13.dp, vertical = 11.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(if (trouble) MaterialTheme.colorScheme.error else visual.color)
-        )
-        Spacer(Modifier.width(11.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = visual.title,
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(Modifier.clip(CircleShape).clickable(role = Role.Button, onClickLabel = "Open Bluetooth connection", onClick = onConnect)
+                .heightIn(min = 48.dp).padding(vertical = 7.dp)
+                .border(1.dp, colors.outline, CircleShape).padding(horizontal = 9.dp, vertical = 5.dp)
+                .semantics { liveRegion = LiveRegionMode.Polite },
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                Box(Modifier.size(6.dp).background(if (connected) StudioPalette.Lime else colors.onSurfaceVariant, CircleShape))
+                Text(status, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+            }
         }
-        Spacer(Modifier.width(8.dp))
-        Text(
-            text = actionLabel,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary
-        )
-        Icon(
-            imageVector = Icons.Rounded.KeyboardArrowRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(18.dp)
-        )
+        Spacer(Modifier.height(8.dp))
+        HorizontalDivider(color = colors.outlineVariant)
     }
 }
 
 @Composable
-private fun SectionLabel(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.onSurface,
-        modifier = Modifier.padding(top = 14.dp, start = 2.dp).semantics { heading() }
-    )
-}
-
-/** Compact icon chip for the Quick Tools strip. */
-@Composable
-private fun QuickToolChip(
-    tool: QuickTool,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    Column(
-        modifier = modifier.fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                shape = RoundedCornerShape(12.dp)
-            )
-            .clickable(onClickLabel = "Open ${tool.label}", onClick = onClick)
-            .padding(vertical = 10.dp, horizontal = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            imageVector = tool.icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(17.dp)
-        )
-        Spacer(Modifier.height(5.dp))
-        Text(
-            text = tool.label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
-        )
+private fun HomeTitle(compact: Boolean, onCustomize: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Column(Modifier.padding(top = 4.dp, bottom = 2.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("YOUR WORKSPACE", style = StudioIndexStyle, color = colors.primary)
+            Text("01 / 04", style = StudioIndexStyle, color = colors.onSurfaceVariant)
+        }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text("Control center", modifier = Modifier.weight(1f).semantics { heading() }, color = colors.onBackground,
+                style = if (compact) MaterialTheme.typography.headlineMedium.copy(fontSize = 30.sp, lineHeight = 34.sp) else MaterialTheme.typography.headlineLarge)
+            IconButton(onClick = onCustomize, modifier = Modifier.size(48.dp).border(1.dp, colors.outline, MaterialTheme.shapes.small)) {
+                Icon(AeroIcons.Sliders, "Choose dashboard tiles", tint = colors.onSurface)
+            }
+        }
     }
 }
 
-/**
- * Tile card with tactile press feedback and a cut-corner icon plate that echoes
- * the icon set's geometry. Hairline border so the card reads as an object in
- * light mode, where surface-on-background contrast alone is nearly invisible.
- */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun HomeTileCard(
-    tile: HomeTile,
-    onLongPress: (() -> Unit)? = null,
-    onClick: () -> Unit
-) {
-    val reduceMotion = com.aeropad.remote.ui.components.LocalReduceMotion.current
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (pressed && !reduceMotion) 0.965f else 1f,
-        animationSpec = tween(110),
-        label = "tileScale"
-    )
-    val tint = if (tile.isControl) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-    val plate = RoundedCornerShape(
-        topStart = 11.dp,
-        topEnd = 11.dp,
-        bottomEnd = 11.dp,
-        bottomStart = 3.dp
-    )
+private fun ConnectionHero(connection: StudioConnection, showArt: Boolean, onConnect: () -> Unit) {
+    Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(13.dp))
+        .background(Brush.linearGradient(listOf(StudioPalette.Blueprint, StudioPalette.BlueprintDeep)))
+        .studioGrid(StudioPalette.BlueprintInk.copy(alpha = .08f))) {
+        Row(Modifier.fillMaxWidth().heightIn(min = if (showArt) 190.dp else 154.dp).padding(18.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Box(Modifier.size(5.dp).background(StudioPalette.Lime, CircleShape))
+                    Text("CONNECTION HUB", color = StudioPalette.BlueprintCaption, style = StudioIndexStyle)
+                }
+                Text(connection.title, color = StudioPalette.BlueprintInk, style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.semantics { heading() })
+                connection.detail?.let { Text(it, color = StudioPalette.BlueprintCaption,
+                    style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis) }
+                Button(onClick = onConnect, modifier = Modifier.heightIn(min = 48.dp), shape = MaterialTheme.shapes.small,
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 7.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = StudioPalette.Lime, contentColor = StudioPalette.OnLime)) {
+                    Text(connection.action, modifier = Modifier.weight(1f, fill = false))
+                    Spacer(Modifier.width(5.dp))
+                    Icon(AeroIcons.Open, contentDescription = null, modifier = Modifier.size(14.dp))
+                }
+            }
+            if (showArt) {
+                Column(Modifier.weight(.92f), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Image(painterResource(R.drawable.studio_hero_pad), contentDescription = null, contentScale = ContentScale.Fit,
+                        modifier = Modifier.fillMaxWidth().height(137.dp))
+                    Text("FIG. 01", style = StudioIndexStyle, color = StudioPalette.BlueprintCaption)
+                }
+            }
+        }
+    }
+}
 
-    Box(
-        modifier = Modifier.fillMaxWidth()
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
+@Composable
+private fun StudioSection(title: String, modifier: Modifier = Modifier, action: String? = null, onAction: (() -> Unit)? = null) {
+    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(title, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.weight(1f).semantics { heading() })
+        if (action != null && onAction != null) {
+            TextButton(onClick = onAction, modifier = Modifier.heightIn(min = 48.dp)) {
+                Text(action)
+                Spacer(Modifier.width(4.dp))
+                Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, modifier = Modifier.size(15.dp))
             }
-            .clip(MaterialTheme.shapes.medium)
-            .background(MaterialTheme.colorScheme.surface)
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                shape = MaterialTheme.shapes.medium
-            )
-            .combinedClickable(
-                interactionSource = interactionSource,
-                indication = androidx.compose.foundation.LocalIndication.current,
-                role = Role.Button,
-                onClickLabel = "Open ${tile.title}",
-                onLongClickLabel = "Hide ${tile.title} tile",
-                onClick = onClick,
-                onLongClick = onLongPress
-            )
-    ) {
-        Column(modifier = Modifier.padding(horizontal = 13.dp, vertical = 13.dp)) {
-            Box(
-                modifier = Modifier
-                    .size(34.dp)
-                    .clip(plate)
-                    .background(tint.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
-            ) {
-                // contentDescription = null — the title right below names it.
-                Icon(
-                    imageVector = tile.icon,
-                    contentDescription = null,
-                    tint = tint,
-                    modifier = Modifier.size(19.dp)
-                )
-            }
-            Spacer(Modifier.height(11.dp))
-            Text(
-                text = tile.title,
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-            /**
-             * Subtitles were 1–3 lines depending on the wording, so tiles in the
-             * same row ended at different heights. Pinned to two lines so every
-             * card in a row matches.
-             */
-            Text(
-                text = tile.subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.9f),
-                minLines = 2,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
         }
     }
 }

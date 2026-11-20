@@ -30,6 +30,8 @@ val keyAliasName = System.getenv("RELEASE_KEY_ALIAS")
 val keyPasswordValue = System.getenv("RELEASE_KEY_PASSWORD")
     ?: findProperty("RELEASE_KEY_PASSWORD") as String?
 val hasReleaseKeystore = !keystorePath.isNullOrBlank() && file(keystorePath).exists()
+val studioPreview = providers.gradleProperty("studioPreview").orNull == "true"
+
 val requireReleaseSigning =
     (System.getenv("REQUIRE_RELEASE_SIGNING")
         ?: findProperty("REQUIRE_RELEASE_SIGNING")?.toString()) == "1"
@@ -63,6 +65,8 @@ android {
         // Round 13 — which key signed THIS build, for every variant. Read it
         // back with: aapt2 dump xmltree --file AndroidManifest.xml app.apk
         manifestPlaceholders["aeropadSigning"] = if (hasReleaseKeystore) "release" else "debug"
+        manifestPlaceholders["aeropadLauncherLabel"] = "@string/app_name"
+        resValue("string", "shortcut_target_package", "com.aeropad.remote")
 
         testInstrumentationRunner = "com.aeropad.remote.HiltTestRunner"
         vectorDrawables { useSupportLibrary = true }
@@ -100,6 +104,16 @@ android {
     }
 
     buildTypes {
+        debug {
+            if (studioPreview) {
+                // Install beside production without changing the normal debug or release IDs.
+                applicationIdSuffix = ".preview"
+                versionNameSuffix = "-preview"
+                manifestPlaceholders["aeropadLauncherLabel"] = "AeroPad Preview"
+                manifestPlaceholders["aeropadSigning"] = "debug"
+                resValue("string", "shortcut_target_package", "com.aeropad.remote.preview")
+            }
+        }
         release {
             signingConfig = if (hasReleaseKeystore) {
                 signingConfigs.getByName("release")
